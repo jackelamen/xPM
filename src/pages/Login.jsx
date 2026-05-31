@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Loader2Icon } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const Login = () => {
     const { signIn, signUp } = useAuth()
     const navigate = useNavigate()
 
-    const [mode, setMode] = useState('login') // 'login' | 'signup'
+    const [mode, setMode] = useState('login')
+    const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -25,8 +27,18 @@ const Login = () => {
             } else {
                 const { error } = await signUp(email, password)
                 if (error) throw error
+
+                // Update profile name if provided
+                if (name.trim()) {
+                    await supabase
+                        .from('profiles')
+                        .update({ name: name.trim() })
+                        .eq('email', email.toLowerCase())
+                }
+
                 toast.success('Account created. You can now sign in.')
                 setMode('login')
+                setName('')
             }
         } catch (error) {
             toast.error(error.message)
@@ -38,7 +50,7 @@ const Login = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950 px-4">
             <div className="w-full max-w-sm">
-                {/* Logo / Title */}
+                {/* Logo */}
                 <div className="mb-8 text-center">
                     <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 mb-4">
                         <span className="text-white font-bold text-sm">xPM</span>
@@ -51,8 +63,22 @@ const Login = () => {
                     </p>
                 </div>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {mode === 'signup' && (
+                        <div>
+                            <label className="block text-sm text-gray-700 dark:text-zinc-300 mb-1">
+                                Your Name
+                            </label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Jack Lamen"
+                            />
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm text-gray-700 dark:text-zinc-300 mb-1">
                             Email
@@ -91,11 +117,10 @@ const Login = () => {
                     </button>
                 </form>
 
-                {/* Toggle */}
                 <p className="text-sm text-center text-gray-500 dark:text-zinc-400 mt-6">
                     {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
                     <button
-                        onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                        onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setName('') }}
                         className="text-blue-500 hover:underline"
                     >
                         {mode === 'login' ? 'Sign up' : 'Sign in'}
