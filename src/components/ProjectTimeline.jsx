@@ -134,13 +134,17 @@ export default function ProjectTimeline({ tasks, projectId }) {
         if (mode === "move") {
             if (origEnd) newEnd = addDays(origEnd, daysDelta)
             if (origStart) newStart = addDays(origStart, daysDelta)
-            else if (origEnd) newStart = null
-        } else if (mode === "resize-left" && origStart) {
-            newStart = addDays(origStart, daysDelta)
+        } else if (mode === "resize-left") {
+            // Use origStart if available, otherwise anchor to origEnd as the base
+            const base = origStart || (origEnd ? subDays(origEnd, 1) : today)
+            newStart = addDays(base, daysDelta)
             if (newEnd && newStart >= newEnd) newStart = subDays(newEnd, 1)
-        } else if (mode === "resize-right" && origEnd) {
-            newEnd = addDays(origEnd, daysDelta)
+        } else if (mode === "resize-right") {
+            // Always adjusts due date — origEnd must exist (bar wouldn't render without it)
+            const base = origEnd || today
+            newEnd = addDays(base, daysDelta)
             if (newStart && newEnd <= newStart) newEnd = addDays(newStart, 1)
+            else if (!newStart && newEnd <= today) newEnd = addDays(today, 1)
         }
         setLocalDates(prev => ({
             ...prev,

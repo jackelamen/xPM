@@ -173,12 +173,15 @@ export default function ProjectGantt({ tasks, projectId }) {
         if (mode === "move") {
             if (ne) ne = addDays(origEnd, daysDelta)
             if (ns) ns = addDays(origStart, daysDelta)
-        } else if (mode === "resize-left" && ns) {
-            ns = addDays(origStart, daysDelta)
+        } else if (mode === "resize-left") {
+            const base = ns || (ne ? subDays(ne, 1) : today)
+            ns = addDays(base, daysDelta)
             if (ne && ns >= ne) ns = subDays(ne, 1)
-        } else if (mode === "resize-right" && ne) {
-            ne = addDays(origEnd, daysDelta)
+        } else if (mode === "resize-right") {
+            const base = ne || today
+            ne = addDays(base, daysDelta)
             if (ns && ne <= ns) ne = addDays(ns, 1)
+            else if (!ns && ne <= today) ne = addDays(today, 1)
         }
         setLocalDates(prev => ({
             ...prev,
