@@ -8,7 +8,8 @@ import {
     XIcon, CalendarIcon, UserIcon, FlagIcon,
     MessageCircleIcon, ClockIcon, Loader2Icon,
     CheckCircle2Icon, CircleIcon, CircleDotIcon,
-    TrashIcon, PencilIcon, CheckIcon
+    TrashIcon, PencilIcon, CheckIcon, LinkIcon,
+    MilestoneIcon, PlusIcon
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -157,6 +158,53 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         if (!error) {
             setSubtasks((prev) => prev.map((s) => s.id === subtask.id ? { ...s, status: newStatus } : s))
         }
+    }
+
+    // Task links
+    const [links, setLinks] = useState([])
+    const [newLinkUrl, setNewLinkUrl] = useState("")
+    const [newLinkLabel, setNewLinkLabel] = useState("")
+    const [addingLink, setAddingLink] = useState(false)
+    const [showLinkForm, setShowLinkForm] = useState(false)
+
+    useEffect(() => {
+        if (taskId) fetchLinks()
+    }, [taskId])
+
+    const fetchLinks = async () => {
+        const { data } = await supabase
+            .from("task_links")
+            .select("*")
+            .eq("task_id", taskId)
+            .order("created_at", { ascending: true })
+        if (data) setLinks(data)
+    }
+
+    const handleAddLink = async () => {
+        if (!newLinkUrl.trim()) return
+        setAddingLink(true)
+        try {
+            const url = newLinkUrl.startsWith("http") ? newLinkUrl : `https://${newLinkUrl}`
+            const { data, error } = await supabase
+                .from("task_links")
+                .insert({ task_id: taskId, url, label: newLinkLabel.trim() || null, created_by: user.id })
+                .select()
+                .single()
+            if (error) throw error
+            setLinks((prev) => [...prev, data])
+            setNewLinkUrl("")
+            setNewLinkLabel("")
+            setShowLinkForm(false)
+        } catch {
+            toast.error("Failed to add link")
+        } finally {
+            setAddingLink(false)
+        }
+    }
+
+    const handleDeleteLink = async (linkId) => {
+        await supabase.from("task_links").delete().eq("id", linkId)
+        setLinks((prev) => prev.filter((l) => l.id !== linkId))
     }
 
     const handleStatusChange = async (newStatus) => {
@@ -355,6 +403,19 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 {format(new Date(task.created_at), "MMM d, yyyy")}
                             </p>
                         </div>
+
+                        {/* Milestone */}
+                        <div>
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                                <MilestoneIcon className="size-3" /> Milestone
+                            </p>
+                            <button
+                                onClick={() => handleFieldUpdate("milestone", !task.milestone)}
+                                className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded border transition ${task.milestone ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"}`}
+                            >
+                                {task.milestone ? "★ Milestone" : "☆ Mark as milestone"}
+                            </button>
+                        </div>
                     </div>
 
                     {/* Description */}
@@ -366,6 +427,42 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             multiline
                             placeholder="Add a description..."
                         />
+                    </div>
+
+                    {/* Links */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide flex items-center gap-1">
+                                <LinkIcon className="size-3" /> Links ({links.length})
+                            </p>
+                            <button onClick={() => setShowLinkForm(!showLinkForm)} className="text-xs text-blue-500 hover:underline">
+                                {showLinkForm ? "Cancel" : "+ Add"}
+                            </button>
+                        </div>
+                        {showLinkForm && (
+                            <div className="space-y-1.5 mb-2">
+                                <input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="https://..." className="w-full text-sm px-2 py-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                <div className="flex gap-1.5">
+                                    <input value={newLinkLabel} onChange={(e) => setNewLinkLabel(e.target.value)} placeholder="Label (optional)" className="flex-1 text-sm px-2 py-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                    <button onClick={handleAddLink} disabled={addingLink || !newLinkUrl.trim()} className="px-2 py-1 rounded bg-blue-500 text-white text-sm disabled:opacity-50">
+                                        {addingLink ? <Loader2Icon className="size-3.5 animate-spin" /> : "Add"}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        <div className="space-y-1">
+                            {links.map((link) => (
+                                <div key={link.id} className="flex items-center gap-2 group">
+                                    <LinkIcon className="size-3 text-zinc-400 flex-shrink-0" />
+                                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline truncate flex-1">
+                                        {link.label || link.url}
+                                    </a>
+                                    <button onClick={() => handleDeleteLink(link.id)} className="opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-500 transition">
+                                        <XIcon className="size-3.5" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Subtasks */}
