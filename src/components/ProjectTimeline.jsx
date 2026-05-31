@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { supabase } from "../lib/supabase"
 import {
     format, addDays, differenceInDays, startOfDay, isToday,
-    isWeekend, subDays, parseISO, startOfWeek, endOfWeek
+    isWeekend, subDays, parseISO
 } from "date-fns"
 import {
     ChevronLeftIcon, ChevronRightIcon, CalendarIcon,
@@ -35,7 +35,7 @@ const DAY_WIDTH_OPTIONS = [
     { value: 8, label: "Week" },
 ]
 
-export default function ProjectTimeline({ tasks, projectId }) {
+export default function ProjectTimeline({ tasks }) {
     const today = startOfDay(new Date())
     const [viewStart, setViewStart] = useState(subDays(today, 7))
     const [dayWidth, setDayWidth] = useState(16)
@@ -87,8 +87,6 @@ export default function ProjectTimeline({ tasks, projectId }) {
     // X position helpers
     const dayOffset = (date) => differenceInDays(startOfDay(date), startOfDay(viewStart))
     const xPos = (date) => dayOffset(date) * dayWidth
-    const dateFromX = (x) => addDays(viewStart, Math.round(x / dayWidth))
-
     // Header days
     const headerDays = useMemo(() => {
         return Array.from({ length: VISIBLE_DAYS + 1 }, (_, i) => addDays(viewStart, i))
@@ -126,7 +124,7 @@ export default function ProjectTimeline({ tasks, projectId }) {
         setDragging(dragState)
     }
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = useCallback((e) => {
         const drag = draggingRef.current
         if (!drag) return
         const dx = e.clientX - drag.startX
@@ -144,6 +142,7 @@ export default function ProjectTimeline({ tasks, projectId }) {
             if (newEnd && newStart >= newEnd) newStart = subDays(newEnd, 1)
         } else if (mode === "resize-right") {
             const base = origEnd || today
+            if (!newStart) newStart = base
             newEnd = addDays(base, daysDelta)
             if (newStart && newEnd <= newStart) newEnd = addDays(newStart, 1)
         }
@@ -154,9 +153,9 @@ export default function ProjectTimeline({ tasks, projectId }) {
                 due_date: newEnd ? format(newEnd, "yyyy-MM-dd") : null,
             }
         }))
-    }
+    }, [dayWidth, today])
 
-    const handleMouseUp = async () => {
+    const handleMouseUp = useCallback(async () => {
         const drag = draggingRef.current
         if (!drag) return
         draggingRef.current = null
@@ -178,7 +177,17 @@ export default function ProjectTimeline({ tasks, projectId }) {
             }
             return prev
         })
-    }
+    }, [])
+
+    useEffect(() => {
+        if (!dragging) return
+        window.addEventListener("mousemove", handleMouseMove)
+        window.addEventListener("mouseup", handleMouseUp)
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove)
+            window.removeEventListener("mouseup", handleMouseUp)
+        }
+    }, [dragging, handleMouseMove, handleMouseUp])
 
     const totalContentWidth = VISIBLE_DAYS * dayWidth
     const todayX = xPos(today)
@@ -223,7 +232,6 @@ export default function ProjectTimeline({ tasks, projectId }) {
                 className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800 select-none"
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
             >
                 <div style={{ minWidth: leftColWidth + totalContentWidth }}>
                     {/* Header */}

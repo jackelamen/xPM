@@ -91,7 +91,7 @@ export default function ProjectGantt({ tasks, projectId }) {
         setLoadingDeps(true)
         const taskIds = tasks.map(t => t.id)
         if (!taskIds.length) { setDeps([]); setLoadingDeps(false); return }
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from("task_dependencies")
             .select("id, task_id, depends_on_task_id, dependency_type")
             .in("task_id", taskIds)
@@ -108,8 +108,6 @@ export default function ProjectGantt({ tasks, projectId }) {
     }
 
     const xOf = (date) => Math.round(differenceInDays(startOfDay(date), startOfDay(viewStart)) * DAY_W)
-    const dateFromX = (x) => addDays(viewStart, Math.round(x / DAY_W))
-
     // Tasks with at least a due date
     const scheduledTasks = useMemo(() =>
         tasks.filter(t => t.due_date || localDates[t.id]?.due_date), [tasks, localDates])
@@ -166,7 +164,7 @@ export default function ProjectGantt({ tasks, projectId }) {
         setDragging(dragState)
     }
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = useCallback((e) => {
         const drag = draggingRef.current
         if (!drag) return
         const dx = e.clientX - drag.startX
@@ -183,6 +181,7 @@ export default function ProjectGantt({ tasks, projectId }) {
             if (ne && ns >= ne) ns = subDays(ne, 1)
         } else if (mode === "resize-right") {
             const base = ne || today
+            if (!ns) ns = base
             ne = addDays(base, daysDelta)
             if (ns && ne <= ns) ne = addDays(ns, 1)
         }
@@ -193,9 +192,9 @@ export default function ProjectGantt({ tasks, projectId }) {
                 due_date: ne ? format(ne, "yyyy-MM-dd") : null,
             }
         }))
-    }
+    }, [today])
 
-    const handleMouseUp = () => {
+    const handleMouseUp = useCallback(() => {
         const drag = draggingRef.current
         if (!drag) return
         draggingRef.current = null
@@ -216,7 +215,17 @@ export default function ProjectGantt({ tasks, projectId }) {
             }
             return prev
         })
-    }
+    }, [])
+
+    useEffect(() => {
+        if (!dragging) return
+        window.addEventListener("mousemove", handleMouseMove)
+        window.addEventListener("mouseup", handleMouseUp)
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove)
+            window.removeEventListener("mouseup", handleMouseUp)
+        }
+    }, [dragging, handleMouseMove, handleMouseUp])
 
     // ─── Link mode ──────────────────────────────────────────────────────────
     const handleBarClick = async (task) => {
@@ -347,7 +356,6 @@ export default function ProjectGantt({ tasks, projectId }) {
                 className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
             >
                 <div style={{ minWidth: LEFT_W + totalW }} className="select-none">
                     {/* Left column header */}
@@ -395,7 +403,7 @@ export default function ProjectGantt({ tasks, projectId }) {
                     <div className="flex">
                         {/* Left column: task names */}
                         <div style={{ width: LEFT_W, minWidth: LEFT_W }} className="flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800">
-                            {scheduledTasks.map((task, i) => {
+                            {scheduledTasks.map((task) => {
                                 const isSlipped = slippedTaskIds.has(task.id)
                                 const isLinkFrom = linking?.fromTaskId === task.id
                                 return (
