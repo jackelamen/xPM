@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon,
     FileStackIcon, ZapIcon, LayoutDashboardIcon, GanttChartIcon,
-    FileTextIcon, ListIcon
+    FileTextIcon, NetworkIcon
 } from "lucide-react";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
@@ -14,6 +14,7 @@ import ProjectTasks from "../components/ProjectTasks";
 import ProjectBoard from "../components/ProjectBoard";
 import ProjectTimeline from "../components/ProjectTimeline";
 import ProjectNotes from "../components/ProjectNotes";
+import ProjectGantt from "../components/ProjectGantt";
 import TaskPanel from "../components/TaskPanel";
 
 export default function ProjectDetail() {
@@ -67,6 +68,7 @@ export default function ProjectDetail() {
         { key: "board", label: "Board", icon: LayoutDashboardIcon },
         { key: "calendar", label: "Calendar", icon: CalendarIcon },
         { key: "timeline", label: "Timeline", icon: GanttChartIcon },
+        { key: "gantt", label: "Gantt", icon: NetworkIcon },
         { key: "notes", label: "Notes", icon: FileTextIcon },
         { key: "analytics", label: "Analytics", icon: BarChart3Icon },
         { key: "settings", label: "Settings", icon: SettingsIcon },
@@ -145,6 +147,11 @@ export default function ProjectDetail() {
                     {activeTab === "timeline" && (
                         <div className="max-w-6xl">
                             <ProjectTimeline tasks={tasks} projectId={id} />
+                        </div>
+                    )}
+                    {activeTab === "gantt" && (
+                        <div className="max-w-6xl overflow-x-auto">
+                            <ProjectGantt tasks={tasks} projectId={id} />
                         </div>
                     )}
                     {activeTab === "notes" && (

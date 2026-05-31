@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Environment files — never commit real keys
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# .env.production is a template (no real keys), so it IS committed.
+# If you ever add real keys to it, add it here.
+
+# Supabase local stack
+supabase/.branches/
+supabase/.temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

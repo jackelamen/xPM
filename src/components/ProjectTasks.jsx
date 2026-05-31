@@ -4,8 +4,9 @@ import { useDispatch } from "react-redux";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteTasks, updateTaskStatus } from "../features/workspaceSlice";
-import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap, DownloadIcon } from "lucide-react";
+import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap, DownloadIcon, ZapIcon } from "lucide-react";
 import SavedViews from "./SavedViews";
+import PulseBridge from "./PulseBridge";
 
 const typeIcons = {
     BUG: { icon: Bug, color: "text-red-600 dark:text-red-400" },
@@ -21,7 +22,7 @@ const priorityTexts = {
     HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
 };
 
-const ProjectTasks = ({ tasks, onTaskClick, projectId }) => {
+const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
@@ -103,6 +104,8 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId }) => {
             toast.error(error || "Failed to delete tasks")
         }
     };
+
+    const [showPulse, setShowPulse] = useState(false)
 
     return (
         <div>
@@ -300,6 +303,24 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId }) => {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* Pulse Bridge */}
+            <div className="mt-6 border border-violet-100 dark:border-violet-900/40 rounded-xl overflow-hidden">
+                <button
+                    onClick={() => setShowPulse(!showPulse)}
+                    className="w-full flex items-center gap-2 px-4 py-3 bg-violet-50/60 dark:bg-violet-900/10 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition text-left"
+                >
+                    <ZapIcon className="size-4 text-violet-500" />
+                    <span className="text-sm font-medium text-violet-700 dark:text-violet-300">Pulse Tasks</span>
+                    <span className="text-xs text-violet-400 ml-1">— tasks from your Pulse daily planner linked to this project</span>
+                    <span className="ml-auto text-xs text-violet-400">{showPulse ? "▲" : "▼"}</span>
+                </button>
+                {showPulse && (
+                    <div className="p-4">
+                        <PulseBridge projectId={projectId} onTaskCreated={onRefresh} />
+                    </div>
+                )}
             </div>
         </div>
     );

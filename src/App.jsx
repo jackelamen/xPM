@@ -8,6 +8,7 @@ import ProjectDetails from "./pages/ProjectDetails";
 import ProfileSettings from "./pages/ProfileSettings";
 import CRM from "./pages/CRM";
 import Workload from "./pages/Workload";
+import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
 import { useAuth } from "./context/AuthContext";
 import { Loader2Icon } from "lucide-react";
@@ -32,6 +33,7 @@ const App = () => {
             <Toaster />
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/" element={
                     <ProtectedRoute>
                         <Layout />
