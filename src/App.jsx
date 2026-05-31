@@ -5,7 +5,6 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Team from "./pages/Team";
 import ProjectDetails from "./pages/ProjectDetails";
-import TaskDetails from "./pages/TaskDetails";
 import Login from "./pages/Login";
 import { useAuth } from "./context/AuthContext";
 import { Loader2Icon } from "lucide-react";
@@ -39,7 +38,7 @@ const App = () => {
                     <Route path="team" element={<Team />} />
                     <Route path="projects" element={<Projects />} />
                     <Route path="projectsDetail" element={<ProjectDetails />} />
-                    <Route path="taskDetails" element={<TaskDetails />} />
+                    <Route path="taskDetails" element={<Navigate to="/projects" replace />} />
                 </Route>
             </Routes>
         </>
