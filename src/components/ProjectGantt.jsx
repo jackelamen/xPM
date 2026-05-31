@@ -490,26 +490,28 @@ export default function ProjectGantt({ tasks, projectId }) {
                                 return (
                                     <g key={task.id}
                                         style={{ cursor: linking ? "pointer" : isDraggingThis ? "grabbing" : "grab" }}
-                                        onClick={() => linking?.fromTaskId && handleBarClick(task)}
-                                        onMouseDown={(e) => !linking && handleBarMouseDown(e, task, "move")}>
-                                        {/* Bar background */}
+                                        onClick={() => linking?.fromTaskId && handleBarClick(task)}>
+                                        {/* Bar background — move handler only on the bar body, not the whole group */}
                                         <rect x={Math.max(0, x)} y={y} width={w - Math.max(0, -x)} height={BAR_H}
                                             rx={BAR_RADIUS} ry={BAR_RADIUS}
                                             fill={barFill} stroke={barStroke} strokeWidth={1.5}
-                                            opacity={isDraggingThis ? 0.7 : 1} />
+                                            opacity={isDraggingThis ? 0.7 : 1}
+                                            onMouseDown={(e) => !linking && handleBarMouseDown(e, task, "move")} />
 
                                         {/* Milestone diamond overlay */}
                                         {task.milestone && (
                                             <polygon
                                                 points={`${x + w / 2},${y - 4} ${x + w / 2 + 8},${y + BAR_H / 2} ${x + w / 2},${y + BAR_H + 4} ${x + w / 2 - 8},${y + BAR_H / 2}`}
-                                                fill="#f59e0b" stroke="#d97706" strokeWidth={1} opacity={0.85} />
+                                                fill="#f59e0b" stroke="#d97706" strokeWidth={1} opacity={0.85}
+                                                style={{ pointerEvents: "none" }} />
                                         )}
 
                                         {/* Completion overlay */}
                                         {task.status === "DONE" && (
                                             <rect x={Math.max(0, x)} y={y} width={w - Math.max(0, -x)} height={BAR_H}
                                                 rx={BAR_RADIUS} ry={BAR_RADIUS}
-                                                fill="rgba(255,255,255,0.25)" />
+                                                fill="rgba(255,255,255,0.25)"
+                                                style={{ pointerEvents: "none" }} />
                                         )}
 
                                         {/* Label */}
@@ -521,17 +523,18 @@ export default function ProjectGantt({ tasks, projectId }) {
                                             </text>
                                         )}
 
+                                        {/* Resize handles — placed AFTER bar so they sit on top and capture events first */}
                                         {/* Left resize handle */}
                                         {getDate(task, "start_date") && (
-                                            <rect x={Math.max(0, x)} y={y} width={6} height={BAR_H}
-                                                rx={BAR_RADIUS} fill="rgba(0,0,0,0.15)"
+                                            <rect x={Math.max(0, x)} y={y} width={8} height={BAR_H}
+                                                rx={BAR_RADIUS} fill="rgba(0,0,0,0.0)"
                                                 style={{ cursor: "ew-resize" }}
                                                 onMouseDown={(e) => { e.stopPropagation(); !linking && handleBarMouseDown(e, task, "resize-left") }} />
                                         )}
 
                                         {/* Right resize handle */}
-                                        <rect x={Math.max(0, x) + w - 6 - Math.max(0, -x)} y={y} width={6} height={BAR_H}
-                                            rx={BAR_RADIUS} fill="rgba(0,0,0,0.15)"
+                                        <rect x={Math.max(0, x) + w - 8 - Math.max(0, -x)} y={y} width={8} height={BAR_H}
+                                            rx={BAR_RADIUS} fill="rgba(0,0,0,0.0)"
                                             style={{ cursor: "ew-resize" }}
                                             onMouseDown={(e) => { e.stopPropagation(); !linking && handleBarMouseDown(e, task, "resize-right") }} />
 

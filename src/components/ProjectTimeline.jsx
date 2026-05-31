@@ -304,7 +304,7 @@ export default function ProjectTimeline({ tasks, projectId }) {
 
                                                 {isVisible && (
                                                     <div
-                                                        className={`absolute rounded cursor-grab active:cursor-grabbing flex items-center px-1.5 ${statusConfig.bar} ${PRIORITY_COLORS[task.priority] || ""} ${isDraggingThis ? "opacity-80 shadow-lg" : "hover:opacity-90"} transition-opacity`}
+                                                        className={`absolute rounded flex items-center ${statusConfig.bar} ${PRIORITY_COLORS[task.priority] || ""} ${isDraggingThis ? "opacity-80 shadow-lg" : "hover:opacity-90"} transition-opacity`}
                                                         style={{
                                                             left: Math.max(0, barLeft),
                                                             width: barWidth - (barLeft < 0 ? -barLeft : 0),
@@ -312,21 +312,34 @@ export default function ProjectTimeline({ tasks, projectId }) {
                                                             transform: "translateY(-50%)",
                                                             height: 24,
                                                             zIndex: isDraggingThis ? 20 : 1,
+                                                            cursor: "grab",
                                                         }}
-                                                        onMouseDown={(e) => handleBarMouseDown(e, task, "move")}
+                                                        onMouseDown={(e) => {
+                                                            // Only trigger move if the click was not on a resize handle
+                                                            if (e.target.dataset.resize) return
+                                                            handleBarMouseDown(e, task, "move")
+                                                        }}
                                                         title={`${task.title}\n${startDate ? format(startDate, "MMM d") : "No start"} → ${dueDate ? format(dueDate, "MMM d") : "No due"}`}
                                                     >
                                                         {/* Left resize handle */}
                                                         {startDate && (
-                                                            <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/20 rounded-l"
-                                                                onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, task, "resize-left") }} />
+                                                            <div
+                                                                data-resize="left"
+                                                                className="absolute left-0 top-0 bottom-0 w-3 rounded-l hover:bg-black/20"
+                                                                style={{ cursor: "ew-resize" }}
+                                                                onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, task, "resize-left") }}
+                                                            />
                                                         )}
-                                                        <span className="text-xs text-white font-medium truncate flex-1 select-none">
+                                                        <span className="text-xs text-white font-medium truncate select-none px-3">
                                                             {barWidth > 60 ? task.title : ""}
                                                         </span>
                                                         {/* Right resize handle */}
-                                                        <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/20 rounded-r"
-                                                            onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, task, "resize-right") }} />
+                                                        <div
+                                                            data-resize="right"
+                                                            className="absolute right-0 top-0 bottom-0 w-3 rounded-r hover:bg-black/20"
+                                                            style={{ cursor: "ew-resize" }}
+                                                            onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, task, "resize-right") }}
+                                                        />
                                                     </div>
                                                 )}
 
