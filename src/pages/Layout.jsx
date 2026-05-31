@@ -50,22 +50,25 @@ const Layout = () => {
     }
 
     if (loading) return (
-        <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
-            <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+        <div className='flex items-center justify-center h-screen bg-[#f8f8f8] dark:bg-[#0e0e0e]'>
+            <Loader2Icon className="size-5 text-gray-400 dark:text-zinc-500 animate-spin" />
         </div>
     )
 
     // New user with no workspace yet
     if (!loading && workspaces.length === 0) return (
-        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950 px-4">
-            <div className="w-full max-w-sm text-center">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 mb-4">
-                    <span className="text-white font-bold text-sm">xPM</span>
+        <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8] dark:bg-[#0e0e0e] px-4">
+            <div className="w-full max-w-[320px]">
+                <div className="flex items-center gap-2.5 mb-8">
+                    <div className="w-7 h-7 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
+                        <span className="text-white dark:text-gray-900 font-bold text-[11px]">xPM</span>
+                    </div>
+                    <span className="text-gray-900 dark:text-white font-semibold text-[14px]">EDGEx PM</span>
                 </div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                    Create your first workspace
+                <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white mb-1">
+                    Create your workspace
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-6">
+                <p className="text-[13px] text-gray-500 dark:text-zinc-400 mb-6">
                     A workspace holds your projects and team.
                 </p>
                 <form onSubmit={handleCreateWorkspace} className="space-y-3">
@@ -75,14 +78,14 @@ const Layout = () => {
                         value={wsName}
                         onChange={(e) => setWsName(e.target.value)}
                         placeholder="e.g. Signal 7 Partners"
-                        className="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 placeholder:text-gray-400 dark:placeholder:text-zinc-600"
                     />
                     <button
                         type="submit"
                         disabled={creating}
-                        className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium hover:opacity-90 transition disabled:opacity-60"
+                        className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
                     >
-                        {creating && <Loader2Icon className="size-4 animate-spin" />}
+                        {creating && <Loader2Icon className="size-3.5 animate-spin" />}
                         Create workspace
                     </button>
                 </form>
@@ -91,11 +94,11 @@ const Layout = () => {
     )
 
     return (
-        <div className="flex bg-white dark:bg-zinc-950 text-gray-900 dark:text-slate-100">
+        <div className="flex bg-[#fcf8f8] dark:bg-[#0e0e0e] text-gray-900 dark:text-slate-100">
             <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
             <div className="flex-1 flex flex-col h-screen">
                 <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-                <div className="flex-1 h-full p-6 xl:p-10 xl:px-16 overflow-y-scroll">
+                <div className="flex-1 h-full p-6 xl:p-8 overflow-y-scroll bg-[#fcf8f8] dark:bg-[#0e0e0e]">
                     <Outlet />
                 </div>
             </div>
