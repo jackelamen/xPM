@@ -1,37 +1,82 @@
-import { format } from "date-fns";
-import { Plus, Save } from "lucide-react";
-import { useEffect, useState } from "react";
-import AddProjectMember from "./AddProjectMember";
+import { useState, useEffect } from "react";
+import { Save, Loader2Icon, Trash2Icon } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { supabase } from "../lib/supabase";
+import { fetchWorkspaceDetail } from "../features/workspaceSlice";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+const inputClasses = "w-full px-3 py-2 rounded mt-1 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500";
+const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
+const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border-zinc-300 dark:border-zinc-800";
 
 export default function ProjectSettings({ project }) {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        name: "New Website Launch",
-        description: "Initial launch for new web platform.",
+        name: "",
+        description: "",
         status: "PLANNING",
-        priority: "MEDIUM",
-        start_date: "2025-09-10",
-        end_date: "2025-10-15",
-        progress: 30,
     });
-
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
+
+    useEffect(() => {
+        if (project) {
+            setFormData({
+                name: project.name || "",
+                description: project.description || "",
+                status: project.status || "PLANNING",
+            });
+        }
+    }, [project]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!project) return;
+        setIsSubmitting(true);
+        try {
+            const { error } = await supabase
+                .from("projects")
+                .update({
+                    name: formData.name,
+                    description: formData.description,
+                    status: formData.status,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", project.id);
 
+            if (error) throw error;
+            toast.success("Project updated");
+            dispatch(fetchWorkspaceDetail(project.workspace_id));
+        } catch (err) {
+            toast.error(err.message || "Failed to save");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    useEffect(() => {
-        if (project) setFormData(project);
-    }, [project]);
+    const handleArchive = async () => {
+        if (!window.confirm("Archive this project? It will be hidden but not deleted.")) return;
+        setIsArchiving(true);
+        try {
+            const { error } = await supabase
+                .from("projects")
+                .update({ archived_at: new Date().toISOString() })
+                .eq("id", project.id);
 
-    const inputClasses = "w-full px-3 py-2 rounded mt-2 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300";
+            if (error) throw error;
+            toast.success("Project archived");
+            dispatch(fetchWorkspaceDetail(project.workspace_id));
+            navigate("/projects");
+        } catch (err) {
+            toast.error(err.message || "Failed to archive");
+            setIsArchiving(false);
+        }
+    };
 
-    const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border-zinc-300 dark:border-zinc-800";
-
-    const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
+    if (!project) return null;
 
     return (
         <div className="grid lg:grid-cols-2 gap-8">
@@ -39,90 +84,85 @@ export default function ProjectSettings({ project }) {
             <div className={cardClasses}>
                 <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">Project Details</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Name */}
-                    <div className="space-y-2">
+                    <div>
                         <label className={labelClasses}>Project Name</label>
-                        <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClasses} required />
+                        <input
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className={inputClasses}
+                            required
+                        />
                     </div>
 
-                    {/* Description */}
-                    <div className="space-y-2">
+                    <div>
                         <label className={labelClasses}>Description</label>
-                        <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClasses + " h-24"} />
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className={inputClasses + " h-24 resize-none"}
+                        />
                     </div>
 
-                    {/* Status & Priority */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className={labelClasses}>Status</label>
-                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className={inputClasses} >
-                                <option value="PLANNING">Planning</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="ON_HOLD">On Hold</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="CANCELLED">Cancelled</option>
-                            </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className={labelClasses}>Priority</label>
-                            <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className={inputClasses} >
-                                <option value="LOW">Low</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="HIGH">High</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label className={labelClasses}>Status</label>
+                        <select
+                            value={formData.status}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                            className={inputClasses}
+                        >
+                            <option value="PLANNING">Planning</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="ON_HOLD">On Hold</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="space-y-4 grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className={labelClasses}>Start Date</label>
-                            <input type="date" value={format(formData.start_date, "yyyy-MM-dd")} onChange={(e) => setFormData({ ...formData, start_date: new Date(e.target.value) })} className={inputClasses} />
-                        </div>
-                        <div className="space-y-2">
-                            <label className={labelClasses}>End Date</label>
-                            <input type="date" value={format(formData.end_date, "yyyy-MM-dd")} onChange={(e) => setFormData({ ...formData, end_date: new Date(e.target.value) })} className={inputClasses} />
-                        </div>
-                    </div>
-
-                    {/* Progress */}
-                    <div className="space-y-2">
-                        <label className={labelClasses}>Progress: {formData.progress}%</label>
-                        <input type="range" min="0" max="100" step="5" value={formData.progress} onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })} className="w-full accent-blue-500 dark:accent-blue-400" />
-                    </div>
-
-                    {/* Save Button */}
-                    <button type="submit" disabled={isSubmitting} className="ml-auto flex items-center text-sm justify-center gap-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white px-4 py-2 rounded" >
-                        <Save className="size-4" /> {isSubmitting ? "Saving..." : "Save Changes"}
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex items-center gap-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white px-4 py-2 rounded disabled:opacity-60 hover:opacity-90 transition"
+                    >
+                        {isSubmitting ? <Loader2Icon className="size-4 animate-spin" /> : <Save className="size-4" />}
+                        {isSubmitting ? "Saving..." : "Save Changes"}
                     </button>
                 </form>
             </div>
 
-            {/* Team Members */}
+            {/* Danger Zone */}
             <div className="space-y-6">
+                {/* Members */}
                 <div className={cardClasses}>
-                    <div className="flex items-center justify-between gap-4">
-                        <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">
-                            Team Members <span className="text-sm text-zinc-600 dark:text-zinc-400">({project.members.length})</span>
-                        </h2>
-                        <button type="button" onClick={() => setIsDialogOpen(true)} className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800" >
-                            <Plus className="size-4 text-zinc-900 dark:text-zinc-300" />
-                        </button>
-                        <AddProjectMember isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
-                    </div>
-
-                    {/* Member List */}
-                    {project.members.length > 0 && (
-                        <div className="space-y-2 mt-2 max-h-32 overflow-y-auto">
-                            {project.members.map((member, index) => (
-                                <div key={index} className="flex items-center justify-between px-3 py-2 rounded dark:bg-zinc-800 text-sm text-zinc-900 dark:text-zinc-300" >
-                                    <span> {member?.user?.email || "Unknown"} </span>
-                                    {project.team_lead === member.user.id && <span className="px-2 py-0.5 rounded-xs ring ring-zinc-200 dark:ring-zinc-600">Team Lead</span>}
+                    <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-3">
+                        Team Members <span className="text-sm text-zinc-500">({project.members?.length || 0})</span>
+                    </h2>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {(project.members || []).map((member) => (
+                            <div key={member.id || member.user_id} className="flex items-center gap-3 px-3 py-2 rounded dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-300">
+                                <div className="size-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium">
+                                    {(member.user?.name || member.user?.email || "?")[0].toUpperCase()}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                                <span className="flex-1 truncate">{member.user?.name || member.user?.email}</span>
+                                <span className="text-xs text-zinc-500 dark:text-zinc-400 capitalize">{member.role}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Danger Zone */}
+                <div className="rounded-lg border border-red-200 dark:border-red-900 p-6">
+                    <h2 className="text-lg font-medium text-red-600 dark:text-red-400 mb-1">Danger Zone</h2>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+                        Archiving a project hides it from all views. Tasks are preserved.
+                    </p>
+                    <button
+                        onClick={handleArchive}
+                        disabled={isArchiving}
+                        className="flex items-center gap-2 text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition disabled:opacity-60"
+                    >
+                        {isArchiving ? <Loader2Icon className="size-4 animate-spin" /> : <Trash2Icon className="size-4" />}
+                        {isArchiving ? "Archiving..." : "Archive Project"}
+                    </button>
                 </div>
             </div>
         </div>

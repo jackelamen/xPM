@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Plus } from "lucide-react";
+import { ChevronDown, Check, Plus, Loader2Icon } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { setCurrentWorkspace, fetchWorkspaceDetail } from "../features/workspaceSlice";
+import { setCurrentWorkspace, fetchWorkspaceDetail, createWorkspace } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 function WorkspaceAvatar({ name, size = "sm" }) {
     const initials = name?.slice(0, 2).toUpperCase() || "WS"
@@ -17,15 +19,37 @@ function WorkspaceAvatar({ name, size = "sm" }) {
 function WorkspaceDropdown() {
     const { workspaces, currentWorkspace } = useSelector((state) => state.workspace);
     const [isOpen, setIsOpen] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [newWsName, setNewWsName] = useState("");
+    const [showCreate, setShowCreate] = useState(false);
     const dropdownRef = useRef(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const onSelectWorkspace = (wsId) => {
         dispatch(setCurrentWorkspace(wsId))
         dispatch(fetchWorkspaceDetail(wsId))
         setIsOpen(false)
         navigate('/')
+    }
+
+    const handleCreateWorkspace = async (e) => {
+        e.preventDefault()
+        if (!newWsName.trim()) return
+        setCreating(true)
+        try {
+            await dispatch(createWorkspace({ name: newWsName.trim(), userId: user.id })).unwrap()
+            toast.success("Workspace created!")
+            setNewWsName("")
+            setShowCreate(false)
+            setIsOpen(false)
+            navigate('/')
+        } catch (err) {
+            toast.error(err || "Failed to create workspace")
+        } finally {
+            setCreating(false)
+        }
     }
 
     useEffect(() => {
@@ -86,9 +110,31 @@ function WorkspaceDropdown() {
                     <hr className="border-gray-200 dark:border-zinc-700" />
 
                     <div className="p-2">
-                        <button className="flex items-center text-xs gap-2 my-1 w-full text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800">
-                            <Plus className="w-4 h-4" /> Create Workspace
-                        </button>
+                        {showCreate ? (
+                            <form onSubmit={handleCreateWorkspace} className="flex gap-1">
+                                <input
+                                    autoFocus
+                                    value={newWsName}
+                                    onChange={(e) => setNewWsName(e.target.value)}
+                                    placeholder="Workspace name"
+                                    className="flex-1 text-xs px-2 py-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={creating}
+                                    className="px-2 py-1.5 rounded bg-blue-500 text-white text-xs disabled:opacity-60"
+                                >
+                                    {creating ? <Loader2Icon className="size-3 animate-spin" /> : "Add"}
+                                </button>
+                            </form>
+                        ) : (
+                            <button
+                                onClick={() => setShowCreate(true)}
+                                className="flex items-center text-xs gap-2 my-1 w-full text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800"
+                            >
+                                <Plus className="w-4 h-4" /> Create Workspace
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

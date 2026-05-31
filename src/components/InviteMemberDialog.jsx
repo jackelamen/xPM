@@ -1,19 +1,56 @@
 import { useState } from "react";
-import { Mail, UserPlus } from "lucide-react";
-import { useSelector } from "react-redux";
+import { Mail, UserPlus, Loader2Icon } from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { supabase } from "../lib/supabase";
+import { fetchWorkspaceDetail } from "../features/workspaceSlice";
+import toast from "react-hot-toast";
 
 const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
 
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
+    const dispatch = useDispatch();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [formData, setFormData] = useState({
-        email: "",
-        role: "org:member",
-    });
+    const [formData, setFormData] = useState({ email: "", role: "member" });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!currentWorkspace) return;
+        setIsSubmitting(true);
+        try {
+            // Look up the user by email in profiles
+            const { data: profile, error: profileError } = await supabase
+                .from("profiles")
+                .select("id, email")
+                .eq("email", formData.email.trim().toLowerCase())
+                .single();
 
+            if (profileError || !profile) {
+                toast.error("No account found with that email. They need to sign up first.");
+                return;
+            }
+
+            // Check if already a member
+            const already = currentWorkspace.members?.find((m) => m.user_id === profile.id);
+            if (already) {
+                toast.error("This person is already a member of this workspace.");
+                return;
+            }
+
+            const { error } = await supabase
+                .from("workspace_members")
+                .insert({ workspace_id: currentWorkspace.id, user_id: profile.id, role: formData.role });
+
+            if (error) throw error;
+
+            toast.success(`${formData.email} added to ${currentWorkspace.name}`);
+            dispatch(fetchWorkspaceDetail(currentWorkspace.id));
+            setFormData({ email: "", role: "member" });
+            setIsDialogOpen(false);
+        } catch (err) {
+            toast.error(err.message || "Failed to invite member");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isDialogOpen) return null;
@@ -50,8 +87,8 @@ const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-900 dark:text-zinc-200">Role</label>
                         <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full rounded border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-200 py-2 px-3 mt-1 focus:outline-none focus:border-blue-500 text-sm" >
-                            <option value="org:member">Member</option>
-                            <option value="org:admin">Admin</option>
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
                         </select>
                     </div>
 
@@ -60,8 +97,9 @@ const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                         <button type="button" onClick={() => setIsDialogOpen(false)} className="px-5 py-2 rounded text-sm border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition" >
                             Cancel
                         </button>
-                        <button type="submit" disabled={isSubmitting || !currentWorkspace} className="px-5 py-2 rounded text-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 hover:opacity-90 transition" >
-                            {isSubmitting ? "Sending..." : "Send Invitation"}
+                        <button type="submit" disabled={isSubmitting || !currentWorkspace} className="flex items-center gap-2 px-5 py-2 rounded text-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 hover:opacity-90 transition" >
+                            {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
+                            {isSubmitting ? "Adding..." : "Add Member"}
                         </button>
                     </div>
                 </form>
