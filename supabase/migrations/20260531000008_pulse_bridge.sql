@@ -52,8 +52,7 @@ returns table (
     project_name text,
     workspace_id uuid,
     workspace_name text,
-    milestone boolean,
-    recurrence_rule text
+    milestone boolean
 )
 language sql stable security definer as $$
     select
@@ -66,8 +65,7 @@ language sql stable security definer as $$
         p.name as project_name,
         t.workspace_id,
         w.name as workspace_name,
-        t.milestone,
-        t.recurrence_rule
+        t.milestone
     from public.tasks t
     join public.projects p on p.id = t.project_id
     join public.workspaces w on w.id = t.workspace_id
