@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { useSelector } from "react-redux";
+import { Calendar as CalendarIcon, Loader2Icon } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
 import { format } from "date-fns";
+import { createTask } from "../features/workspaceSlice";
+import toast from "react-hot-toast";
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
+    const dispatch = useDispatch();
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
     const project = currentWorkspace?.projects.find((p) => p.id === projectId);
     const teamMembers = project?.members || [];
@@ -21,8 +24,28 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-
+        if (!currentWorkspace) return;
+        setIsSubmitting(true);
+        try {
+            await dispatch(createTask({
+                workspaceId: currentWorkspace.id,
+                projectId,
+                title: formData.title,
+                description: formData.description,
+                type: formData.type,
+                status: formData.status,
+                priority: formData.priority,
+                assigneeId: formData.assigneeId || null,
+                dueDate: formData.due_date || null,
+            })).unwrap();
+            toast.success("Task created!");
+            setShowCreateTask(false);
+            setFormData({ title: "", description: "", type: "TASK", status: "TODO", priority: "MEDIUM", assigneeId: "", due_date: "" });
+        } catch (err) {
+            toast.error(err || "Failed to create task");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return showCreateTask ? (
@@ -109,7 +132,8 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         <button type="button" onClick={() => setShowCreateTask(false)} className="rounded border border-zinc-300 dark:border-zinc-700 px-5 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition" >
                             Cancel
                         </button>
-                        <button type="submit" disabled={isSubmitting} className="rounded px-5 py-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white dark:text-zinc-200 transition" >
+                        <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 rounded px-5 py-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white transition disabled:opacity-60" >
+                            {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
                             {isSubmitting ? "Creating..." : "Create Task"}
                         </button>
                     </div>

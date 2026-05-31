@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { XIcon } from "lucide-react";
-import { useSelector } from "react-redux";
+import { XIcon, Loader2Icon } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { createProject } from "../features/workspaceSlice";
+import toast from "react-hot-toast";
 
 const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
 
+    const dispatch = useDispatch();
     const { currentWorkspace } = useSelector((state) => state.workspace);
 
     const [formData, setFormData] = useState({
@@ -22,7 +25,23 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+        if (!currentWorkspace) return;
+        setIsSubmitting(true);
+        try {
+            await dispatch(createProject({
+                workspaceId: currentWorkspace.id,
+                name: formData.name,
+                description: formData.description,
+                status: formData.status,
+            })).unwrap();
+            toast.success("Project created!");
+            setIsDialogOpen(false);
+            setFormData({ name: "", description: "", status: "PLANNING", priority: "MEDIUM", start_date: "", end_date: "", team_members: [], team_lead: "", progress: 0 });
+        } catch (err) {
+            toast.error(err || "Failed to create project");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const removeTeamMember = (email) => {
@@ -145,7 +164,8 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                         <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800" >
                             Cancel
                         </button>
-                        <button disabled={isSubmitting || !currentWorkspace} className="px-4 py-2 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white dark:text-zinc-200" >
+                        <button disabled={isSubmitting || !currentWorkspace} className="flex items-center gap-2 px-4 py-2 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60" >
+                            {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
                             {isSubmitting ? "Creating..." : "Create Project"}
                         </button>
                     </div>

@@ -5,17 +5,20 @@ import ProjectOverview from '../components/ProjectOverview'
 import RecentActivity from '../components/RecentActivity'
 import TasksSummary from '../components/TasksSummary'
 import CreateProjectDialog from '../components/CreateProjectDialog'
+import { useAuth } from '../context/AuthContext'
 
 const Dashboard = () => {
 
-    const user = { fullName: 'User' }
+    const { user } = useAuth()
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+    const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'there'
 
     return (
         <div className='max-w-6xl mx-auto'>
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 ">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1"> Welcome back, {user?.fullName || 'User'} </h1>
+                    <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1"> Welcome back, {displayName} </h1>
                     <p className="text-gray-500 dark:text-zinc-400 text-sm"> Here's what's happening with your projects today </p>
                 </div>
 

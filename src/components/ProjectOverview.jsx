@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Calendar, UsersIcon, FolderOpen } from "lucide-react";
 import { format } from "date-fns";
@@ -14,19 +14,17 @@ const ProjectOverview = () => {
         CANCELLED: "bg-red-200 text-red-800 dark:bg-red-500 dark:text-red-900"
     };
 
-    const priorityColors = {
-        LOW: "border-zinc-300 text-zinc-600 dark:border-zinc-600 dark:text-zinc-400",
-        MEDIUM: "border-amber-300 text-amber-700 dark:border-amber-500 dark:text-amber-400",
-        HIGH: "border-green-300 text-green-700 dark:border-green-500 dark:text-green-400",
-    };
-
     const currentWorkspace = useSelector((state) => state?.workspace?.currentWorkspace || null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [projects, setProjects] = useState([]);
 
-    useEffect(() => {
-        setProjects(currentWorkspace?.projects || []);
-    }, [currentWorkspace]);
+    const projects = currentWorkspace?.projects || []
+
+    const getProgress = (project) => {
+        const tasks = project.tasks || []
+        if (!tasks.length) return 0
+        const done = tasks.filter((t) => t.status === "DONE").length
+        return Math.round((done / tasks.length) * 100)
+    }
 
     return currentWorkspace && (
         <div className="bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 rounded-lg overflow-hidden">
@@ -64,38 +62,36 @@ const ProjectOverview = () => {
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
                                         <span className={`text-xs px-2 py-1 rounded ${statusColors[project.status]}`}>
-                                            {project.status.replace('_', ' ').replaceAll(/\b\w/g, c => c.toUpperCase())}
+                                            {project.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                                         </span>
-                                        <div className={`w-2 h-2 rounded-full border-2 ${priorityColors[project.priority]}`} />
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-500 mb-3">
-                                    <div className="flex items-center gap-4">
-                                        {project.members?.length > 0 && (
-                                            <div className="flex items-center gap-1">
-                                                <UsersIcon className="w-3 h-3" />
-                                                {project.members.length} members
-                                            </div>
-                                        )}
-                                        {project.end_date && (
-                                            <div className="flex items-center gap-1">
-                                                <Calendar className="w-3 h-3" />
-                                                {format(new Date(project.end_date), "MMM d, yyyy")}
-                                            </div>
-                                        )}
+                                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-500 mb-3">
+                                    <div className="flex items-center gap-1">
+                                        <UsersIcon className="w-3 h-3" />
+                                        {project.members?.length || 1} member{(project.members?.length || 1) !== 1 ? "s" : ""}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {project.tasks?.length || 0} task{(project.tasks?.length || 0) !== 1 ? "s" : ""}
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-zinc-500 dark:text-zinc-500">Progress</span>
-                                        <span className="text-zinc-600 dark:text-zinc-400">{project.progress || 0}%</span>
-                                    </div>
-                                    <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded h-1.5">
-                                        <div className="h-1.5 bg-blue-500 rounded" style={{ width: `${project.progress || 0}%` }} />
-                                    </div>
-                                </div>
+                                {(() => {
+                                    const progress = getProgress(project)
+                                    return (
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-zinc-500 dark:text-zinc-500">Progress</span>
+                                                <span className="text-zinc-600 dark:text-zinc-400">{progress}%</span>
+                                            </div>
+                                            <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded h-1.5">
+                                                <div className="h-1.5 bg-blue-500 rounded transition-all" style={{ width: `${progress}%` }} />
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </Link>
                         ))}
                     </div>

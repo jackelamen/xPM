@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon, FileStackIcon, ZapIcon } from "lucide-react";
+import { ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon, FileStackIcon, ZapIcon, LayoutDashboardIcon } from "lucide-react";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
 import CreateTaskDialog from "../components/CreateTaskDialog";
 import ProjectCalendar from "../components/ProjectCalendar";
 import ProjectTasks from "../components/ProjectTasks";
+import ProjectBoard from "../components/ProjectBoard";
+import TaskPanel from "../components/TaskPanel";
 
 export default function ProjectDetail() {
 
@@ -21,6 +23,7 @@ export default function ProjectDetail() {
     const [tasks, setTasks] = useState([]);
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [activeTab, setActiveTab] = useState(tab || "tasks");
+    const [selectedTaskId, setSelectedTaskId] = useState(null);
 
     useEffect(() => {
         if (tab) setActiveTab(tab);
@@ -97,6 +100,7 @@ export default function ProjectDetail() {
                 <div className="inline-flex flex-wrap max-sm:grid grid-cols-3 gap-2 border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
                     {[
                         { key: "tasks", label: "Tasks", icon: FileStackIcon },
+                        { key: "board", label: "Board", icon: LayoutDashboardIcon },
                         { key: "calendar", label: "Calendar", icon: CalendarIcon },
                         { key: "analytics", label: "Analytics", icon: BarChart3Icon },
                         { key: "settings", label: "Settings", icon: SettingsIcon },
@@ -111,7 +115,16 @@ export default function ProjectDetail() {
                 <div className="mt-6">
                     {activeTab === "tasks" && (
                         <div className=" dark:bg-zinc-900/40 rounded max-w-6xl">
-                            <ProjectTasks tasks={tasks} />
+                            <ProjectTasks tasks={tasks} onTaskClick={(taskId) => setSelectedTaskId(taskId)} />
+                        </div>
+                    )}
+                    {activeTab === "board" && (
+                        <div className="max-w-6xl">
+                            <ProjectBoard
+                                tasks={tasks}
+                                projectId={id}
+                                onTaskClick={(taskId) => setSelectedTaskId(taskId)}
+                            />
                         </div>
                     )}
                     {activeTab === "analytics" && (
@@ -134,6 +147,15 @@ export default function ProjectDetail() {
 
             {/* Create Task Modal */}
             {showCreateTask && <CreateTaskDialog showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} projectId={id} />}
+
+            {/* Task Side Panel */}
+            {selectedTaskId && (
+                <TaskPanel
+                    taskId={selectedTaskId}
+                    projectId={id}
+                    onClose={() => setSelectedTaskId(null)}
+                />
+            )}
         </div>
     );
 }

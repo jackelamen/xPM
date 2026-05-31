@@ -1,19 +1,27 @@
 import { FolderOpen, CheckCircle, Users, AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useSelector } from "react-redux";
+import { useAuth } from "../context/AuthContext";
 
 export default function StatsGrid() {
+    const { user } = useAuth()
     const currentWorkspace = useSelector(
         (state) => state?.workspace?.currentWorkspace || null
     );
 
-    const [stats, setStats] = useState({
-        totalProjects: 0,
-        activeProjects: 0,
-        completedProjects: 0,
-        myTasks: 0,
-        overdueIssues: 0,
-    });
+    const stats = useMemo(() => {
+        if (!currentWorkspace) return { totalProjects: 0, completedProjects: 0, myTasks: 0, overdueIssues: 0 }
+
+        const allTasks = currentWorkspace.projects.flatMap((p) => p.tasks || [])
+        const now = new Date()
+
+        return {
+            totalProjects: currentWorkspace.projects.length,
+            completedProjects: currentWorkspace.projects.filter((p) => p.status === "COMPLETED").length,
+            myTasks: allTasks.filter((t) => t.assignee_id === user?.id && t.status !== "DONE").length,
+            overdueIssues: allTasks.filter((t) => t.due_date && new Date(t.due_date) < now && t.status !== "DONE").length,
+        }
+    }, [currentWorkspace, user])
 
     const statCards = [
         {
@@ -49,33 +57,6 @@ export default function StatsGrid() {
             textColor: "text-amber-500",
         },
     ];
-
-    useEffect(() => {
-        if (currentWorkspace) {
-            setStats({
-                totalProjects: currentWorkspace.projects.length,
-                activeProjects: currentWorkspace.projects.filter(
-                    (p) => p.status !== "CANCELLED" && p.status !== "COMPLETED"
-                ).length,
-                completedProjects: currentWorkspace.projects
-                    .filter((p) => p.status === "COMPLETED")
-                    .reduce((acc, project) => acc + project.tasks.length, 0),
-                myTasks: currentWorkspace.projects.reduce(
-                    (acc, project) =>
-                        acc +
-                        project.tasks.filter(
-                            (t) => t.assignee?.email === currentWorkspace.owner.email
-                        ).length,
-                    0
-                ),
-                overdueIssues: currentWorkspace.projects.reduce(
-                    (acc, project) =>
-                        acc + project.tasks.filter((t) => t.due_date < new Date()).length,
-                    0
-                ),
-            });
-        }
-    }, [currentWorkspace]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-9">

@@ -1,23 +1,22 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { ArrowRight, Clock, AlertTriangle, User } from "lucide-react";
 import { useSelector } from "react-redux";
+import { useAuth } from "../context/AuthContext";
 
 export default function TasksSummary() {
 
+    const { user } = useAuth()
     const { currentWorkspace } = useSelector((state) => state.workspace);
-    const user = { id: 'user_1' }
-    const [tasks, setTasks] = useState([]);
 
-    // Get all tasks for all projects in current workspace
-    useEffect(() => {
-        if (currentWorkspace) {
-            setTasks(currentWorkspace.projects.flatMap((project) => project.tasks));
-        }
-    }, [currentWorkspace]);
+    const tasks = useMemo(() => {
+        if (!currentWorkspace) return []
+        return currentWorkspace.projects.flatMap((p) => p.tasks || [])
+    }, [currentWorkspace])
 
-    const myTasks = tasks.filter(i => i.assigneeId === user.id);
-    const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'DONE');
-    const inProgressIssues = tasks.filter(i => i.status === 'IN_PROGRESS');
+    const now = new Date()
+    const myTasks = tasks.filter((t) => t.assignee_id === user?.id && t.status !== "DONE")
+    const overdueTasks = tasks.filter((t) => t.due_date && new Date(t.due_date) < now && t.status !== "DONE")
+    const inProgressIssues = tasks.filter((t) => t.status === "IN_PROGRESS")
 
     const summaryCards = [
         {

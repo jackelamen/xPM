@@ -24,24 +24,31 @@ const ProjectCard = ({ project }) => {
             </div>
 
             <div className="flex items-center justify-between mb-4">
-                <span className={`px-2 py-0.5 rounded text-xs ${statusColors[project.status]}`} >
+                <span className={`px-2 py-0.5 rounded text-xs ${statusColors[project.status]}`}>
                     {project.status.replace("_", " ")}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-zinc-500 capitalize">
-                    {project.priority} priority
+                <span className="text-xs text-gray-500 dark:text-zinc-500">
+                    {project.tasks?.length || 0} task{(project.tasks?.length || 0) !== 1 ? "s" : ""}
                 </span>
             </div>
 
             {/* Progress */}
-            <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500 dark:text-zinc-500">Progress</span>
-                    <span className="text-gray-400 dark:text-zinc-400">{project.progress || 0}%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded">
-                    <div className="h-1.5 rounded bg-blue-500" style={{ width: `${project.progress || 0}%` }} />
-                </div>
-            </div>
+            {(() => {
+                const tasks = project.tasks || []
+                const done = tasks.filter((t) => t.status === "DONE").length
+                const progress = tasks.length ? Math.round((done / tasks.length) * 100) : 0
+                return (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-500 dark:text-zinc-500">Progress</span>
+                            <span className="text-gray-400 dark:text-zinc-400">{progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded">
+                            <div className="h-1.5 rounded bg-blue-500" style={{ width: `${progress}%` }} />
+                        </div>
+                    </div>
+                )
+            })()}
 
             </Link>
     );
