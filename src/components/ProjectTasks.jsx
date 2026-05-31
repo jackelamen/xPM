@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteTasks, updateTaskStatus } from "../features/workspaceSlice";
 import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap, DownloadIcon } from "lucide-react";
+import SavedViews from "./SavedViews";
 
 const typeIcons = {
     BUG: { icon: Bug, color: "text-red-600 dark:text-red-400" },
@@ -20,7 +21,7 @@ const priorityTexts = {
     HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
 };
 
-const ProjectTasks = ({ tasks, onTaskClick }) => {
+const ProjectTasks = ({ tasks, onTaskClick, projectId }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
@@ -105,8 +106,14 @@ const ProjectTasks = ({ tasks, onTaskClick }) => {
 
     return (
         <div>
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 mb-4">
+            {/* Filters + Saved Views */}
+            <div className="flex flex-wrap gap-2 mb-4 items-center">
+                <SavedViews
+                    projectId={projectId}
+                    viewType="list"
+                    currentFilters={filters}
+                    onLoadView={(savedFilters) => setFilters({ status: "", type: "", priority: "", assignee: "", ...savedFilters })}
+                />
                 {["status", "type", "priority", "assignee"].map((name) => {
                     const options = {
                         status: [

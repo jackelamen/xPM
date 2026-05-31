@@ -9,7 +9,7 @@ import {
     MessageCircleIcon, ClockIcon, Loader2Icon,
     CheckCircle2Icon, CircleIcon, CircleDotIcon,
     TrashIcon, PencilIcon, CheckIcon, LinkIcon,
-    MilestoneIcon, PlusIcon
+    MilestoneIcon, PlusIcon, BuildingIcon, TrendingUpIcon
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -167,6 +167,13 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const [addingLink, setAddingLink] = useState(false)
     const [showLinkForm, setShowLinkForm] = useState(false)
 
+    // CRM record links
+    const [crmLinks, setCrmLinks] = useState([])
+    const [showCrmPicker, setShowCrmPicker] = useState(false)
+    const [crmQuery, setCrmQuery] = useState("")
+    const [crmResults, setCrmResults] = useState([])
+    const [crmSearching, setCrmSearching] = useState(false)
+
     useEffect(() => {
         if (taskId) fetchLinks()
     }, [taskId])
@@ -205,6 +212,98 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const handleDeleteLink = async (linkId) => {
         await supabase.from("task_links").delete().eq("id", linkId)
         setLinks((prev) => prev.filter((l) => l.id !== linkId))
+    }
+
+    // CRM link fetch
+    useEffect(() => {
+        if (taskId && currentWorkspace) fetchCrmLinks()
+    }, [taskId])
+
+    const fetchCrmLinks = async () => {
+        const [{ data: asSource }, { data: asTarget }] = await Promise.all([
+            supabase.from("record_links")
+                .select("id, target_type, target_id")
+                .eq("workspace_id", currentWorkspace.id)
+                .eq("source_type", "task")
+                .eq("source_id", taskId)
+                .in("target_type", ["contact", "company", "deal"]),
+            supabase.from("record_links")
+                .select("id, source_type, source_id")
+                .eq("workspace_id", currentWorkspace.id)
+                .eq("target_type", "task")
+                .eq("target_id", taskId)
+                .in("source_type", ["contact", "company", "deal"]),
+        ])
+        const combined = [
+            ...((asSource || []).map(l => ({ linkId: l.id, type: l.target_type, recordId: l.target_id }))),
+            ...((asTarget || []).map(l => ({ linkId: l.id, type: l.source_type, recordId: l.source_id }))),
+        ]
+        // Fetch names for each
+        const contactIds = combined.filter(l => l.type === "contact").map(l => l.recordId)
+        const companyIds = combined.filter(l => l.type === "company").map(l => l.recordId)
+        const dealIds = combined.filter(l => l.type === "deal").map(l => l.recordId)
+        const [{ data: contacts }, { data: companies }, { data: deals }] = await Promise.all([
+            contactIds.length ? supabase.from("contacts").select("id, name").in("id", contactIds) : { data: [] },
+            companyIds.length ? supabase.from("companies").select("id, name").in("id", companyIds) : { data: [] },
+            dealIds.length ? supabase.from("deals").select("id, name").in("id", dealIds) : { data: [] },
+        ])
+        const nameMap = {}
+        ;[...(contacts||[]), ...(companies||[]), ...(deals||[])].forEach(r => { nameMap[r.id] = r.name })
+        setCrmLinks(combined.map(l => ({ ...l, name: nameMap[l.recordId] || "Unknown" })))
+    }
+
+    const handleCrmSearch = async (q) => {
+        setCrmQuery(q)
+        if (!q.trim()) { setCrmResults([]); return }
+        setCrmSearching(true)
+        const [{ data: contacts }, { data: companies }, { data: deals }] = await Promise.all([
+            supabase.from("contacts").select("id, name").eq("workspace_id", currentWorkspace.id).ilike("name", `%${q}%`).limit(4),
+            supabase.from("companies").select("id, name").eq("workspace_id", currentWorkspace.id).ilike("name", `%${q}%`).limit(4),
+            supabase.from("deals").select("id, name").eq("workspace_id", currentWorkspace.id).ilike("name", `%${q}%`).limit(4),
+        ])
+        setCrmResults([
+            ...(contacts || []).map(r => ({ ...r, type: "contact" })),
+            ...(companies || []).map(r => ({ ...r, type: "company" })),
+            ...(deals || []).map(r => ({ ...r, type: "deal" })),
+        ])
+        setCrmSearching(false)
+    }
+
+    const handleCrmLink = async (record) => {
+        const already = crmLinks.find(l => l.recordId === record.id)
+        if (already) { toast("Already linked"); return }
+        const { error } = await supabase.from("record_links").insert({
+            workspace_id: currentWorkspace.id,
+            source_type: "task",
+            source_id: taskId,
+            target_type: record.type,
+            target_id: record.id,
+            relation_type: "related",
+            created_by: user.id,
+        })
+        if (error) { toast.error("Failed to link"); return }
+        toast.success(`${record.type} linked`)
+        setShowCrmPicker(false)
+        setCrmQuery("")
+        setCrmResults([])
+        fetchCrmLinks()
+    }
+
+    const handleCrmUnlink = async (linkId) => {
+        await supabase.from("record_links").delete().eq("id", linkId)
+        setCrmLinks(prev => prev.filter(l => l.linkId !== linkId))
+    }
+
+    const crmTypeIcon = (type) => {
+        if (type === "contact") return UserIcon
+        if (type === "company") return BuildingIcon
+        return TrendingUpIcon
+    }
+
+    const crmTypeBadge = (type) => {
+        if (type === "contact") return "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+        if (type === "company") return "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
+        return "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
     }
 
     const handleStatusChange = async (newStatus) => {
@@ -462,6 +561,63 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                     </button>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* CRM Records */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                                CRM Records ({crmLinks.length})
+                            </p>
+                            <button onClick={() => setShowCrmPicker(!showCrmPicker)} className="text-xs text-blue-500 hover:underline">
+                                {showCrmPicker ? "Cancel" : "+ Link"}
+                            </button>
+                        </div>
+                        {showCrmPicker && (
+                            <div className="space-y-1.5 mb-2 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 bg-zinc-50 dark:bg-zinc-900/50">
+                                <input
+                                    autoFocus
+                                    value={crmQuery}
+                                    onChange={(e) => handleCrmSearch(e.target.value)}
+                                    placeholder="Search contacts, companies, deals..."
+                                    className="w-full text-sm px-2 py-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                                {crmSearching && <p className="text-xs text-zinc-400 px-1">Searching...</p>}
+                                {crmResults.length > 0 && (
+                                    <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                                        {crmResults.map(r => {
+                                            const Icon = crmTypeIcon(r.type)
+                                            return (
+                                                <button key={`${r.type}-${r.id}`} onClick={() => handleCrmLink(r)}
+                                                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-left">
+                                                    <Icon className="size-3.5 text-zinc-400 flex-shrink-0" />
+                                                    <span className="text-sm text-zinc-800 dark:text-zinc-200 flex-1 truncate">{r.name}</span>
+                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize ${crmTypeBadge(r.type)}`}>{r.type}</span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                                {crmQuery && !crmSearching && crmResults.length === 0 && (
+                                    <p className="text-xs text-zinc-400 px-1">No records found</p>
+                                )}
+                            </div>
+                        )}
+                        <div className="space-y-1">
+                            {crmLinks.map(({ linkId, type, name }) => {
+                                const Icon = crmTypeIcon(type)
+                                return (
+                                    <div key={linkId} className="flex items-center gap-2 group">
+                                        <Icon className="size-3.5 text-zinc-400 flex-shrink-0" />
+                                        <span className="text-sm text-zinc-700 dark:text-zinc-300 flex-1 truncate">{name}</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize ${crmTypeBadge(type)}`}>{type}</span>
+                                        <button onClick={() => handleCrmUnlink(linkId)} className="opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-500 transition">
+                                            <XIcon className="size-3.5" />
+                                        </button>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
 
