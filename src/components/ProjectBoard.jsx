@@ -111,7 +111,7 @@ function DragCard({ task }) {
 
 // Column component
 function Column({ column, tasks, onTaskClick, activeId }) {
-    const { setNodeRef } = useSortable({ id: column.id })
+    const { setNodeRef, isOver } = useSortable({ id: column.id })
 
     return (
         <div ref={setNodeRef} className="flex flex-col min-w-72 max-w-72 flex-shrink-0">
@@ -127,7 +127,11 @@ function Column({ column, tasks, onTaskClick, activeId }) {
             </div>
 
             {/* Cards */}
-            <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-2 min-h-32 space-y-2">
+            <div className={`flex-1 rounded-lg p-2 min-h-32 space-y-2 transition-colors ${
+                isOver
+                    ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-300 dark:ring-blue-700"
+                    : "bg-zinc-50 dark:bg-zinc-900/50"
+            }`}>
                 <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                     {tasks.map((task) => (
                         <TaskCard
@@ -141,7 +145,7 @@ function Column({ column, tasks, onTaskClick, activeId }) {
 
                 {tasks.length === 0 && (
                     <div className="flex items-center justify-center h-20 text-xs text-zinc-400 dark:text-zinc-600">
-                        No tasks
+                        Drop tasks here
                     </div>
                 )}
             </div>

@@ -212,6 +212,16 @@ const workspaceSlice = createSlice({
             state.workspaces = []
             state.currentWorkspace = null
         },
+        patchTask: (state, action) => {
+            const { projectId, task } = action.payload
+            if (state.currentWorkspace) {
+                state.currentWorkspace.projects = state.currentWorkspace.projects.map((p) =>
+                    p.id === projectId
+                        ? { ...p, tasks: p.tasks.map((t) => t.id === task.id ? { ...t, ...task } : t) }
+                        : p
+                )
+            }
+        },
     },
     extraReducers: (builder) => {
         // fetchWorkspaces
@@ -297,5 +307,5 @@ const workspaceSlice = createSlice({
     }
 })
 
-export const { setCurrentWorkspace, clearWorkspaces } = workspaceSlice.actions
+export const { setCurrentWorkspace, clearWorkspaces, patchTask } = workspaceSlice.actions
 export default workspaceSlice.reducer
