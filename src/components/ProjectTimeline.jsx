@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react"
+import { useState, useMemo, useRef } from "react"
 import { supabase } from "../lib/supabase"
 import {
     format, addDays, differenceInDays, startOfDay, isToday,
@@ -41,6 +41,7 @@ export default function ProjectTimeline({ tasks, projectId }) {
     const [dayWidth, setDayWidth] = useState(16)
     const [groupBy, setGroupBy] = useState("none")
     const [dragging, setDragging] = useState(null) // { taskId, startX, origStart, origEnd, mode: 'move'|'resize-left'|'resize-right' }
+    const draggingRef = useRef(null) // mirror of dragging for use in mousemove without stale closure
     const [localDates, setLocalDates] = useState({}) // taskId -> { start_date, due_date }
     const containerRef = useRef(null)
     const rowHeight = 40
@@ -114,20 +115,23 @@ export default function ProjectTimeline({ tasks, projectId }) {
     const scrollRight = () => setViewStart(prev => addDays(prev, 7))
     const jumpToday = () => setViewStart(subDays(today, 7))
 
-    // Drag handlers
-    const handleBarMouseDown = useCallback((e, task, mode) => {
+    // Drag handlers — use ref to avoid stale closure in mousemove
+    const handleBarMouseDown = (e, task, mode) => {
         e.preventDefault()
         e.stopPropagation()
         const startDate = getDate(task, "start_date")
         const dueDate = getDate(task, "due_date")
-        setDragging({ taskId: task.id, startX: e.clientX, origStart: startDate, origEnd: dueDate, mode })
-    }, [localDates])
+        const dragState = { taskId: task.id, startX: e.clientX, origStart: startDate, origEnd: dueDate, mode }
+        draggingRef.current = dragState
+        setDragging(dragState)
+    }
 
-    const handleMouseMove = useCallback((e) => {
-        if (!dragging) return
-        const dx = e.clientX - dragging.startX
+    const handleMouseMove = (e) => {
+        const drag = draggingRef.current
+        if (!drag) return
+        const dx = e.clientX - drag.startX
         const daysDelta = Math.round(dx / dayWidth)
-        const { taskId, origStart, origEnd, mode } = dragging
+        const { taskId, origStart, origEnd, mode } = drag
         let newStart = origStart
         let newEnd = origEnd
 
@@ -135,16 +139,13 @@ export default function ProjectTimeline({ tasks, projectId }) {
             if (origEnd) newEnd = addDays(origEnd, daysDelta)
             if (origStart) newStart = addDays(origStart, daysDelta)
         } else if (mode === "resize-left") {
-            // Use origStart if available, otherwise anchor to origEnd as the base
             const base = origStart || (origEnd ? subDays(origEnd, 1) : today)
             newStart = addDays(base, daysDelta)
             if (newEnd && newStart >= newEnd) newStart = subDays(newEnd, 1)
         } else if (mode === "resize-right") {
-            // Always adjusts due date — origEnd must exist (bar wouldn't render without it)
             const base = origEnd || today
             newEnd = addDays(base, daysDelta)
             if (newStart && newEnd <= newStart) newEnd = addDays(newStart, 1)
-            else if (!newStart && newEnd <= today) newEnd = addDays(today, 1)
         }
         setLocalDates(prev => ({
             ...prev,
@@ -153,21 +154,31 @@ export default function ProjectTimeline({ tasks, projectId }) {
                 due_date: newEnd ? format(newEnd, "yyyy-MM-dd") : null,
             }
         }))
-    }, [dragging, dayWidth])
+    }
 
-    const handleMouseUp = useCallback(async () => {
-        if (!dragging) return
-        const override = localDates[dragging.taskId]
-        if (override) {
-            const updates = {}
-            if (override.start_date !== undefined) updates.start_date = override.start_date
-            if (override.due_date !== undefined) updates.due_date = override.due_date
-            const { error } = await supabase.from("tasks").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", dragging.taskId)
-            if (error) { toast.error("Failed to save dates"); return }
-            toast.success("Dates updated")
-        }
+    const handleMouseUp = async () => {
+        const drag = draggingRef.current
+        if (!drag) return
+        draggingRef.current = null
         setDragging(null)
-    }, [dragging, localDates])
+        // Read localDates via functional update to get current value
+        setLocalDates(prev => {
+            const override = prev[drag.taskId]
+            if (override) {
+                const updates = {}
+                if (override.start_date !== undefined) updates.start_date = override.start_date
+                if (override.due_date !== undefined) updates.due_date = override.due_date
+                supabase.from("tasks")
+                    .update({ ...updates, updated_at: new Date().toISOString() })
+                    .eq("id", drag.taskId)
+                    .then(({ error }) => {
+                        if (error) toast.error("Failed to save dates")
+                        else toast.success("Dates updated")
+                    })
+            }
+            return prev
+        })
+    }
 
     const totalContentWidth = VISIBLE_DAYS * dayWidth
     const todayX = xPos(today)

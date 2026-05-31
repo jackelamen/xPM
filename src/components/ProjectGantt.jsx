@@ -71,6 +71,7 @@ export default function ProjectGantt({ tasks, projectId }) {
     const [loadingDeps, setLoadingDeps] = useState(true)
     const [localDates, setLocalDates] = useState({})
     const [dragging, setDragging] = useState(null)
+    const draggingRef = useRef(null)
     const [linking, setLinking] = useState(null) // { fromTaskId } — click mode for adding deps
     const [selectedDep, setSelectedDep] = useState(null)
     const [showDepPanel, setShowDepPanel] = useState(false)
@@ -153,21 +154,24 @@ export default function ProjectGantt({ tasks, projectId }) {
         return m
     }, [scheduledTasks])
 
-    // ─── Drag handling ──────────────────────────────────────────────────────
+    // ─── Drag handling — use ref to avoid stale closure in mousemove ────────
     const handleBarMouseDown = (e, task, mode) => {
         if (linking) return
         e.preventDefault()
         e.stopPropagation()
         const startDate = getDate(task, "start_date")
         const dueDate = getDate(task, "due_date")
-        setDragging({ taskId: task.id, startX: e.clientX, origStart: startDate, origEnd: dueDate, mode })
+        const dragState = { taskId: task.id, startX: e.clientX, origStart: startDate, origEnd: dueDate, mode }
+        draggingRef.current = dragState
+        setDragging(dragState)
     }
 
-    const handleMouseMove = useCallback((e) => {
-        if (!dragging) return
-        const dx = e.clientX - dragging.startX
+    const handleMouseMove = (e) => {
+        const drag = draggingRef.current
+        if (!drag) return
+        const dx = e.clientX - drag.startX
         const daysDelta = Math.round(dx / DAY_W)
-        const { taskId, origStart, origEnd, mode } = dragging
+        const { taskId, origStart, origEnd, mode } = drag
         let ns = origStart, ne = origEnd
 
         if (mode === "move") {
@@ -181,7 +185,6 @@ export default function ProjectGantt({ tasks, projectId }) {
             const base = ne || today
             ne = addDays(base, daysDelta)
             if (ns && ne <= ns) ne = addDays(ns, 1)
-            else if (!ns && ne <= today) ne = addDays(today, 1)
         }
         setLocalDates(prev => ({
             ...prev,
@@ -190,23 +193,30 @@ export default function ProjectGantt({ tasks, projectId }) {
                 due_date: ne ? format(ne, "yyyy-MM-dd") : null,
             }
         }))
-    }, [dragging])
+    }
 
-    const handleMouseUp = useCallback(async () => {
-        if (!dragging) return
-        const override = localDates[dragging.taskId]
-        if (override) {
-            const updates = {}
-            if (override.start_date !== undefined) updates.start_date = override.start_date
-            if (override.due_date !== undefined) updates.due_date = override.due_date
-            const { error } = await supabase.from("tasks")
-                .update({ ...updates, updated_at: new Date().toISOString() })
-                .eq("id", dragging.taskId)
-            if (error) { toast.error("Failed to save dates"); return }
-            toast.success("Dates updated")
-        }
+    const handleMouseUp = () => {
+        const drag = draggingRef.current
+        if (!drag) return
+        draggingRef.current = null
         setDragging(null)
-    }, [dragging, localDates])
+        setLocalDates(prev => {
+            const override = prev[drag.taskId]
+            if (override) {
+                const updates = {}
+                if (override.start_date !== undefined) updates.start_date = override.start_date
+                if (override.due_date !== undefined) updates.due_date = override.due_date
+                supabase.from("tasks")
+                    .update({ ...updates, updated_at: new Date().toISOString() })
+                    .eq("id", drag.taskId)
+                    .then(({ error }) => {
+                        if (error) toast.error("Failed to save dates")
+                        else toast.success("Dates updated")
+                    })
+            }
+            return prev
+        })
+    }
 
     // ─── Link mode ──────────────────────────────────────────────────────────
     const handleBarClick = async (task) => {
