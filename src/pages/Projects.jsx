@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Plus, Search, FolderOpen } from "lucide-react";
+import { Plus, Search, FolderOpen, UploadIcon } from "lucide-react";
 import ProjectCard from "../components/ProjectCard";
 import CreateProjectDialog from "../components/CreateProjectDialog";
+import AsanaImport from "../components/AsanaImport";
 
 export default function Projects() {
     
@@ -13,6 +14,7 @@ export default function Projects() {
     const [filteredProjects, setFilteredProjects] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isImportOpen, setIsImportOpen] = useState(false);
     const [filters, setFilters] = useState({
         status: "ALL",
         priority: "ALL",
@@ -48,10 +50,16 @@ export default function Projects() {
                     <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1"> Projects </h1>
                     <p className="text-gray-500 dark:text-zinc-400 text-sm"> Manage and track your projects </p>
                 </div>
-                <button onClick={() => setIsDialogOpen(true)} className="flex items-center px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition" >
-                    <Plus className="size-4 mr-2" /> New Project
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setIsImportOpen(true)} className="flex items-center px-4 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+                        <UploadIcon className="size-4 mr-2" /> Import from Asana
+                    </button>
+                    <button onClick={() => setIsDialogOpen(true)} className="flex items-center px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition">
+                        <Plus className="size-4 mr-2" /> New Project
+                    </button>
+                </div>
                 <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+                <AsanaImport isOpen={isImportOpen} setIsOpen={setIsImportOpen} />
             </div>
 
             {/* Search and Filters */}

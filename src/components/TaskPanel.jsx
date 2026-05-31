@@ -89,9 +89,15 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const [submittingComment, setSubmittingComment] = useState(false)
     const [updatingStatus, setUpdatingStatus] = useState(false)
     const [deleting, setDeleting] = useState(false)
+    const [subtasks, setSubtasks] = useState([])
+    const [newSubtask, setNewSubtask] = useState("")
+    const [addingSubtask, setAddingSubtask] = useState(false)
 
     useEffect(() => {
-        if (taskId) fetchComments()
+        if (taskId) {
+            fetchComments()
+            fetchSubtasks()
+        }
     }, [taskId])
 
     const fetchComments = async () => {
@@ -103,6 +109,54 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
             .order("created_at", { ascending: true })
         if (!error) setComments(data || [])
         setLoadingComments(false)
+    }
+
+    const fetchSubtasks = async () => {
+        const { data } = await supabase
+            .from("tasks")
+            .select("id, title, status")
+            .eq("parent_task_id", taskId)
+            .order("created_at", { ascending: true })
+        if (data) setSubtasks(data)
+    }
+
+    const handleAddSubtask = async () => {
+        if (!newSubtask.trim() || !task) return
+        setAddingSubtask(true)
+        try {
+            const { data, error } = await supabase
+                .from("tasks")
+                .insert({
+                    workspace_id: currentWorkspace.id,
+                    project_id: projectId,
+                    title: newSubtask.trim(),
+                    status: "TODO",
+                    type: "TASK",
+                    priority: "MEDIUM",
+                    parent_task_id: taskId,
+                    created_by: user.id,
+                })
+                .select("id, title, status")
+                .single()
+            if (error) throw error
+            setSubtasks((prev) => [...prev, data])
+            setNewSubtask("")
+        } catch {
+            toast.error("Failed to add subtask")
+        } finally {
+            setAddingSubtask(false)
+        }
+    }
+
+    const toggleSubtaskStatus = async (subtask) => {
+        const newStatus = subtask.status === "DONE" ? "TODO" : "DONE"
+        const { error } = await supabase
+            .from("tasks")
+            .update({ status: newStatus })
+            .eq("id", subtask.id)
+        if (!error) {
+            setSubtasks((prev) => prev.map((s) => s.id === subtask.id ? { ...s, status: newStatus } : s))
+        }
     }
 
     const handleStatusChange = async (newStatus) => {
@@ -312,6 +366,48 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             multiline
                             placeholder="Add a description..."
                         />
+                    </div>
+
+                    {/* Subtasks */}
+                    <div>
+                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
+                            Subtasks ({subtasks.length})
+                        </p>
+                        <div className="space-y-1.5 mb-2">
+                            {subtasks.map((sub) => (
+                                <div key={sub.id} className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => toggleSubtaskStatus(sub)}
+                                        className={`size-4 rounded border flex-shrink-0 flex items-center justify-center transition ${
+                                            sub.status === "DONE"
+                                                ? "bg-emerald-500 border-emerald-500 text-white"
+                                                : "border-zinc-300 dark:border-zinc-600 hover:border-emerald-400"
+                                        }`}
+                                    >
+                                        {sub.status === "DONE" && <CheckIcon className="size-2.5" />}
+                                    </button>
+                                    <span className={`text-sm ${sub.status === "DONE" ? "line-through text-zinc-400 dark:text-zinc-500" : "text-zinc-800 dark:text-zinc-200"}`}>
+                                        {sub.title}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <input
+                                value={newSubtask}
+                                onChange={(e) => setNewSubtask(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
+                                placeholder="Add subtask..."
+                                className="flex-1 text-sm px-2 py-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <button
+                                onClick={handleAddSubtask}
+                                disabled={addingSubtask || !newSubtask.trim()}
+                                className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 transition"
+                            >
+                                {addingSubtask ? <Loader2Icon className="size-3.5 animate-spin" /> : "Add"}
+                            </button>
+                        </div>
                     </div>
 
                     {/* Comments */}

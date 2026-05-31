@@ -8,6 +8,7 @@ import { fetchWorkspaces, fetchWorkspaceDetail, createWorkspace } from '../featu
 import { useAuth } from '../context/AuthContext'
 import { Loader2Icon } from 'lucide-react'
 import toast from 'react-hot-toast'
+import QuickCapture from '../components/QuickCapture'
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -98,6 +99,7 @@ const Layout = () => {
                     <Outlet />
                 </div>
             </div>
+            <QuickCapture />
         </div>
     )
 }

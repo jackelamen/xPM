@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteTasks, updateTaskStatus } from "../features/workspaceSlice";
-import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
+import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap, DownloadIcon } from "lucide-react";
 
 const typeIcons = {
     BUG: { icon: Bug, color: "text-red-600 dark:text-red-400" },
@@ -24,6 +24,28 @@ const ProjectTasks = ({ tasks, onTaskClick }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
+
+    const handleExportCSV = () => {
+        const headers = ["Title", "Status", "Type", "Priority", "Assignee", "Due Date", "Created"]
+        const rows = tasks.map((t) => [
+            `"${(t.title || "").replace(/"/g, '""')}"`,
+            t.status || "",
+            t.type || "",
+            t.priority || "",
+            t.assignee?.name || t.assignee?.email || "",
+            t.due_date ? format(new Date(t.due_date), "yyyy-MM-dd") : "",
+            t.created_at ? format(new Date(t.created_at), "yyyy-MM-dd") : "",
+        ])
+        const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+        const blob = new Blob([csv], { type: "text/csv" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `tasks-${format(new Date(), "yyyy-MM-dd")}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success("Tasks exported")
+    };
 
     const [filters, setFilters] = useState({
         status: "",
@@ -133,6 +155,14 @@ const ProjectTasks = ({ tasks, onTaskClick }) => {
                         <Trash className="size-3" /> Delete
                     </button>
                 )}
+
+                <button
+                    type="button"
+                    onClick={handleExportCSV}
+                    className="ml-auto px-3 py-1 flex items-center gap-2 rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                >
+                    <DownloadIcon className="size-3" /> Export CSV
+                </button>
             </div>
 
             {/* Tasks Table */}

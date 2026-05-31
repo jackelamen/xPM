@@ -8,8 +8,7 @@ import toast from "react-hot-toast";
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
     const dispatch = useDispatch();
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
-    const project = currentWorkspace?.projects.find((p) => p.id === projectId);
-    const teamMembers = project?.members || [];
+    const teamMembers = currentWorkspace?.members || [];
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -96,8 +95,8 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                             <select value={formData.assigneeId} onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
                                 <option value="">Unassigned</option>
                                 {teamMembers.map((member) => (
-                                    <option key={member?.user.id} value={member?.user.id}>
-                                        {member?.user.email}
+                                    <option key={member.user_id} value={member.user_id}>
+                                        {member.user?.name || member.user?.email}
                                     </option>
                                 ))}
                             </select>
