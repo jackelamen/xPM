@@ -7,6 +7,7 @@ import Team from "./pages/Team";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProfileSettings from "./pages/ProfileSettings";
 import CRM from "./pages/CRM";
+import Workload from "./pages/Workload";
 import Login from "./pages/Login";
 import { useAuth } from "./context/AuthContext";
 import { Loader2Icon } from "lucide-react";
@@ -43,6 +44,7 @@ const App = () => {
                     <Route path="taskDetails" element={<Navigate to="/projects" replace />} />
                     <Route path="settings" element={<ProfileSettings />} />
                     <Route path="crm" element={<CRM />} />
+                    <Route path="workload" element={<Workload />} />
                 </Route>
             </Routes>
         </>

@@ -294,6 +294,28 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         setCrmLinks(prev => prev.filter(l => l.linkId !== linkId))
     }
 
+    // Recurrence
+    const [recurrenceRule, setRecurrenceRule] = useState(task?.recurrence_rule || "")
+    const [recurrenceAnchor, setRecurrenceAnchor] = useState(task?.recurrence_anchor_date || "")
+
+    const RECURRENCE_OPTIONS = [
+        { value: "", label: "No recurrence" },
+        { value: "DAILY", label: "Daily" },
+        { value: "WEEKLY", label: "Weekly" },
+        { value: "BIWEEKLY", label: "Every 2 weeks" },
+        { value: "MONTHLY", label: "Monthly" },
+    ]
+
+    const handleRecurrenceSave = async () => {
+        const { error } = await supabase.from("tasks").update({
+            recurrence_rule: recurrenceRule || null,
+            recurrence_anchor_date: recurrenceRule && recurrenceAnchor ? recurrenceAnchor : null,
+            updated_at: new Date().toISOString(),
+        }).eq("id", taskId)
+        if (error) { toast.error("Failed to save recurrence"); return }
+        toast.success(recurrenceRule ? "Recurrence set" : "Recurrence removed")
+    }
+
     const crmTypeIcon = (type) => {
         if (type === "contact") return UserIcon
         if (type === "company") return BuildingIcon
@@ -332,7 +354,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         // Fetch updated task and patch Redux state
         const { data } = await supabase
             .from("tasks")
-            .select("id, project_id, title, description, status, type, priority, assignee_id, due_date, created_at, updated_at, assignee:profiles!tasks_assignee_id_fkey(id, name, email, avatar_url)")
+            .select("id, project_id, title, description, status, type, priority, assignee_id, due_date, created_at, updated_at, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!tasks_assignee_id_fkey(id, name, email, avatar_url)")
             .eq("id", taskId)
             .single()
 
@@ -515,6 +537,43 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 {task.milestone ? "★ Milestone" : "☆ Mark as milestone"}
                             </button>
                         </div>
+                    </div>
+
+                    {/* Recurrence */}
+                    <div className="border border-zinc-100 dark:border-zinc-800 rounded-lg p-3 space-y-2">
+                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Recurrence</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <select
+                                value={recurrenceRule}
+                                onChange={(e) => setRecurrenceRule(e.target.value)}
+                                className="text-sm px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            >
+                                {RECURRENCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                            {recurrenceRule && (
+                                <>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">starting</span>
+                                    <input
+                                        type="date"
+                                        value={recurrenceAnchor}
+                                        onChange={(e) => setRecurrenceAnchor(e.target.value)}
+                                        className="text-sm px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    />
+                                </>
+                            )}
+                            <button
+                                onClick={handleRecurrenceSave}
+                                className="px-3 py-1 text-xs rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                        {recurrenceRule && (
+                            <p className="text-xs text-blue-500 dark:text-blue-400">
+                                Repeats {RECURRENCE_OPTIONS.find(o => o.value === recurrenceRule)?.label?.toLowerCase()}
+                                {recurrenceAnchor ? ` from ${recurrenceAnchor}` : ""}
+                            </p>
+                        )}
                     </div>
 
                     {/* Description */}
