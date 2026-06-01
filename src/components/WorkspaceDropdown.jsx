@@ -6,9 +6,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
-function WorkspaceAvatar({ name, size = "sm" }) {
+function WorkspaceAvatar({ name, iconUrl, size = "sm" }) {
     const initials = name?.slice(0, 2).toUpperCase() || "WS"
     const sizeClass = size === "sm" ? "w-5 h-5 text-[9px]" : "w-7 h-7 text-[11px]"
+    if (iconUrl) return (
+        <img src={iconUrl} alt={name} className={`${sizeClass} rounded-md object-cover flex-shrink-0`} />
+    )
     return (
         <div className={`${sizeClass} rounded-md bg-gray-900 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-900 font-bold flex-shrink-0 tracking-tight`}>
             {initials}
@@ -68,7 +71,7 @@ function WorkspaceDropdown() {
                 onClick={() => setIsOpen(prev => !prev)}
                 className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors text-left"
             >
-                <WorkspaceAvatar name={currentWorkspace?.name} size="lg" />
+                <WorkspaceAvatar name={currentWorkspace?.name} iconUrl={currentWorkspace?.icon_url} size="lg" />
                 <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-900 dark:text-white text-[13px] truncate leading-tight">
                         {currentWorkspace?.name || "Select Workspace"}
@@ -90,7 +93,7 @@ function WorkspaceDropdown() {
                                 onClick={() => onSelectWorkspace(ws.id)}
                                 className="flex items-center gap-2.5 px-2 py-2 cursor-pointer rounded-md hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-colors"
                             >
-                                <WorkspaceAvatar name={ws.name} size="sm" />
+                                <WorkspaceAvatar name={ws.name} iconUrl={ws.icon_url} size="sm" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[13px] font-medium text-gray-800 dark:text-zinc-100 truncate">
                                         {ws.name}

@@ -105,12 +105,12 @@ export const fetchWorkspaceDetail = createAsyncThunk(
 
 export const createSpace = createAsyncThunk(
     "workspace/createSpace",
-    async ({ workspaceId, name, description, color }, { rejectWithValue }) => {
+    async ({ workspaceId, name, description, color, icon_url }, { rejectWithValue }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser()
             const { data, error } = await supabase
                 .from("spaces")
-                .insert({ workspace_id: workspaceId, name, description, color: color || "#6366f1", created_by: user.id })
+                .insert({ workspace_id: workspaceId, name, description, color: color || "#6366f1", icon_url: icon_url || null, created_by: user.id })
                 .select()
                 .single()
             if (error) throw error
@@ -123,11 +123,11 @@ export const createSpace = createAsyncThunk(
 
 export const updateSpace = createAsyncThunk(
     "workspace/updateSpace",
-    async ({ spaceId, name, description, color }, { rejectWithValue }) => {
+    async ({ spaceId, name, description, color, icon_url }, { rejectWithValue }) => {
         try {
             const { data, error } = await supabase
                 .from("spaces")
-                .update({ name, description, color, updated_at: new Date().toISOString() })
+                .update({ name, description, color, icon_url: icon_url ?? undefined, updated_at: new Date().toISOString() })
                 .eq("id", spaceId)
                 .select()
                 .single()

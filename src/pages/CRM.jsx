@@ -7,7 +7,7 @@ import {
     XIcon, Loader2Icon, TrashIcon, ExternalLinkIcon,
     SearchIcon, PencilIcon, CheckIcon, SettingsIcon,
     LayoutDashboardIcon, AlertCircleIcon, ClockIcon,
-    ChevronLeftIcon, ChevronRightIcon, FilterIcon, MoreHorizontalIcon
+    ChevronLeftIcon, ChevronRightIcon, UploadIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ContactDetail, CompanyDetail, DealDetail } from "../components/CRMDetailPanel";
@@ -304,9 +304,29 @@ function Companies({ workspaceId }) {
 
     const fetchCompanies = async () => {
         setLoading(true);
-        const { data } = await supabase.from("companies").select("*").eq("workspace_id", workspaceId).order("name");
+        const { data } = await supabase.from("companies").select("*, logo_url").eq("workspace_id", workspaceId).order("name");
         setCompanies(data || []);
         setLoading(false);
+    };
+
+    const handleLogoUpload = async (companyId, file) => {
+        if (!file) return;
+        try {
+            const ext = file.name.split('.').pop();
+            const path = `companies/${companyId}/logo.${ext}`;
+            const { error: upErr } = await supabase.storage
+                .from('workspace-assets')
+                .upload(path, file, { upsert: true });
+            if (upErr) throw upErr;
+            const { data } = supabase.storage.from('workspace-assets').getPublicUrl(path);
+            const url = data.publicUrl + '?t=' + Date.now();
+            const { error: dbErr } = await supabase.from('companies').update({ logo_url: url }).eq('id', companyId);
+            if (dbErr) throw dbErr;
+            setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, logo_url: url } : c));
+            toast.success('Logo updated');
+        } catch (err) {
+            toast.error(err.message || 'Upload failed');
+        }
     };
 
     const handleSave = async (e) => {
@@ -417,7 +437,19 @@ function Companies({ workspaceId }) {
                                 <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
                                     <td className="px-5 py-3.5">
                                         <div className="flex items-center gap-3">
-                                            <Avatar name={c.name} color="from-purple-500 to-violet-600" />
+                                            <label className="relative cursor-pointer flex-shrink-0 group/logo" title="Upload logo" onClick={e => e.stopPropagation()}>
+                                                <div className="size-8 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
+                                                    {c.logo_url
+                                                        ? <img src={c.logo_url} alt={c.name} className="w-full h-full object-contain" />
+                                                        : <Avatar name={c.name} color="from-purple-500 to-violet-600" size="size-8" />
+                                                    }
+                                                </div>
+                                                <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <UploadIcon className="size-3 text-white" />
+                                                </div>
+                                                <input type="file" accept="image/*" className="hidden"
+                                                    onChange={e => handleLogoUpload(c.id, e.target.files?.[0])} />
+                                            </label>
                                             <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
                                         </div>
                                     </td>

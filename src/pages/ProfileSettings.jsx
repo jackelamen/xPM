@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useDispatch, useSelector } from 'react-redux'
-import { Loader2Icon, SaveIcon, LogOutIcon, SunIcon, MoonIcon, ArchiveIcon, ZapIcon } from 'lucide-react'
+import { Loader2Icon, SaveIcon, LogOutIcon, SunIcon, MoonIcon, ArchiveIcon, ZapIcon, UploadIcon, BuildingIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
-import { clearWorkspaces } from '../features/workspaceSlice'
+import { clearWorkspaces, fetchWorkspaces } from '../features/workspaceSlice'
 import { toggleTheme } from '../features/themeSlice'
 
 export const AUTO_ARCHIVE_KEY = 'xpm_auto_archive'
@@ -33,6 +33,124 @@ function Section({ title, description, children }) {
             </div>
             {children}
         </div>
+    )
+}
+
+function WorkspaceSettings() {
+    const currentWorkspace = useSelector((state) => state.workspace.currentWorkspace)
+    const dispatch = useDispatch()
+    const [wsName, setWsName] = useState('')
+    const [iconUrl, setIconUrl] = useState('')
+    const [uploading, setUploading] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const fileRef = useRef()
+
+    useEffect(() => {
+        if (currentWorkspace) {
+            setWsName(currentWorkspace.name || '')
+            setIconUrl(currentWorkspace.icon_url || '')
+        }
+    }, [currentWorkspace])
+
+    const handleIconUpload = async (e) => {
+        const file = e.target.files?.[0]
+        if (!file || !currentWorkspace) return
+        setUploading(true)
+        try {
+            const ext = file.name.split('.').pop()
+            const path = `workspaces/${currentWorkspace.id}/icon.${ext}`
+            const { error: upErr } = await supabase.storage
+                .from('workspace-assets')
+                .upload(path, file, { upsert: true })
+            if (upErr) throw upErr
+            const { data } = supabase.storage.from('workspace-assets').getPublicUrl(path)
+            const url = data.publicUrl + '?t=' + Date.now()
+            const { error: dbErr } = await supabase
+                .from('workspaces')
+                .update({ icon_url: url })
+                .eq('id', currentWorkspace.id)
+            if (dbErr) throw dbErr
+            setIconUrl(url)
+            dispatch(fetchWorkspaces())
+            toast.success('Workspace icon updated')
+        } catch (err) {
+            toast.error(err.message || 'Upload failed')
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const handleSaveName = async (e) => {
+        e.preventDefault()
+        if (!wsName.trim() || !currentWorkspace) return
+        setSaving(true)
+        try {
+            const { error } = await supabase
+                .from('workspaces')
+                .update({ name: wsName.trim() })
+                .eq('id', currentWorkspace.id)
+            if (error) throw error
+            dispatch(fetchWorkspaces())
+            toast.success('Workspace updated')
+        } catch (err) {
+            toast.error(err.message || 'Failed to save')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    if (!currentWorkspace) return null
+
+    return (
+        <Section title="Workspace" description="Settings for your current workspace.">
+            {/* Icon upload */}
+            <div className="flex items-center gap-4 mb-6 pb-5 border-b border-gray-100 dark:border-white/[0.06]">
+                <div className="relative group flex-shrink-0">
+                    <div
+                        onClick={() => fileRef.current?.click()}
+                        className="size-14 rounded-xl border-2 border-dashed border-gray-200 dark:border-white/[0.12] bg-gray-50 dark:bg-white/[0.03] flex items-center justify-center overflow-hidden cursor-pointer hover:border-gray-400 dark:hover:border-white/30 transition-colors"
+                    >
+                        {uploading ? (
+                            <Loader2Icon className="size-5 animate-spin text-gray-400" />
+                        ) : iconUrl ? (
+                            <img src={iconUrl} alt="workspace icon" className="w-full h-full object-cover" />
+                        ) : (
+                            <BuildingIcon className="size-5 text-gray-300 dark:text-zinc-600" />
+                        )}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center pointer-events-none">
+                        <UploadIcon className="size-2.5 text-white dark:text-gray-900" />
+                    </div>
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleIconUpload} />
+                </div>
+                <div>
+                    <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100">{currentWorkspace.name}</p>
+                    <p className="text-[12px] text-gray-400 dark:text-zinc-500 mt-0.5">Click the icon to upload a new one</p>
+                </div>
+            </div>
+
+            {/* Name */}
+            <form onSubmit={handleSaveName} className="space-y-4">
+                <div>
+                    <label className={labelClasses}>Workspace name</label>
+                    <input
+                        type="text"
+                        value={wsName}
+                        onChange={(e) => setWsName(e.target.value)}
+                        className={inputClasses}
+                        placeholder="My Workspace"
+                    />
+                </div>
+                <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium hover:opacity-90 transition disabled:opacity-50"
+                >
+                    {saving ? <Loader2Icon className="size-3.5 animate-spin" /> : <SaveIcon className="size-3.5" />}
+                    {saving ? 'Saving...' : 'Save changes'}
+                </button>
+            </form>
+        </Section>
     )
 }
 
@@ -260,6 +378,11 @@ export default function ProfileSettings() {
                     </button>
                 </div>
             </Section>
+
+            {/* Workspace Settings */}
+            <WorkspaceSettings />
+
+            <div className="border-t border-gray-200 dark:border-white/[0.07]" />
 
             {/* Session */}
             <Section title="Session" description="Sign out of your account on this device.">
