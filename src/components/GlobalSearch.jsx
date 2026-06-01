@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { SearchIcon, FolderIcon, CheckSquareIcon, XIcon } from 'lucide-react'
 
-export default function GlobalSearch() {
+export default function GlobalSearch({ className = '' }) {
     const [query, setQuery] = useState('')
     const [open, setOpen] = useState(false)
     const [selectedIndex, setSelectedIndex] = useState(0)
@@ -107,8 +107,8 @@ export default function GlobalSearch() {
     }
 
     return (
-        <div ref={containerRef} className="relative flex-1 max-w-sm">
-            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-400 size-3.5 pointer-events-none" />
+        <div ref={containerRef} className={`relative flex-1 max-w-md ${className}`}>
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 size-3.5 pointer-events-none" />
             <input
                 ref={inputRef}
                 type="text"
@@ -117,7 +117,7 @@ export default function GlobalSearch() {
                 onFocus={() => setOpen(true)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search projects, tasks... (⌘K)"
-                className="pl-8 pr-8 py-2 w-full bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-md text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="pl-8 pr-8 py-1.5 w-full bg-transparent border-0 rounded-md text-[13px] text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:bg-gray-100 dark:focus:bg-white/[0.06] transition-colors"
             />
             {query && (
                 <button

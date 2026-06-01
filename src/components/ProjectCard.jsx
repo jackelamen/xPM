@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const statusColors = {
     PLANNING: "bg-gray-200 dark:bg-zinc-600 text-gray-900 dark:text-zinc-200",
@@ -8,12 +9,40 @@ const statusColors = {
     CANCELLED: "bg-red-200 dark:bg-red-500 text-red-900 dark:text-red-900",
 };
 
-const ProjectCard = ({ project }) => {
+const ProjectCard = ({ project, selected = false, onToggleSelect }) => {
+    const [hovered, setHovered] = useState(false)
+    const showCheckbox = selected || hovered
+
     return (
-        <Link to={`/projectsDetail?id=${project.id}&tab=tasks`} className="bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 rounded-lg p-5 transition-all duration-200 group">
+        <div
+            className={`relative bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border rounded-lg p-5 transition-all duration-200 group ${
+                selected
+                    ? "border-amber-400 dark:border-amber-500 ring-1 ring-amber-300 dark:ring-amber-700"
+                    : "border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
+            }`}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            {/* Checkbox */}
+            {showCheckbox && onToggleSelect && (
+                <button
+                    onClick={(e) => { e.preventDefault(); onToggleSelect(project.id) }}
+                    className="absolute top-3 right-3 z-10"
+                >
+                    <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => onToggleSelect(project.id)}
+                        className="size-4 accent-amber-500 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </button>
+            )}
+
+            <Link to={`/projectsDetail?id=${project.id}&tab=tasks`} className="block">
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-6">
                     <h3 className="font-semibold text-gray-900 dark:text-zinc-200 mb-1 truncate group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
                         {project.name}
                     </h3>
@@ -51,6 +80,7 @@ const ProjectCard = ({ project }) => {
             })()}
 
             </Link>
+        </div>
     );
 };
 

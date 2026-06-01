@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
-import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
+import Navbar from '../components/Navbar'
 import { Outlet } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { loadTheme } from '../features/themeSlice'
-import { fetchWorkspaces, fetchWorkspaceDetail, createWorkspace } from '../features/workspaceSlice'
+import { fetchWorkspaces, fetchWorkspaceDetail, createWorkspace, archiveTasks } from '../features/workspaceSlice'
+import { getAutoArchiveSetting } from './ProfileSettings'
 import { useAuth } from '../context/AuthContext'
 import { Loader2Icon } from 'lucide-react'
 import toast from 'react-hot-toast'
-import QuickCapture from '../components/QuickCapture'
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -35,6 +35,40 @@ const Layout = () => {
         }
     }, [currentWorkspace?.id])
 
+    // Auto-archive completed tasks
+    useEffect(() => {
+        if (!currentWorkspace?.projects) return
+        const { enabled, days } = getAutoArchiveSetting()
+        if (!enabled) return
+
+        const cutoff = new Date()
+        cutoff.setDate(cutoff.getDate() - days)
+
+        const toArchive = currentWorkspace.projects.flatMap((p) =>
+            (p.tasks || [])
+                .filter((t) =>
+                    t.status === 'DONE' &&
+                    !t.archived_at &&
+                    t.updated_at &&
+                    new Date(t.updated_at) < cutoff
+                )
+                .map((t) => ({ id: t.id, projectId: p.id }))
+        )
+
+        if (toArchive.length === 0) return
+
+        // Group by project and dispatch
+        const byProject = toArchive.reduce((acc, t) => {
+            if (!acc[t.projectId]) acc[t.projectId] = []
+            acc[t.projectId].push(t.id)
+            return acc
+        }, {})
+
+        Object.entries(byProject).forEach(([projectId, taskIds]) => {
+            dispatch(archiveTasks({ taskIds, projectId }))
+        })
+    }, [currentWorkspace?.id])
+
     const handleCreateWorkspace = async (e) => {
         e.preventDefault()
         if (!wsName.trim()) return
@@ -50,14 +84,14 @@ const Layout = () => {
     }
 
     if (loading) return (
-        <div className='flex items-center justify-center h-screen bg-[#f8f8f8] dark:bg-[#0e0e0e]'>
+        <div className='flex items-center justify-center h-screen bg-white dark:bg-[#0f0f11]'>
             <Loader2Icon className="size-5 text-gray-400 dark:text-zinc-500 animate-spin" />
         </div>
     )
 
     // New user with no workspace yet
     if (!loading && workspaces.length === 0) return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8] dark:bg-[#0e0e0e] px-4">
+        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0f0f11] px-4">
             <div className="w-full max-w-[320px]">
                 <div className="flex items-center gap-2.5 mb-8">
                     <div className="w-7 h-7 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
@@ -94,15 +128,14 @@ const Layout = () => {
     )
 
     return (
-        <div className="flex bg-[#fcf8f8] dark:bg-[#0e0e0e] text-gray-900 dark:text-slate-100">
+        <div className="flex gradient-mesh dark:gradient-mesh text-gray-900 dark:text-slate-100 min-h-screen">
             <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
             <div className="flex-1 flex flex-col h-screen">
                 <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-                <div className="flex-1 h-full p-6 xl:p-8 overflow-y-scroll bg-[#fcf8f8] dark:bg-[#0e0e0e]">
-                    <Outlet />
+                <div className="flex-1 h-full p-6 xl:p-8 overflow-y-scroll bg-transparent">
+                    <Outlet context={{ setIsSidebarOpen }} />
                 </div>
             </div>
-            <QuickCapture />
         </div>
     )
 }

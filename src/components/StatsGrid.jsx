@@ -26,63 +26,50 @@ export default function StatsGrid() {
     const statCards = [
         {
             icon: FolderOpen,
-            title: "Total Projects",
+            title: "Projects",
             value: stats.totalProjects,
-            subtitle: `projects in ${currentWorkspace?.name}`,
-            bgColor: "bg-blue-500/10",
-            textColor: "text-blue-500",
+            subtitle: `in workspace`,
         },
         {
             icon: CheckCircle,
-            title: "Completed Projects",
+            title: "Completed",
             value: stats.completedProjects,
-            subtitle: `of ${stats.totalProjects} total`,
-            bgColor: "bg-emerald-500/10",
-            textColor: "text-emerald-500",
+            subtitle: `of ${stats.totalProjects} projects`,
         },
         {
             icon: Users,
             title: "My Tasks",
             value: stats.myTasks,
             subtitle: "assigned to me",
-            bgColor: "bg-purple-500/10",
-            textColor: "text-purple-500",
         },
         {
             icon: AlertTriangle,
             title: "Overdue",
             value: stats.overdueIssues,
             subtitle: "need attention",
-            bgColor: "bg-amber-500/10",
-            textColor: "text-amber-500",
+            highlight: stats.overdueIssues > 0,
         },
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-9">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-6">
             {statCards.map(
-                ({ icon: Icon, title, value, subtitle, bgColor, textColor }, i) => (
-                    <div key={i} className="bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition duration-200 rounded-md" >
-                        <div className="p-6 py-4">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">
-                                        {title}
-                                    </p>
-                                    <p className="text-3xl font-bold text-zinc-800 dark:text-white">
-                                        {value}
-                                    </p>
-                                    {subtitle && (
-                                        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-                                            {subtitle}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className={`p-3 rounded-xl ${bgColor} bg-opacity-20`}>
-                                    <Icon size={20} className={textColor} />
-                                </div>
-                            </div>
+                ({ icon: Icon, title, value, subtitle, highlight }, i) => (
+                    <div key={i} className="bg-white dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.07] rounded-xl p-4 hover:border-gray-300 dark:hover:border-white/[0.12] transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-[12px] font-medium text-gray-500 dark:text-zinc-400">
+                                {title}
+                            </p>
+                            <Icon size={13} className={highlight ? "text-amber-500" : "text-gray-400 dark:text-zinc-500"} strokeWidth={1.75} />
                         </div>
+                        <p className={`text-2xl font-semibold tracking-tight ${highlight && value > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-900 dark:text-white"}`}>
+                            {value}
+                        </p>
+                        {subtitle && (
+                            <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+                                {subtitle}
+                            </p>
+                        )}
                     </div>
                 )
             )}

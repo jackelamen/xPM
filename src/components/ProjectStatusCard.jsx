@@ -48,16 +48,18 @@ export default function ProjectStatusCard() {
     }, [currentWorkspace])
 
     return (
-        <div className="bg-white dark:bg-white/[0.03] border border-[#e5e2e1] dark:border-white/[0.07] rounded-[24px] p-7 flex flex-col flex-1 shadow-[0_4px_20px_rgba(0,0,0,0.04)] min-h-[400px]">
+        <div className="glass-panel rounded-2xl p-6 flex flex-col flex-1 min-h-[400px]">
             <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[22px] font-bold text-[#000101] dark:text-white">Project Status</h2>
-                <button className="w-9 h-9 rounded-full border border-[#c5c6ca] dark:border-white/[0.1] flex items-center justify-center text-gray-600 dark:text-zinc-400 hover:bg-[#f1eded] dark:hover:bg-white/[0.05] transition-colors">
-                    <SlidersHorizontalIcon size={13} />
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-white">Project Status</h2>
+                <button className="w-7 h-7 rounded-md border border-zinc-200 dark:border-white/[0.1] flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-white/[0.05] transition-colors">
+                    <SlidersHorizontalIcon size={12} />
                 </button>
             </div>
 
             {projects.length === 0 ? (
-                <p className="text-[13px] text-gray-400 dark:text-zinc-600 text-center py-6">No projects yet</p>
+                <div className="flex flex-col items-center justify-center flex-1 py-10 gap-3">
+                    <p className="text-sm text-zinc-500 dark:text-zinc-500">No active projects</p>
+                </div>
             ) : (
                 <div className="flex flex-col gap-6">
                     {projects.map((project) => {
@@ -69,21 +71,21 @@ export default function ProjectStatusCard() {
                                 className="group"
                             >
                                 <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-[16px] font-bold text-[#000101] dark:text-zinc-200 truncate group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
                                         {project.name}
                                     </span>
-                                    <div className="flex items-center gap-2.5 flex-shrink-0 ml-3">
-                                        <span className="text-[16px] font-bold text-gray-700 dark:text-zinc-400 tabular-nums">
+                                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tabular-nums">
                                             {project.progress}%
                                         </span>
-                                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${config.badge}`}>
+                                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${config.badge}`}>
                                             {config.label}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="w-full bg-[#ebe7e7] dark:bg-white/[0.06] rounded-full h-3">
+                                <div className="w-full bg-zinc-100 dark:bg-white/[0.06] rounded-full h-1.5">
                                     <div
-                                        className={`${config.bar} h-3 rounded-full transition-all`}
+                                        className={`${config.bar} h-1.5 rounded-full transition-all`}
                                         style={{ width: `${project.progress}%` }}
                                     />
                                 </div>

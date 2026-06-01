@@ -8,9 +8,9 @@ import toast from "react-hot-toast";
 
 function WorkspaceAvatar({ name, size = "sm" }) {
     const initials = name?.slice(0, 2).toUpperCase() || "WS"
-    const sizeClass = size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs"
+    const sizeClass = size === "sm" ? "w-5 h-5 text-[9px]" : "w-7 h-7 text-[11px]"
     return (
-        <div className={`${sizeClass} rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+        <div className={`${sizeClass} rounded-md bg-gray-900 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-900 font-bold flex-shrink-0 tracking-tight`}>
             {initials}
         </div>
     )
@@ -63,66 +63,60 @@ function WorkspaceDropdown() {
     }, []);
 
     return (
-        <div className="relative m-4" ref={dropdownRef}>
+        <div className="relative px-3 py-2.5" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(prev => !prev)}
-                className="w-full flex items-center justify-between p-2 h-auto text-left rounded hover:bg-gray-100 dark:hover:bg-zinc-800"
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors text-left"
             >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <WorkspaceAvatar name={currentWorkspace?.name} size="lg" />
-                    <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">
-                            {currentWorkspace?.name || "Select Workspace"}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">
-                            {workspaces.length} workspace{workspaces.length !== 1 ? "s" : ""}
-                        </p>
-                    </div>
+                <WorkspaceAvatar name={currentWorkspace?.name} size="lg" />
+                <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 dark:text-white text-[13px] truncate leading-tight">
+                        {currentWorkspace?.name || "Select Workspace"}
+                    </p>
+
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-500 dark:text-zinc-400 flex-shrink-0 ml-2" />
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-64 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded shadow-lg top-full left-0">
-                    <div className="p-2">
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-2">
+                <div className="absolute z-50 w-60 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/[0.08] rounded-lg shadow-xl shadow-black/10 top-full left-3 mt-1">
+                    <div className="p-1.5">
+                        <p className="text-[10px] font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1 px-2 pt-1">
                             Workspaces
                         </p>
                         {workspaces.map((ws) => (
                             <div
                                 key={ws.id}
                                 onClick={() => onSelectWorkspace(ws.id)}
-                                className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                className="flex items-center gap-2.5 px-2 py-2 cursor-pointer rounded-md hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-colors"
                             >
                                 <WorkspaceAvatar name={ws.name} size="sm" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 dark:text-white truncate">
+                                    <p className="text-[13px] font-medium text-gray-800 dark:text-zinc-100 truncate">
                                         {ws.name}
                                     </p>
                                 </div>
                                 {currentWorkspace?.id === ws.id && (
-                                    <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                    <Check className="w-3.5 h-3.5 text-gray-900 dark:text-zinc-200 flex-shrink-0" />
                                 )}
                             </div>
                         ))}
                     </div>
 
-                    <hr className="border-gray-200 dark:border-zinc-700" />
-
-                    <div className="p-2">
+                    <div className="border-t border-gray-100 dark:border-white/[0.06] p-1.5">
                         {showCreate ? (
-                            <form onSubmit={handleCreateWorkspace} className="flex gap-1">
+                            <form onSubmit={handleCreateWorkspace} className="flex gap-1.5 px-1">
                                 <input
                                     autoFocus
                                     value={newWsName}
                                     onChange={(e) => setNewWsName(e.target.value)}
                                     placeholder="Workspace name"
-                                    className="flex-1 text-xs px-2 py-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="flex-1 text-xs px-2 py-1.5 rounded-md border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.05] text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20"
                                 />
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="px-2 py-1.5 rounded bg-blue-500 text-white text-xs disabled:opacity-60"
+                                    className="px-2.5 py-1.5 rounded-md bg-gray-900 dark:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-medium disabled:opacity-50"
                                 >
                                     {creating ? <Loader2Icon className="size-3 animate-spin" /> : "Add"}
                                 </button>
@@ -130,9 +124,9 @@ function WorkspaceDropdown() {
                         ) : (
                             <button
                                 onClick={() => setShowCreate(true)}
-                                className="flex items-center text-xs gap-2 my-1 w-full text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                className="flex items-center text-[12px] gap-1.5 w-full text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-colors"
                             >
-                                <Plus className="w-4 h-4" /> Create Workspace
+                                <Plus className="w-3.5 h-3.5" /> Add workspace
                             </button>
                         )}
                     </div>

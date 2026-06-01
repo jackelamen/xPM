@@ -42,6 +42,15 @@ export const fetchWorkspaceDetail = createAsyncThunk(
 
             if (memberError) throw memberError
 
+            // Fetch spaces
+            const { data: spaces, error: spacesError } = await supabase
+                .from("spaces")
+                .select("*")
+                .eq("workspace_id", workspaceId)
+                .order("created_at", { ascending: true })
+
+            if (spacesError) throw spacesError
+
             // Fetch projects
             const { data: projects, error: projectError } = await supabase
                 .from("projects")
@@ -57,23 +66,85 @@ export const fetchWorkspaceDetail = createAsyncThunk(
             let tasks = []
             if (projectIds.length) {
                 const { data: taskData, error: taskError } = await supabase
-                    .from("tasks")
-                    .select("id, project_id, title, description, status, type, priority, assignee_id, due_date, created_at, updated_at, assignee:profiles!tasks_assignee_id_fkey(id, name, email, avatar_url)")
+                    .from("xpm_tasks")
+                    .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, created_at, updated_at, custom_fields, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
                     .in("project_id", projectIds)
+                    .is("archived_at", null)
                     .order("position", { ascending: true })
 
                 if (taskError) throw taskError
                 tasks = taskData
             }
 
-            // Attach tasks to their projects
+            // Fetch custom field definitions for all projects
+            let fieldDefinitions = []
+            if (projectIds.length) {
+                const { data: fieldDefs, error: fieldError } = await supabase
+                    .from("project_field_definitions")
+                    .select("*")
+                    .in("project_id", projectIds)
+                    .order("position", { ascending: true })
+                if (!fieldError) fieldDefinitions = fieldDefs || []
+            }
+
+            // Attach tasks + field definitions to their projects
             const projectsWithTasks = projects.map((p) => ({
                 ...p,
                 tasks: tasks.filter((t) => t.project_id === p.id),
                 members: members.filter((m) => m.workspace_id === workspaceId),
+                fieldDefinitions: fieldDefinitions.filter((f) => f.project_id === p.id),
             }))
 
-            return { members, projects: projectsWithTasks }
+            return { members, spaces: spaces || [], projects: projectsWithTasks }
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+export const createSpace = createAsyncThunk(
+    "workspace/createSpace",
+    async ({ workspaceId, name, description, color }, { rejectWithValue }) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const { data, error } = await supabase
+                .from("spaces")
+                .insert({ workspace_id: workspaceId, name, description, color: color || "#6366f1", created_by: user.id })
+                .select()
+                .single()
+            if (error) throw error
+            return data
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+export const updateSpace = createAsyncThunk(
+    "workspace/updateSpace",
+    async ({ spaceId, name, description, color }, { rejectWithValue }) => {
+        try {
+            const { data, error } = await supabase
+                .from("spaces")
+                .update({ name, description, color, updated_at: new Date().toISOString() })
+                .eq("id", spaceId)
+                .select()
+                .single()
+            if (error) throw error
+            return data
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+export const deleteSpace = createAsyncThunk(
+    "workspace/deleteSpace",
+    async ({ spaceId }, { rejectWithValue }) => {
+        try {
+            const { error } = await supabase.from("spaces").delete().eq("id", spaceId)
+            if (error) throw error
+            return spaceId
         } catch (err) {
             return rejectWithValue(err.message)
         }
@@ -101,7 +172,7 @@ export const createWorkspace = createAsyncThunk(
 
 export const createProject = createAsyncThunk(
     "workspace/createProject",
-    async ({ workspaceId, name, description, status }, { rejectWithValue }) => {
+    async ({ workspaceId, name, description, status, spaceId }, { rejectWithValue }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser()
 
@@ -112,6 +183,7 @@ export const createProject = createAsyncThunk(
                     name,
                     description,
                     status: status || "ACTIVE",
+                    space_id: spaceId || null,
                     created_by: user.id,
                 })
                 .select()
@@ -127,12 +199,12 @@ export const createProject = createAsyncThunk(
 
 export const createTask = createAsyncThunk(
     "workspace/createTask",
-    async ({ workspaceId, projectId, title, description, status, priority, type, assigneeId, dueDate }, { rejectWithValue }) => {
+    async ({ workspaceId, projectId, title, description, status, priority, type, assigneeId, startDate, dueDate, customFields }, { rejectWithValue }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser()
 
             const { data, error } = await supabase
-                .from("tasks")
+                .from("xpm_tasks")
                 .insert({
                     workspace_id: workspaceId,
                     project_id: projectId,
@@ -140,12 +212,14 @@ export const createTask = createAsyncThunk(
                     description,
                     status: status || "TODO",
                     priority: priority || "MEDIUM",
-                    type: type || "TASK",
+                    type: type || "OTHER",
                     assignee_id: assigneeId || null,
+                    start_date: startDate || null,
                     due_date: dueDate || null,
+                    custom_fields: customFields || {},
                     created_by: user.id,
                 })
-                .select("id, project_id, title, description, status, type, priority, assignee_id, due_date, created_at, updated_at, assignee:profiles!tasks_assignee_id_fkey(id, name, email, avatar_url)")
+                .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, created_at, updated_at, custom_fields, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
                 .single()
 
             if (error) throw error
@@ -161,7 +235,7 @@ export const updateTaskStatus = createAsyncThunk(
     async ({ taskId, projectId, status }, { rejectWithValue }) => {
         try {
             const { data, error } = await supabase
-                .from("tasks")
+                .from("xpm_tasks")
                 .update({ status, updated_at: new Date().toISOString() })
                 .eq("id", taskId)
                 .select("id, project_id, status")
@@ -175,17 +249,88 @@ export const updateTaskStatus = createAsyncThunk(
     }
 )
 
+export const updateTask = createAsyncThunk(
+    "workspace/updateTask",
+    async ({ taskId, projectId, fields }, { dispatch, rejectWithValue }) => {
+        try {
+            const { data, error } = await supabase
+                .from("xpm_tasks")
+                .update({ ...fields, updated_at: new Date().toISOString() })
+                .eq("id", taskId)
+                .select("*")
+                .single()
+            if (error) throw error
+            dispatch(patchTask({ projectId, task: data }))
+            return data
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
 export const deleteTasks = createAsyncThunk(
     "workspace/deleteTasks",
     async ({ taskIds, projectId }, { rejectWithValue }) => {
         try {
             const { error } = await supabase
-                .from("tasks")
+                .from("xpm_tasks")
                 .delete()
                 .in("id", taskIds)
 
             if (error) throw error
             return { taskIds, projectId }
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+export const archiveTasks = createAsyncThunk(
+    "workspace/archiveTasks",
+    async ({ taskIds, projectId }, { rejectWithValue }) => {
+        try {
+            const { error } = await supabase
+                .from("xpm_tasks")
+                .update({ archived_at: new Date().toISOString() })
+                .in("id", taskIds)
+
+            if (error) throw error
+            return { taskIds, projectId }
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+export const archiveProjects = createAsyncThunk(
+    "workspace/archiveProjects",
+    async ({ projectIds }, { rejectWithValue }) => {
+        try {
+            const { error } = await supabase
+                .from("projects")
+                .update({ archived_at: new Date().toISOString() })
+                .in("id", projectIds)
+
+            if (error) throw error
+            return { projectIds }
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+export const upsertFieldDefinitions = createAsyncThunk(
+    "workspace/upsertFieldDefinitions",
+    async ({ projectId, fields }, { rejectWithValue }) => {
+        // fields: array of { key, label, field_type, visible, position }
+        try {
+            const rows = fields.map((f) => ({ ...f, project_id: projectId }))
+            const { data, error } = await supabase
+                .from("project_field_definitions")
+                .upsert(rows, { onConflict: "project_id,key" })
+                .select()
+            if (error) throw error
+            return { projectId, fields: data }
         } catch (err) {
             return rejectWithValue(err.message)
         }
@@ -199,6 +344,7 @@ const workspaceSlice = createSlice({
     initialState: {
         workspaces: [],
         currentWorkspace: null,
+        spaces: [],
         loading: false,
         detailLoading: false,
         error: null,
@@ -239,6 +385,7 @@ const workspaceSlice = createSlice({
         builder.addCase(fetchWorkspaceDetail.pending, (state) => { state.detailLoading = true })
         builder.addCase(fetchWorkspaceDetail.fulfilled, (state, action) => {
             state.detailLoading = false
+            state.spaces = action.payload.spaces || []
             if (state.currentWorkspace) {
                 state.currentWorkspace = {
                     ...state.currentWorkspace,
@@ -251,6 +398,21 @@ const workspaceSlice = createSlice({
             }
         })
         builder.addCase(fetchWorkspaceDetail.rejected, (state) => { state.detailLoading = false })
+
+        // createSpace
+        builder.addCase(createSpace.fulfilled, (state, action) => {
+            state.spaces.push(action.payload)
+        })
+
+        // updateSpace
+        builder.addCase(updateSpace.fulfilled, (state, action) => {
+            state.spaces = state.spaces.map((s) => s.id === action.payload.id ? action.payload : s)
+        })
+
+        // deleteSpace
+        builder.addCase(deleteSpace.fulfilled, (state, action) => {
+            state.spaces = state.spaces.filter((s) => s.id !== action.payload)
+        })
 
         // createWorkspace
         builder.addCase(createWorkspace.fulfilled, (state, action) => {
@@ -301,6 +463,38 @@ const workspaceSlice = createSlice({
                     p.id === projectId
                         ? { ...p, tasks: p.tasks.filter((t) => !taskIds.includes(t.id)) }
                         : p
+                )
+            }
+        })
+
+        // archiveTasks
+        builder.addCase(archiveTasks.fulfilled, (state, action) => {
+            const { taskIds, projectId } = action.payload
+            if (state.currentWorkspace) {
+                state.currentWorkspace.projects = state.currentWorkspace.projects.map((p) =>
+                    p.id === projectId
+                        ? { ...p, tasks: p.tasks.filter((t) => !taskIds.includes(t.id)) }
+                        : p
+                )
+            }
+        })
+
+        // archiveProjects
+        builder.addCase(archiveProjects.fulfilled, (state, action) => {
+            const { projectIds } = action.payload
+            if (state.currentWorkspace) {
+                state.currentWorkspace.projects = state.currentWorkspace.projects.filter(
+                    (p) => !projectIds.includes(p.id)
+                )
+            }
+        })
+
+        // upsertFieldDefinitions
+        builder.addCase(upsertFieldDefinitions.fulfilled, (state, action) => {
+            const { projectId, fields } = action.payload
+            if (state.currentWorkspace) {
+                state.currentWorkspace.projects = state.currentWorkspace.projects.map((p) =>
+                    p.id === projectId ? { ...p, fieldDefinitions: fields } : p
                 )
             }
         })

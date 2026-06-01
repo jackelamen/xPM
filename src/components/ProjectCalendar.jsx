@@ -3,11 +3,12 @@ import { format, isSameDay, isBefore, startOfMonth, endOfMonth, eachDayOfInterva
 import { CalendarIcon, Clock, User, ChevronLeft, ChevronRight } from "lucide-react";
 
 const typeColors = {
-    BUG: "bg-red-200 text-red-800 dark:bg-red-500 dark:text-red-900",
-    FEATURE: "bg-blue-200 text-blue-800 dark:bg-blue-500 dark:text-blue-900",
-    TASK: "bg-green-200 text-green-800 dark:bg-green-500 dark:text-green-900",
-    IMPROVEMENT: "bg-purple-200 text-purple-800 dark:bg-purple-500 dark:text-purple-900",
-    OTHER: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
+    MEETING: "bg-blue-200 text-blue-800 dark:bg-blue-500 dark:text-blue-900",
+    WRITING: "bg-green-200 text-green-800 dark:bg-green-500 dark:text-green-900",
+    STRATEGY: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
+    DESIGN: "bg-purple-200 text-purple-800 dark:bg-purple-500 dark:text-purple-900",
+    ADMIN: "bg-zinc-200 text-zinc-800 dark:bg-zinc-500 dark:text-zinc-900",
+    OTHER: "bg-rose-200 text-rose-800 dark:bg-rose-500 dark:text-rose-900",
 };
 
 const priorityBorders = {

@@ -27,11 +27,11 @@ const ProjectOverview = () => {
     }
 
     return currentWorkspace && (
-        <div className="bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 rounded-lg overflow-hidden">
-            <div className="border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between">
-                <h2 className="text-md text-zinc-800 dark:text-zinc-300">Project Overview</h2>
-                <Link to={'/projects'} className="text-sm text-zinc-600 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300 flex items-center">
-                    View all <ArrowRight className="w-4 h-4 ml-2" />
+        <div className="bg-white dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.07] rounded-xl overflow-hidden">
+            <div className="border-b border-gray-100 dark:border-white/[0.06] px-4 py-3 flex items-center justify-between">
+                <h2 className="text-[13px] font-semibold text-gray-700 dark:text-zinc-300">Projects</h2>
+                <Link to={'/projects'} className="text-[12px] text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 flex items-center gap-1 transition-colors">
+                    View all <ArrowRight className="w-3 h-3" />
                 </Link>
             </div>
 
@@ -48,50 +48,42 @@ const ProjectOverview = () => {
                         <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
                     </div>
                 ) : (
-                    <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    <div className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                         {projects.slice(0, 5).map((project) => (
-                            <Link key={project.id} to={`/projectsDetail?id=${project.id}&tab=tasks`} className="block p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-zinc-800 dark:text-zinc-300 mb-1">
+                            <Link key={project.id} to={`/projectsDetail?id=${project.id}&tab=tasks`} className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-[13px] font-medium text-gray-800 dark:text-zinc-200 truncate">
                                             {project.name}
                                         </h3>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
-                                            {project.description || 'No description'}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 ml-4">
-                                        <span className={`text-xs px-2 py-1 rounded ${statusColors[project.status]}`}>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${statusColors[project.status]}`}>
                                             {project.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                                         </span>
                                     </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-500 mb-3">
-                                    <div className="flex items-center gap-1">
-                                        <UsersIcon className="w-3 h-3" />
-                                        {project.members?.length || 1} member{(project.members?.length || 1) !== 1 ? "s" : ""}
+                                    <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-zinc-500">
+                                        <span className="flex items-center gap-1">
+                                            <UsersIcon className="w-3 h-3" />
+                                            {project.members?.length || 1}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" />
+                                            {project.tasks?.length || 0} tasks
+                                        </span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        {project.tasks?.length || 0} task{(project.tasks?.length || 0) !== 1 ? "s" : ""}
-                                    </div>
                                 </div>
-
-                                {(() => {
-                                    const progress = getProgress(project)
-                                    return (
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center justify-between text-xs">
-                                                <span className="text-zinc-500 dark:text-zinc-500">Progress</span>
-                                                <span className="text-zinc-600 dark:text-zinc-400">{progress}%</span>
+                                <div className="flex-shrink-0 w-24">
+                                    {(() => {
+                                        const progress = getProgress(project)
+                                        return (
+                                            <div>
+                                                <div className="w-full bg-gray-100 dark:bg-white/[0.06] rounded-full h-1">
+                                                    <div className="h-1 bg-gray-900 dark:bg-zinc-400 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                                                </div>
+                                                <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1 text-right">{progress}%</p>
                                             </div>
-                                            <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded h-1.5">
-                                                <div className="h-1.5 bg-blue-500 rounded transition-all" style={{ width: `${progress}%` }} />
-                                            </div>
-                                        </div>
-                                    )
-                                })()}
+                                        )
+                                    })()}
+                                </div>
                             </Link>
                         ))}
                     </div>

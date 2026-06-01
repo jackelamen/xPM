@@ -79,7 +79,7 @@ export default function PulseBridge({ projectId, onTaskCreated }) {
         // Create a real xPM task from the Pulse task, then update bridge record
         setPromoting(link.id)
         try {
-            const { data: task, error } = await supabase.from("tasks").insert({
+            const { data: task, error } = await supabase.from("xpm_tasks").insert({
                 workspace_id: currentWorkspace.id,
                 project_id: projectId,
                 title: link.pulse_task_title || `Pulse task ${link.pulse_task_id}`,

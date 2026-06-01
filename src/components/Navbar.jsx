@@ -1,63 +1,39 @@
-import { PanelLeft, LogOutIcon } from 'lucide-react'
+import { PanelLeft } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
-import { useDispatch, useSelector } from 'react-redux'
-import { toggleTheme } from '../features/themeSlice'
-import { clearWorkspaces } from '../features/workspaceSlice'
-import { MoonIcon, SunIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 
 const Navbar = ({ setIsSidebarOpen }) => {
-
-    const dispatch = useDispatch()
+    const { displayName } = useAuth()
     const navigate = useNavigate()
-    const { theme } = useSelector(state => state.theme)
-    const { user, signOut } = useAuth()
 
-    const handleSignOut = async () => {
-        await signOut()
-        dispatch(clearWorkspaces())
-        navigate('/login')
-        toast.success('Signed out')
-    }
-
-    const initials = user?.email?.charAt(0).toUpperCase() || 'U'
+    const initials = displayName.charAt(0).toUpperCase()
 
     return (
-        <div className="w-full bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 px-6 xl:px-16 py-3 flex-shrink-0">
-            <div className="flex items-center justify-between max-w-6xl mx-auto">
-                {/* Left section */}
-                <div className="flex items-center gap-4 min-w-0 flex-1">
-                    {/* Sidebar Trigger */}
-                    <button onClick={() => setIsSidebarOpen((prev) => !prev)} className="sm:hidden p-2 rounded-lg transition-colors text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800" >
-                        <PanelLeft size={20} />
-                    </button>
+        <div className="w-full bg-white/60 dark:bg-black/30 backdrop-blur-xl border-b border-white/50 dark:border-white/[0.06] px-5 py-2 flex-shrink-0 sticky top-0 z-40">
+            <div className="flex items-center justify-between gap-4">
 
+                {/* Mobile hamburger */}
+                <button
+                    onClick={() => setIsSidebarOpen((prev) => !prev)}
+                    className="sm:hidden p-1.5 rounded-md text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors flex-shrink-0"
+                >
+                    <PanelLeft size={16} />
+                </button>
+
+                {/* Search — takes remaining space */}
+                <div className="flex-1 min-w-0">
                     <GlobalSearch />
                 </div>
 
-                {/* Right section */}
-                <div className="flex items-center gap-3">
-
-                    {/* Theme Toggle */}
-                    <button onClick={() => dispatch(toggleTheme())} className="size-8 flex items-center justify-center bg-white dark:bg-zinc-800 shadow rounded-lg transition hover:scale-105 active:scale-95">
-                        {theme === "light"
-                            ? <MoonIcon className="size-4 text-gray-800 dark:text-gray-200" />
-                            : <SunIcon className="size-4 text-yellow-400" />
-                        }
-                    </button>
-
-                    {/* User Avatar */}
-                    <div className="size-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium">
-                        {initials}
-                    </div>
-
-                    {/* Sign Out */}
-                    <button onClick={handleSignOut} title="Sign out" className="size-8 flex items-center justify-center rounded-lg text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
-                        <LogOutIcon size={16} />
-                    </button>
-                </div>
+                {/* Avatar — links to settings */}
+                <button
+                    onClick={() => navigate('/settings')}
+                    className="size-8 rounded-full bg-gray-900 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-gray-900 text-[12px] font-bold flex-shrink-0 hover:opacity-80 transition-opacity"
+                    title="Settings"
+                >
+                    {initials}
+                </button>
             </div>
         </div>
     )

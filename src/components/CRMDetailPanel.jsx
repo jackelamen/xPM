@@ -92,7 +92,7 @@ function LinkedTasksSection({ workspaceId, recordType, recordId }) {
         if (taskIds.length === 0) { setLinks([]); setLoading(false); return }
 
         const { data: taskData } = await supabase
-            .from("tasks")
+            .from("xpm_tasks")
             .select("id, title, status, priority, due_date, project:projects(name)")
             .in("id", taskIds.map(t => t.taskId))
 
@@ -110,7 +110,7 @@ function LinkedTasksSection({ workspaceId, recordType, recordId }) {
         if (!q.trim()) { setSearchResults([]); return }
         setSearching(true)
         const { data } = await supabase
-            .from("tasks")
+            .from("xpm_tasks")
             .select("id, title, status, project:projects(name)")
             .eq("workspace_id", workspaceId)
             .ilike("title", `%${q}%`)

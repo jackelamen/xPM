@@ -183,7 +183,7 @@ export default function WorkloadView({ onTaskClick }) {
                 .select("*, user:profiles(id, name, email)")
                 .eq("workspace_id", currentWorkspace.id),
             supabase
-                .from("tasks")
+                .from("xpm_tasks")
                 .select("id, title, status, priority, due_date, assignee_id, project_id, project:projects(id, name), assignee:profiles!tasks_assignee_id_fkey(id, name)")
                 .eq("workspace_id", currentWorkspace.id)
                 .order("due_date", { ascending: true, nullsFirst: false }),
@@ -212,17 +212,16 @@ export default function WorkloadView({ onTaskClick }) {
             const name = m.user?.name || m.user?.email || "Unknown"
             if (!groups[name]) groups[name] = { tasks: [], userId: m.user_id }
         })
-        // Add unassigned bucket
-        groups["Unassigned"] = { tasks: [], userId: null }
-
+        // Only include assigned tasks
         filteredTasks.forEach(t => {
-            const name = t.assignee?.name || "Unassigned"
+            if (!t.assignee_id) return
+            const name = t.assignee?.name || t.assignee?.email || "Unknown"
             if (!groups[name]) groups[name] = { tasks: [], userId: t.assignee_id }
             groups[name].tasks.push(t)
         })
 
-        // Remove empty unassigned
-        if (groups["Unassigned"].tasks.length === 0) delete groups["Unassigned"]
+        // Remove members with no tasks
+        Object.keys(groups).forEach(k => { if (groups[k].tasks.length === 0) delete groups[k] })
 
         return Object.entries(groups).sort(([, a], [, b]) => {
             // Sort overloaded first

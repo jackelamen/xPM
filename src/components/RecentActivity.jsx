@@ -47,7 +47,7 @@ const RecentActivity = () => {
         let cancelled = false
         async function fetchComments() {
             const { data } = await supabase
-                .from("task_comments")
+                .from("xpm_task_comments")
                 .select("id, task_id, body, created_at, author:profiles(id, name, email, avatar_url)")
                 .in("task_id", taskIds)
                 .order("created_at", { ascending: false })
@@ -63,16 +63,17 @@ const RecentActivity = () => {
     }, [taskLookup])
 
     return (
-        <div className="bg-white dark:bg-white/[0.03] border border-[#e5e2e1] dark:border-white/[0.07] rounded-[24px] p-7 flex flex-col shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+        <div className="glass-panel rounded-2xl p-6 flex flex-col">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[22px] font-bold text-[#000101] dark:text-white">Recent Comments</h2>
-                <Link to="/projects" className="w-9 h-9 rounded-full border border-[#c5c6ca] dark:border-white/[0.1] flex items-center justify-center text-gray-600 dark:text-zinc-400 hover:bg-[#f1eded] dark:hover:bg-white/[0.05] transition-colors" title="Open projects">
-                    <MessageSquareIcon size={12} />
-                </Link>
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-white">Recent Comments</h2>
             </div>
 
             {comments.length === 0 ? (
-                <p className="text-[13px] text-gray-400 dark:text-zinc-600 text-center py-6">No recent comments</p>
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                    <MessageSquareIcon className="size-7 text-zinc-300 dark:text-zinc-700" />
+                    <p className="text-sm text-zinc-500 dark:text-zinc-500">No comments yet</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-600">Comments on tasks will appear here</p>
+                </div>
             ) : (
                 <div className="flex flex-col gap-3">
                     {comments.map((comment) => {

@@ -8,7 +8,7 @@ create table public.pulse_xpm_task_links (
     -- xPM side (nullable until a match is confirmed)
     xpm_workspace_id uuid references public.workspaces(id) on delete cascade,
     xpm_project_id uuid references public.projects(id) on delete set null,
-    xpm_task_id uuid references public.tasks(id) on delete set null,
+    xpm_task_id uuid references public.xpm_tasks(id) on delete set null,
     -- Pulse side
     pulse_task_id text not null,          -- Pulse task primary key (text, Pulse owns its schema)
     pulse_task_title text,                 -- cached for display without cross-app join
@@ -66,7 +66,7 @@ language sql stable security definer as $$
         t.workspace_id,
         w.name as workspace_name,
         t.milestone
-    from public.tasks t
+    from public.xpm_tasks t
     join public.projects p on p.id = t.project_id
     join public.workspaces w on w.id = t.workspace_id
     join public.workspace_members wm on wm.workspace_id = t.workspace_id

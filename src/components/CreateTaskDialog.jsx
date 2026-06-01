@@ -14,7 +14,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
     const [formData, setFormData] = useState({
         title: "",
         description: "",
-        type: "TASK",
+        type: "MEETING",
         status: "TODO",
         priority: "MEDIUM",
         assigneeId: "",
@@ -39,7 +39,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
             })).unwrap();
             toast.success("Task created!");
             setShowCreateTask(false);
-            setFormData({ title: "", description: "", type: "TASK", status: "TODO", priority: "MEDIUM", assigneeId: "", due_date: "" });
+            setFormData({ title: "", description: "", type: "MEETING", status: "TODO", priority: "MEDIUM", assigneeId: "", due_date: "" });
         } catch (err) {
             toast.error(err || "Failed to create task");
         } finally {
@@ -70,10 +70,11 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Type</label>
                             <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
-                                <option value="BUG">Bug</option>
-                                <option value="FEATURE">Feature</option>
-                                <option value="TASK">Task</option>
-                                <option value="IMPROVEMENT">Improvement</option>
+                                <option value="MEETING">Meeting</option>
+                                <option value="WRITING">Writing</option>
+                                <option value="STRATEGY">Strategy</option>
+                                <option value="DESIGN">Design</option>
+                                <option value="ADMIN">Admin</option>
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>

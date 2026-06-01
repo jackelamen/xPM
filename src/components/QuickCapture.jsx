@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useAuth } from '../context/AuthContext'
 import { createTask } from '../features/workspaceSlice'
 import { PlusIcon, XIcon, Loader2Icon } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-export default function QuickCapture() {
+export default function QuickCapture({ variant = 'floating' }) {
     const [open, setOpen] = useState(false)
     const [title, setTitle] = useState('')
     const [projectId, setProjectId] = useState('')
@@ -12,9 +13,11 @@ export default function QuickCapture() {
     const [submitting, setSubmitting] = useState(false)
     const inputRef = useRef(null)
     const dispatch = useDispatch()
+    const { user } = useAuth()
 
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace)
     const projects = currentWorkspace?.projects || []
+    const firstProjectId = projects[0]?.id
 
     // Global keyboard shortcut: Cmd+Shift+K
     useEffect(() => {
@@ -32,9 +35,9 @@ export default function QuickCapture() {
     useEffect(() => {
         if (open) {
             setTimeout(() => inputRef.current?.focus(), 50)
-            if (projects.length > 0 && !projectId) setProjectId(projects[0].id)
+            if (firstProjectId && !projectId) setProjectId(firstProjectId)
         }
-    }, [open])
+    }, [open, firstProjectId, projectId])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -47,7 +50,8 @@ export default function QuickCapture() {
                 title: title.trim(),
                 priority,
                 status: 'TODO',
-                type: 'TASK',
+                type: 'MEETING',
+                assigneeId: user?.id || null,
             })).unwrap()
             toast.success('Task created')
             setTitle('')
@@ -61,14 +65,25 @@ export default function QuickCapture() {
 
     return (
         <>
-            {/* Floating button */}
-            <button
-                onClick={() => setOpen(true)}
-                title="Quick capture (⌘⇧K)"
-                className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
-            >
-                <PlusIcon className="size-5" />
-            </button>
+            {variant === 'inline' ? (
+                <button
+                    onClick={() => setOpen(true)}
+                    title="Quick capture (⌘⇧K)"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.05] text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-white/[0.08] transition-colors whitespace-nowrap"
+                >
+                    <PlusIcon className="size-3.5" strokeWidth={2.5} />
+                    Quick Capture
+                    <span className="ml-1 text-[10px] text-gray-400 dark:text-zinc-600 font-normal hidden lg:inline">⌘⇧K</span>
+                </button>
+            ) : (
+                <button
+                    onClick={() => setOpen(true)}
+                    title="Quick capture (⌘⇧K)"
+                    className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+                >
+                    <PlusIcon className="size-5" />
+                </button>
+            )}
 
             {/* Modal */}
             {open && (

@@ -167,7 +167,7 @@ export default function ProjectTimeline({ tasks }) {
                 const updates = {}
                 if (override.start_date !== undefined) updates.start_date = override.start_date
                 if (override.due_date !== undefined) updates.due_date = override.due_date
-                supabase.from("tasks")
+                supabase.from("xpm_tasks")
                     .update({ ...updates, updated_at: new Date().toISOString() })
                     .eq("id", drag.taskId)
                     .then(({ error }) => {

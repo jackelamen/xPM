@@ -33,11 +33,12 @@ const priorityColors = {
 }
 
 const typeColors = {
-    TASK: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
-    BUG: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
-    FEATURE: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
-    IMPROVEMENT: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
-    OTHER: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+    MEETING: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+    WRITING: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+    STRATEGY: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
+    DESIGN: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400",
+    ADMIN: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    OTHER: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
 }
 
 // Individual draggable task card
@@ -47,8 +48,10 @@ function TaskCard({ task, onTaskClick, isDragging }) {
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.4 : 1,
+        opacity: isDragging ? 0.35 : 1,
     }
+
+    const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "DONE"
 
     return (
         <div
@@ -57,39 +60,39 @@ function TaskCard({ task, onTaskClick, isDragging }) {
             {...attributes}
             {...listeners}
             onClick={() => onTaskClick && onTaskClick(task.id)}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-sm transition-all select-none"
+            className="bg-white dark:bg-[#1c1c1c] border border-gray-200/80 dark:border-white/[0.07] rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-gray-300 dark:hover:border-white/[0.12] hover:shadow-sm dark:hover:shadow-none transition-all select-none group"
         >
-            {/* Type badge */}
-            <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${typeColors[task.type] || typeColors.TASK}`}>
-                    {task.type}
-                </span>
-                {task.priority && (
-                    <FlagIcon className={`size-3 ${priorityColors[task.priority] || "text-zinc-400"}`} />
-                )}
-            </div>
-
             {/* Title */}
-            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100 leading-snug mb-2">
+            <p className="text-[13px] font-medium text-gray-800 dark:text-zinc-100 leading-snug mb-2.5">
                 {task.title}
             </p>
 
             {/* Footer */}
-            <div className="flex items-center justify-between mt-2">
-                {task.assignee ? (
-                    <div className="size-5 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[10px] font-medium">
-                        {(task.assignee.name || task.assignee.email || "?")[0].toUpperCase()}
-                    </div>
-                ) : (
-                    <div className="size-5 rounded-full bg-zinc-200 dark:bg-zinc-700" />
-                )}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                    {task.priority && task.priority !== "LOW" && (
+                        <FlagIcon className={`size-3 ${priorityColors[task.priority] || "text-zinc-400"}`} />
+                    )}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[task.type] || typeColors.OTHER}`}>
+                        {task.type}
+                    </span>
+                </div>
 
-                {task.due_date && (
-                    <div className="flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        <CalendarIcon className="size-3" />
-                        {format(new Date(task.due_date), "MMM d")}
-                    </div>
-                )}
+                <div className="flex items-center gap-1.5">
+                    {task.due_date && (
+                        <div className={`flex items-center gap-0.5 text-[11px] ${isOverdue ? "text-red-500" : "text-gray-400 dark:text-zinc-500"}`}>
+                            <CalendarIcon className="size-3" />
+                            {format(new Date(task.due_date), "MMM d")}
+                        </div>
+                    )}
+                    {task.assignee ? (
+                        <div className="size-5 rounded-full bg-gray-800 dark:bg-zinc-500 flex items-center justify-center text-white text-[9px] font-semibold">
+                            {(task.assignee.name || task.assignee.email || "?")[0].toUpperCase()}
+                        </div>
+                    ) : (
+                        <div className="size-5 rounded-full border border-dashed border-gray-300 dark:border-zinc-600" />
+                    )}
+                </div>
             </div>
         </div>
     )
@@ -99,7 +102,7 @@ function TaskCard({ task, onTaskClick, isDragging }) {
 function DragCard({ task }) {
     return (
         <div className="bg-white dark:bg-zinc-900 border border-blue-400 dark:border-blue-500 rounded-lg p-3 shadow-lg rotate-1 w-64">
-            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${typeColors[task.type] || typeColors.TASK}`}>
+            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${typeColors[task.type] || typeColors.OTHER}`}>
                 {task.type}
             </span>
             <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100 mt-2 leading-snug">
@@ -114,23 +117,23 @@ function Column({ column, tasks, onTaskClick, activeId }) {
     const { setNodeRef, isOver } = useSortable({ id: column.id })
 
     return (
-        <div ref={setNodeRef} className="flex flex-col min-w-72 max-w-72 flex-shrink-0">
+        <div ref={setNodeRef} className="flex flex-col min-w-[272px] max-w-[272px] flex-shrink-0">
             {/* Column header */}
-            <div className="flex items-center gap-2 mb-3 px-1">
-                <div className={`size-2 rounded-full ${column.color}`} />
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <div className="flex items-center gap-2 mb-2.5 px-0.5">
+                <div className={`size-1.5 rounded-full ${column.color}`} />
+                <span className="text-[12px] font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wide">
                     {column.label}
                 </span>
-                <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full">
+                <span className="ml-auto text-[11px] font-medium text-gray-400 dark:text-zinc-600 tabular-nums">
                     {tasks.length}
                 </span>
             </div>
 
             {/* Cards */}
-            <div className={`flex-1 rounded-lg p-2 min-h-32 space-y-2 transition-colors ${
+            <div className={`flex-1 rounded-xl p-2 min-h-32 space-y-2 transition-colors ${
                 isOver
-                    ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-300 dark:ring-blue-700"
-                    : "bg-zinc-50 dark:bg-zinc-900/50"
+                    ? "bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-200 dark:ring-blue-800"
+                    : "bg-gray-100/60 dark:bg-white/[0.025]"
             }`}>
                 <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                     {tasks.map((task) => (
@@ -144,8 +147,8 @@ function Column({ column, tasks, onTaskClick, activeId }) {
                 </SortableContext>
 
                 {tasks.length === 0 && (
-                    <div className="flex items-center justify-center h-20 text-xs text-zinc-400 dark:text-zinc-600">
-                        Drop tasks here
+                    <div className="flex items-center justify-center h-20 text-[11px] text-gray-400 dark:text-zinc-600">
+                        Drop here
                     </div>
                 )}
             </div>

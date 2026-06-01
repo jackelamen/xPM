@@ -1,96 +1,139 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../context/AuthContext";
-import { Loader2Icon, SaveIcon, LogOutIcon } from "lucide-react";
-import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { clearWorkspaces } from "../features/workspaceSlice";
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import { useDispatch, useSelector } from 'react-redux'
+import { Loader2Icon, SaveIcon, LogOutIcon, SunIcon, MoonIcon, ArchiveIcon, ZapIcon } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
+import { clearWorkspaces } from '../features/workspaceSlice'
+import { toggleTheme } from '../features/themeSlice'
 
-const inputClasses = "w-full px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mt-1";
-const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
+export const AUTO_ARCHIVE_KEY = 'xpm_auto_archive'
+export const PULSE_KEY = 'xpm_pulse_enabled'
+
+export function getPulseEnabled() {
+    try { return JSON.parse(localStorage.getItem(PULSE_KEY)) === true }
+    catch { return false }
+}
+
+export function getAutoArchiveSetting() {
+    try { return JSON.parse(localStorage.getItem(AUTO_ARCHIVE_KEY)) || { enabled: false, days: 7 } }
+    catch { return { enabled: false, days: 7 } }
+}
+
+const inputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 mt-1.5 placeholder:text-gray-400"
+const labelClasses = "text-[12px] font-medium text-gray-600 dark:text-zinc-400"
+
+function Section({ title, description, children }) {
+    return (
+        <div className="bg-white dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.07] rounded-2xl p-6">
+            <div className="mb-5">
+                <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white">{title}</h2>
+                {description && <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-0.5">{description}</p>}
+            </div>
+            {children}
+        </div>
+    )
+}
 
 export default function ProfileSettings() {
-    const { user, signOut } = useAuth();
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
+    const { user, signOut, displayName: contextDisplayName } = useAuth()
+    const navigate = useNavigate()
+    const dispatch = useDispatch()
+    const { theme } = useSelector((state) => state.theme)
 
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [saving, setSaving] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [name, setName] = useState('')
+    const [email, setEmail] = useState('')
+    const [saving, setSaving] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    const [autoArchive, setAutoArchive] = useState(getAutoArchiveSetting)
+    const [pulseEnabled, setPulseEnabled] = useState(getPulseEnabled)
+
+    const saveAutoArchive = (next) => {
+        setAutoArchive(next)
+        localStorage.setItem(AUTO_ARCHIVE_KEY, JSON.stringify(next))
+        toast.success(next.enabled ? `Auto-archive enabled (${next.days} days)` : 'Auto-archive disabled')
+    }
+
+    const togglePulse = (val) => {
+        localStorage.setItem(PULSE_KEY, JSON.stringify(val))
+        setPulseEnabled(val)
+        toast.success(val ? 'Pulse integration enabled' : 'Pulse integration disabled')
+    }
 
     useEffect(() => {
-        if (!user) return;
+        if (!user) return
         supabase
-            .from("profiles")
-            .select("name, email")
-            .eq("id", user.id)
+            .from('profiles')
+            .select('name, email')
+            .eq('id', user.id)
             .single()
             .then(({ data }) => {
                 if (data) {
-                    setName(data.name || "");
-                    setEmail(data.email || user.email || "");
+                    setName(data.name || '')
+                    setEmail(data.email || user.email || '')
                 }
-                setLoading(false);
-            });
-    }, [user]);
+                setLoading(false)
+            })
+    }, [user])
 
     const handleSave = async (e) => {
-        e.preventDefault();
-        setSaving(true);
+        e.preventDefault()
+        setSaving(true)
         try {
             const { error } = await supabase
-                .from("profiles")
+                .from('profiles')
                 .update({ name: name.trim(), updated_at: new Date().toISOString() })
-                .eq("id", user.id);
-
-            if (error) throw error;
-            toast.success("Profile updated");
+                .eq('id', user.id)
+            if (error) throw error
+            toast.success('Profile updated')
         } catch (err) {
-            toast.error(err.message || "Failed to save");
+            toast.error(err.message || 'Failed to save')
         } finally {
-            setSaving(false);
+            setSaving(false)
         }
-    };
+    }
 
     const handleSignOut = async () => {
-        await signOut();
-        dispatch(clearWorkspaces());
-        navigate("/login");
-        toast.success("Signed out");
-    };
+        await signOut()
+        dispatch(clearWorkspaces())
+        navigate('/login')
+        toast.success('Signed out')
+    }
 
     if (loading) return (
         <div className="flex items-center justify-center py-20">
-            <Loader2Icon className="size-6 animate-spin text-zinc-400" />
+            <Loader2Icon className="size-5 animate-spin text-gray-400" />
         </div>
-    );
+    )
+
+    const initials = (name || contextDisplayName || '?')[0].toUpperCase()
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8">
-            <div>
-                <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Profile Settings</h1>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Manage your account details</p>
+        <div className="max-w-2xl mx-auto space-y-4">
+            {/* Page title */}
+            <div className="mb-6">
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Settings</h1>
+                <p className="text-[13px] text-gray-400 dark:text-zinc-500 mt-0.5">Manage your account and preferences</p>
             </div>
 
-            {/* Avatar */}
-            <div className="flex items-center gap-4">
-                <div className="size-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-semibold">
-                    {(name || email || "?")[0].toUpperCase()}
+            {/* Profile card */}
+            <Section title="Profile" description="Your public display name and account email.">
+                {/* Avatar row */}
+                <div className="flex items-center gap-4 mb-6 pb-5 border-b border-gray-100 dark:border-white/[0.06]">
+                    <div className="size-14 rounded-full bg-gray-900 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-gray-900 text-xl font-bold flex-shrink-0">
+                        {initials}
+                    </div>
+                    <div>
+                        <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">{name || email}</p>
+                        <p className="text-[12px] text-gray-400 dark:text-zinc-500">{email}</p>
+                    </div>
                 </div>
-                <div>
-                    <p className="font-medium text-zinc-800 dark:text-zinc-200">{name || email}</p>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">{email}</p>
-                </div>
-            </div>
 
-            {/* Profile Form */}
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50">
-                <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-200 mb-4">Personal Information</h2>
                 <form onSubmit={handleSave} className="space-y-4">
                     <div>
-                        <label className={labelClasses}>Display Name</label>
+                        <label className={labelClasses}>Display name</label>
                         <input
                             type="text"
                             value={name}
@@ -105,33 +148,129 @@ export default function ProfileSettings() {
                             type="email"
                             value={email}
                             disabled
-                            className={inputClasses + " opacity-60 cursor-not-allowed"}
+                            className={inputClasses + ' opacity-50 cursor-not-allowed'}
                         />
-                        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Email cannot be changed here.</p>
+                        <p className="text-[11px] text-gray-400 dark:text-zinc-600 mt-1">Email cannot be changed here.</p>
                     </div>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-2 px-4 py-2 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm disabled:opacity-60 hover:opacity-90 transition"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
                     >
-                        {saving ? <Loader2Icon className="size-4 animate-spin" /> : <SaveIcon className="size-4" />}
-                        {saving ? "Saving..." : "Save Changes"}
+                        {saving ? <Loader2Icon className="size-3.5 animate-spin" /> : <SaveIcon className="size-3.5" />}
+                        {saving ? 'Saving...' : 'Save changes'}
                     </button>
                 </form>
-            </div>
+            </Section>
 
-            {/* Sign Out */}
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50">
-                <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-200 mb-1">Session</h2>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Sign out of your account on this device.</p>
+            {/* Appearance */}
+            <Section title="Appearance" description="Choose how xPM looks for you.">
+                <div className="flex gap-3">
+                    {[
+                        { value: 'light', label: 'Light', icon: SunIcon },
+                        { value: 'dark',  label: 'Dark',  icon: MoonIcon },
+                    ].map(({ value, label, icon: Icon }) => (
+                        <button
+                            key={value}
+                            onClick={() => { if (theme !== value) dispatch(toggleTheme()) }}
+                            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-all ${
+                                theme === value
+                                    ? 'border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm'
+                                    : 'border-gray-200 dark:border-white/[0.1] text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-white/[0.05]'
+                            }`}
+                        >
+                            <Icon size={14} />
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </Section>
+
+            {/* Automation */}
+            <Section title="Automation" description="Rules that run automatically in the background.">
+                <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <ArchiveIcon size={13} className="text-zinc-500 dark:text-zinc-400" />
+                            <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100">Auto-archive completed tasks</p>
+                        </div>
+                        <p className="text-[12px] text-gray-500 dark:text-zinc-500">
+                            Automatically archive tasks marked as Done after a set number of days.
+                        </p>
+                        {autoArchive.enabled && (
+                            <div className="flex items-center gap-2 mt-3">
+                                <span className="text-[12px] text-gray-600 dark:text-zinc-400">Archive after</span>
+                                <select
+                                    value={autoArchive.days}
+                                    onChange={(e) => saveAutoArchive({ ...autoArchive, days: Number(e.target.value) })}
+                                    className="text-[12px] border border-gray-200 dark:border-white/[0.1] rounded-md px-2 py-1 bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 outline-none cursor-pointer"
+                                >
+                                    {[1, 2, 3, 5, 7, 14, 30].map((d) => (
+                                        <option key={d} value={d}>{d} {d === 1 ? 'day' : 'days'}</option>
+                                    ))}
+                                </select>
+                                <span className="text-[12px] text-gray-600 dark:text-zinc-400">of completion</span>
+                            </div>
+                        )}
+                    </div>
+                    {/* Toggle */}
+                    <button
+                        onClick={() => saveAutoArchive({ ...autoArchive, enabled: !autoArchive.enabled })}
+                        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none mt-0.5 ${
+                            autoArchive.enabled ? 'bg-zinc-900 dark:bg-white' : 'bg-gray-200 dark:bg-zinc-700'
+                        }`}
+                        role="switch"
+                        aria-checked={autoArchive.enabled}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-zinc-900 shadow transition-transform duration-200 ${
+                            autoArchive.enabled ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                    </button>
+                </div>
+            </Section>
+
+            {/* Pulse Integration */}
+            <Section title="Pulse Integration" description="Enable if you have access to Pulse, the EDGEx daily planner. Adds a 'Send to Pulse' field in My Tasks.">
+                <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <ZapIcon size={13} className="text-violet-500" />
+                            <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100">Enable Pulse integration</p>
+                        </div>
+                        <p className="text-[12px] text-gray-500 dark:text-zinc-500">
+                            Pulse and xPM share the same account — no login required. Once enabled, the "Send to Pulse" column becomes available in My Tasks via the Fields picker.
+                        </p>
+                        {pulseEnabled && (
+                            <p className="text-[12px] text-violet-600 dark:text-violet-400 mt-2 flex items-center gap-1.5">
+                                <ZapIcon size={11} /> Active — open the Fields picker in My Tasks to show "Send to Pulse"
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => togglePulse(!pulseEnabled)}
+                        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none mt-0.5 ${
+                            pulseEnabled ? 'bg-violet-500' : 'bg-gray-200 dark:bg-zinc-700'
+                        }`}
+                        role="switch"
+                        aria-checked={pulseEnabled}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                            pulseEnabled ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                    </button>
+                </div>
+            </Section>
+
+            {/* Session */}
+            <Section title="Session" description="Sign out of your account on this device.">
                 <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-2 px-4 py-2 rounded border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 text-[13px] font-medium hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 >
-                    <LogOutIcon className="size-4" />
+                    <LogOutIcon size={13} />
                     Sign out
                 </button>
-            </div>
+            </Section>
         </div>
-    );
+    )
 }

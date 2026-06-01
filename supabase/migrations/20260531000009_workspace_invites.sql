@@ -1,3 +1,4 @@
+
 -- workspace_invites: pending email invitations to workspaces
 create table public.workspace_invites (
     id uuid primary key default gen_random_uuid(),
@@ -5,7 +6,7 @@ create table public.workspace_invites (
     invited_by uuid not null references public.profiles(id) on delete cascade,
     email text not null,
     role text not null default 'member' check (role in ('admin', 'member')),
-    token text not null unique default encode(gen_random_bytes(32), 'hex'),
+    token text not null unique default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
     status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'expired')),
     expires_at timestamptz not null default (now() + interval '7 days'),
     created_at timestamptz default now(),

@@ -4,10 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { createProject } from "../features/workspaceSlice";
 import toast from "react-hot-toast";
 
-const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
+const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen, defaultSpaceId = "" }) => {
 
     const dispatch = useDispatch();
     const { currentWorkspace } = useSelector((state) => state.workspace);
+    const spaces = useSelector((state) => state.workspace.spaces || []);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -19,6 +20,7 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
         team_members: [],
         team_lead: "",
         progress: 0,
+        space_id: defaultSpaceId,
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,10 +35,11 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                 name: formData.name,
                 description: formData.description,
                 status: formData.status,
+                spaceId: formData.space_id || null,
             })).unwrap();
             toast.success("Project created!");
             setIsDialogOpen(false);
-            setFormData({ name: "", description: "", status: "PLANNING", priority: "MEDIUM", start_date: "", end_date: "", team_members: [], team_lead: "", progress: 0 });
+            setFormData({ name: "", description: "", status: "PLANNING", priority: "MEDIUM", start_date: "", end_date: "", team_members: [], team_lead: "", progress: 0, space_id: defaultSpaceId });
         } catch (err) {
             toast.error(err || "Failed to create project");
         } finally {
@@ -70,6 +73,23 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                         <label className="block text-sm mb-1">Project Name</label>
                         <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter project name" className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm" required />
                     </div>
+
+                    {/* Space */}
+                    {spaces.length > 0 && (
+                        <div>
+                            <label className="block text-sm mb-1">Space</label>
+                            <select
+                                value={formData.space_id}
+                                onChange={(e) => setFormData({ ...formData, space_id: e.target.value })}
+                                className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                            >
+                                <option value="">No space</option>
+                                {spaces.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Description */}
                     <div>

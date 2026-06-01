@@ -48,84 +48,105 @@ const Login = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950 px-4">
-            <div className="w-full max-w-sm">
-                {/* Logo */}
-                <div className="mb-8 text-center">
-                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 mb-4">
-                        <span className="text-white font-bold text-sm">xPM</span>
+        <div className="min-h-screen flex bg-[#f8f8f8] dark:bg-[#0e0e0e]">
+            {/* Left panel */}
+            <div className="hidden lg:flex flex-col justify-between w-[380px] bg-gray-900 dark:bg-black p-10 flex-shrink-0">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
+                        <span className="text-gray-900 font-bold text-[11px] tracking-tight">xPM</span>
                     </div>
-                    <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        The EDGEx PM
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-                        {mode === 'login' ? 'Sign in to your workspace' : 'Create your account'}
-                    </p>
+                    <span className="text-white font-semibold text-[14px]">EDGEx PM</span>
                 </div>
+                <div>
+                    <blockquote className="text-gray-300 text-[15px] leading-relaxed font-light italic mb-4">
+                        "The workspace built for how we actually work."
+                    </blockquote>
+                    <p className="text-gray-500 text-[12px]">Replace Asana. Keep control.</p>
+                </div>
+            </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {mode === 'signup' && (
+            {/* Right form panel */}
+            <div className="flex-1 flex items-center justify-center px-6">
+                <div className="w-full max-w-[340px]">
+                    {/* Mobile logo */}
+                    <div className="flex items-center gap-2 mb-8 lg:hidden">
+                        <div className="w-7 h-7 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
+                            <span className="text-white dark:text-gray-900 font-bold text-[11px]">xPM</span>
+                        </div>
+                        <span className="text-gray-900 dark:text-white font-semibold text-[14px]">EDGEx PM</span>
+                    </div>
+
+                    <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white mb-1">
+                        {mode === 'login' ? 'Sign in' : 'Create account'}
+                    </h1>
+                    <p className="text-[13px] text-gray-500 dark:text-zinc-400 mb-7">
+                        {mode === 'login' ? 'Welcome back to your workspace' : 'Get started with EDGEx PM'}
+                    </p>
+
+                    <form onSubmit={handleSubmit} className="space-y-3.5">
+                        {mode === 'signup' && (
+                            <div>
+                                <label className="block text-[12px] font-medium text-gray-600 dark:text-zinc-400 mb-1.5">
+                                    Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 placeholder:text-gray-400 dark:placeholder:text-zinc-600 transition-shadow"
+                                    placeholder="Jack Lamen"
+                                />
+                            </div>
+                        )}
+
                         <div>
-                            <label className="block text-sm text-gray-700 dark:text-zinc-300 mb-1">
-                                Your Name
+                            <label className="block text-[12px] font-medium text-gray-600 dark:text-zinc-400 mb-1.5">
+                                Email
                             </label>
                             <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Jack Lamen"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 placeholder:text-gray-400 dark:placeholder:text-zinc-600 transition-shadow"
+                                placeholder="you@company.com"
                             />
                         </div>
-                    )}
 
-                    <div>
-                        <label className="block text-sm text-gray-700 dark:text-zinc-300 mb-1">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="you@example.com"
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-[12px] font-medium text-gray-600 dark:text-zinc-400 mb-1.5">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 placeholder:text-gray-400 dark:placeholder:text-zinc-600 transition-shadow"
+                                placeholder="••••••••"
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm text-gray-700 dark:text-zinc-300 mb-1">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="••••••••"
-                        />
-                    </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex items-center justify-center gap-2 py-2 px-4 mt-1 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        >
+                            {loading && <Loader2Icon className="size-3.5 animate-spin" />}
+                            {mode === 'login' ? 'Sign in' : 'Create account'}
+                        </button>
+                    </form>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium hover:opacity-90 transition disabled:opacity-60"
-                    >
-                        {loading && <Loader2Icon className="size-4 animate-spin" />}
-                        {mode === 'login' ? 'Sign in' : 'Create account'}
-                    </button>
-                </form>
-
-                <p className="text-sm text-center text-gray-500 dark:text-zinc-400 mt-6">
-                    {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-                    <button
-                        onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setName('') }}
-                        className="text-blue-500 hover:underline"
-                    >
-                        {mode === 'login' ? 'Sign up' : 'Sign in'}
-                    </button>
-                </p>
+                    <p className="text-[12px] text-center text-gray-400 dark:text-zinc-500 mt-5">
+                        {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+                        <button
+                            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setName('') }}
+                            className="text-gray-700 dark:text-zinc-300 font-medium hover:underline"
+                        >
+                            {mode === 'login' ? 'Sign up' : 'Sign in'}
+                        </button>
+                    </p>
+                </div>
             </div>
         </div>
     )

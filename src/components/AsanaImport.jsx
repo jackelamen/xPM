@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { createProject, createTask, fetchWorkspaceDetail } from "../features/workspaceSlice";
+import { createProject, createTask, fetchWorkspaceDetail, upsertFieldDefinitions } from "../features/workspaceSlice";
 import { UploadIcon, XIcon, Loader2Icon, CheckIcon, AlertCircleIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -11,10 +11,19 @@ function parseAsanaCSV(text) {
     const headers = lines[0].split(",").map((h) => h.replace(/^"|"$/g, "").trim().toLowerCase())
 
     const get = (row, name) => {
-        const idx = headers.findIndex((h) => h.includes(name))
+        // Exact match first, then fallback to includes
+        let idx = headers.findIndex((h) => h === name)
+        if (idx === -1) idx = headers.findIndex((h) => h.includes(name))
         if (idx === -1) return ""
         const val = row[idx] || ""
         return val.replace(/^"|"$/g, "").trim()
+    }
+
+    // Also validate date strings — return null if value is not a valid date
+    const safeDate = (val) => {
+        if (!val) return null
+        const d = new Date(val)
+        return isNaN(d.getTime()) ? null : val
     }
 
     const tasks = []
@@ -33,14 +42,21 @@ function parseAsanaCSV(text) {
 
         const dueDate = get(row, "due date") || get(row, "due_date") || ""
 
+        const rawTags = get(row, "tags") || ""
+        const rawStartDate = get(row, "start date") || get(row, "start_date") || ""
+
         tasks.push({
             title,
             description: get(row, "notes") || get(row, "description") || "",
             status,
             priority,
-            type: "TASK",
-            due_date: dueDate || null,
-            section: get(row, "section") || get(row, "project section") || "",
+            type: "OTHER",
+            start_date: safeDate(rawStartDate),
+            due_date: safeDate(dueDate),
+            custom_fields: {
+                section: get(row, "section") || get(row, "section/column") || "",
+                tags: rawTags,
+            },
         })
     }
     return tasks
@@ -91,6 +107,15 @@ export default function AsanaImport({ isOpen, setIsOpen }) {
                 status: "ACTIVE",
             })).unwrap()
 
+            // Seed field definitions for this project
+            await dispatch(upsertFieldDefinitions({
+                projectId: projectResult.id,
+                fields: [
+                    { key: "section", label: "Section", field_type: "text",  visible: true, position: 0 },
+                    { key: "tags",    label: "Tags",    field_type: "tags",  visible: true, position: 1 },
+                ],
+            })).unwrap()
+
             // Create tasks one by one
             let count = 0
             for (const task of parsedTasks) {
@@ -102,7 +127,9 @@ export default function AsanaImport({ isOpen, setIsOpen }) {
                     status: task.status,
                     priority: task.priority,
                     type: task.type,
+                    startDate: task.start_date,
                     dueDate: task.due_date,
+                    customFields: task.custom_fields,
                 })).unwrap()
                 count++
                 setImportedCount(count)

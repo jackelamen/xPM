@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Save, Loader2Icon, Trash2Icon } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { supabase } from "../lib/supabase";
 import { fetchWorkspaceDetail } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
@@ -13,11 +13,13 @@ const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-gradient-to
 export default function ProjectSettings({ project }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const spaces = useSelector((state) => state.workspace.spaces || []);
 
     const [formData, setFormData] = useState({
         name: "",
         description: "",
         status: "PLANNING",
+        space_id: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
@@ -28,6 +30,7 @@ export default function ProjectSettings({ project }) {
                 name: project.name || "",
                 description: project.description || "",
                 status: project.status || "PLANNING",
+                space_id: project.space_id || "",
             });
         }
     }, [project]);
@@ -43,6 +46,7 @@ export default function ProjectSettings({ project }) {
                     name: formData.name,
                     description: formData.description,
                     status: formData.status,
+                    space_id: formData.space_id || null,
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", project.id);
@@ -115,6 +119,20 @@ export default function ProjectSettings({ project }) {
                             <option value="ON_HOLD">On Hold</option>
                             <option value="COMPLETED">Completed</option>
                             <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className={labelClasses}>Space</label>
+                        <select
+                            value={formData.space_id}
+                            onChange={(e) => setFormData({ ...formData, space_id: e.target.value })}
+                            className={inputClasses}
+                        >
+                            <option value="">No space</option>
+                            {spaces.map((s) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
                         </select>
                     </div>
 

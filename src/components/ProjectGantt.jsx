@@ -92,7 +92,7 @@ export default function ProjectGantt({ tasks, projectId }) {
         const taskIds = tasks.map(t => t.id)
         if (!taskIds.length) { setDeps([]); setLoadingDeps(false); return }
         const { data } = await supabase
-            .from("task_dependencies")
+            .from("xpm_task_dependencies")
             .select("id, task_id, depends_on_task_id, dependency_type")
             .in("task_id", taskIds)
         setDeps(data || [])
@@ -205,7 +205,7 @@ export default function ProjectGantt({ tasks, projectId }) {
                 const updates = {}
                 if (override.start_date !== undefined) updates.start_date = override.start_date
                 if (override.due_date !== undefined) updates.due_date = override.due_date
-                supabase.from("tasks")
+                supabase.from("xpm_tasks")
                     .update({ ...updates, updated_at: new Date().toISOString() })
                     .eq("id", drag.taskId)
                     .then(({ error }) => {
@@ -239,7 +239,7 @@ export default function ProjectGantt({ tasks, projectId }) {
             return
         }
 
-        const { error } = await supabase.from("task_dependencies").insert({
+        const { error } = await supabase.from("xpm_task_dependencies").insert({
             task_id: linking.fromTaskId,
             depends_on_task_id: task.id,
             dependency_type: "blocks",
@@ -253,7 +253,7 @@ export default function ProjectGantt({ tasks, projectId }) {
     }
 
     const handleDeleteDep = async (depId) => {
-        await supabase.from("task_dependencies").delete().eq("id", depId)
+        await supabase.from("xpm_task_dependencies").delete().eq("id", depId)
         setDeps(prev => prev.filter(d => d.id !== depId))
         setSelectedDep(null)
         toast.success("Dependency removed")

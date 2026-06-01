@@ -1,29 +1,29 @@
 -- Task links table
-create table public.task_links (
+create table public.xpm_task_links (
     id uuid primary key default gen_random_uuid(),
-    task_id uuid not null references public.tasks(id) on delete cascade,
+    task_id uuid not null references public.xpm_tasks(id) on delete cascade,
     url text not null,
     label text,
     created_by uuid references public.profiles(id) on delete set null,
     created_at timestamptz default now()
 );
 
-alter table public.task_links enable row level security;
+alter table public.xpm_task_links enable row level security;
 
-create policy "task_links_select" on public.task_links for select
+create policy "task_links_select" on public.xpm_task_links for select
     using (exists (
-        select 1 from public.tasks t
+        select 1 from public.xpm_tasks t
         join public.workspace_members wm on wm.workspace_id = t.workspace_id
-        where t.id = task_links.task_id and wm.user_id = auth.uid()
+        where t.id = xpm_task_links.task_id and wm.user_id = auth.uid()
     ));
 
-create policy "task_links_insert" on public.task_links for insert
+create policy "task_links_insert" on public.xpm_task_links for insert
     with check (auth.uid() = created_by);
 
-create policy "task_links_delete" on public.task_links for delete
+create policy "task_links_delete" on public.xpm_task_links for delete
     using (auth.uid() = created_by);
 
-create index task_links_task_id_idx on public.task_links(task_id);
+create index xpm_task_links_task_id_idx on public.xpm_task_links(task_id);
 
 -- CRM tables
 create table public.contacts (

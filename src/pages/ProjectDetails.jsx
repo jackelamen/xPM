@@ -3,8 +3,8 @@ import { useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon,
-    FileStackIcon, ZapIcon, LayoutDashboardIcon, GanttChartIcon,
-    FileTextIcon, NetworkIcon
+    FileStackIcon, LayoutDashboardIcon, GanttChartIcon,
+    FileTextIcon, NetworkIcon, CheckCircle2, Clock, Users, ListTodo
 } from "lucide-react";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
@@ -36,11 +36,14 @@ export default function ProjectDetail() {
         if (tab) setActiveTab(tab);
     }, [tab]);
 
+    const [fieldDefinitions, setFieldDefinitions] = useState([]);
+
     useEffect(() => {
         if (projects && projects.length > 0) {
             const proj = projects.find((p) => p.id === id);
             setProject(proj);
             setTasks(proj?.tasks || []);
+            setFieldDefinitions(proj?.fieldDefinitions || []);
         }
     }, [id, projects]);
 
@@ -74,53 +77,103 @@ export default function ProjectDetail() {
         { key: "settings", label: "Settings", icon: SettingsIcon },
     ];
 
+    const totalTasks = tasks.length;
+    const completed = tasks.filter((t) => t.status === "DONE").length;
+    const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;
+    const completionPct = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+
     return (
-        <div className="space-y-5 max-w-6xl mx-auto text-zinc-900 dark:text-white">
+        <div className="max-w-6xl mx-auto text-zinc-900 dark:text-white">
             {/* Header */}
-            <div className="flex max-md:flex-col gap-4 flex-wrap items-start justify-between max-w-6xl">
-                <div className="flex items-center gap-4">
-                    <button className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400" onClick={() => navigate('/projects')}>
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <button
+                        className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition"
+                        onClick={() => navigate('/projects')}
+                    >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-medium">{project.name}</h1>
-                        <span className={`px-2 py-1 rounded text-xs capitalize ${statusColors[project.status]}`}>
-                            {project.status.replace("_", " ")}
-                        </span>
+                    <div>
+                        <div className="flex items-center gap-2.5">
+                            <h1 className="text-lg font-semibold leading-tight">{project.name}</h1>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[project.status]}`}>
+                                {project.status.replace("_", " ")}
+                            </span>
+                        </div>
+                        {project.description && (
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{project.description}</p>
+                        )}
                     </div>
                 </div>
-                <button onClick={() => setShowCreateTask(true)} className="flex items-center gap-2 px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                    <PlusIcon className="size-4" />
+                <button
+                    onClick={() => setShowCreateTask(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
+                >
+                    <PlusIcon className="size-3.5" />
                     New Task
                 </button>
             </div>
 
-            {/* Info Cards */}
-            <div className="grid grid-cols-2 sm:flex flex-wrap gap-6">
-                {[
-                    { label: "Total Tasks", value: tasks.length, color: "text-zinc-900 dark:text-white" },
-                    { label: "Completed", value: tasks.filter((t) => t.status === "DONE").length, color: "text-emerald-700 dark:text-emerald-400" },
-                    { label: "In Progress", value: tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "TODO").length, color: "text-amber-700 dark:text-amber-400" },
-                    { label: "Team Members", value: project.members?.length || 0, color: "text-blue-700 dark:text-blue-400" },
-                ].map((card, idx) => (
-                    <div key={idx} className="dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 flex justify-between sm:min-w-60 p-4 py-2.5 rounded">
-                        <div>
-                            <div className="text-sm text-zinc-600 dark:text-zinc-400">{card.label}</div>
-                            <div className={`text-2xl font-bold ${card.color}`}>{card.value}</div>
-                        </div>
-                        <ZapIcon className={`size-4 ${card.color}`} />
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-900/60 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Total Tasks</span>
+                        <ListTodo className="size-3.5 text-zinc-400" />
                     </div>
-                ))}
+                    <div className="text-2xl font-bold text-zinc-900 dark:text-white">{totalTasks}</div>
+                </div>
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-900/60 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Completed</span>
+                        <CheckCircle2 className="size-3.5 text-emerald-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{completed}</div>
+                </div>
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-900/60 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">In Progress</span>
+                        <Clock className="size-3.5 text-amber-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{inProgress}</div>
+                </div>
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-900/60 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Team</span>
+                        <Users className="size-3.5 text-blue-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{project.members?.length || 0}</div>
+                </div>
             </div>
+
+            {/* Progress bar */}
+            {totalTasks > 0 && (
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">Progress</span>
+                        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{completionPct}%</span>
+                    </div>
+                    <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                            style={{ width: `${completionPct}%` }}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Tabs */}
             <div>
-                <div className="inline-flex flex-wrap gap-0.5 border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
+                <div className="flex flex-wrap border-b border-zinc-200 dark:border-zinc-800 mb-6 gap-0">
                     {TABS.map((tabItem) => (
                         <button
                             key={tabItem.key}
                             onClick={() => { setActiveTab(tabItem.key); setSearchParams({ id: id, tab: tabItem.key }); }}
-                            className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-all ${activeTab === tabItem.key ? "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700"}`}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm transition-all border-b-2 -mb-px ${
+                                activeTab === tabItem.key
+                                    ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-medium"
+                                    : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                            }`}
                         >
                             <tabItem.icon className="size-3.5" />
                             {tabItem.label}
@@ -128,10 +181,10 @@ export default function ProjectDetail() {
                     ))}
                 </div>
 
-                <div className="mt-6">
+                <div>
                     {activeTab === "tasks" && (
                         <div className="dark:bg-zinc-900/40 rounded max-w-6xl">
-                            <ProjectTasks tasks={tasks} projectId={id} onTaskClick={(taskId) => setSelectedTaskId(taskId)} />
+                            <ProjectTasks tasks={tasks} projectId={id} fieldDefinitions={fieldDefinitions} onTaskClick={(taskId) => setSelectedTaskId(taskId)} />
                         </div>
                     )}
                     {activeTab === "board" && (

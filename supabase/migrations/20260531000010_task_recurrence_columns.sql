@@ -1,6 +1,6 @@
 -- Add recurrence and estimation columns to tasks
 -- These were in the project scope but missing from the initial schema.
-alter table public.tasks
+alter table public.xpm_tasks
     add column if not exists recurrence_rule text
         check (recurrence_rule in ('DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY')),
     add column if not exists recurrence_anchor_date date,
@@ -36,7 +36,7 @@ language sql stable security definer as $$
         w.name as workspace_name,
         t.milestone,
         t.recurrence_rule
-    from public.tasks t
+    from public.xpm_tasks t
     join public.projects p on p.id = t.project_id
     join public.workspaces w on w.id = t.workspace_id
     join public.workspace_members wm on wm.workspace_id = t.workspace_id

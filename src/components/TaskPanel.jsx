@@ -29,11 +29,12 @@ const priorityColors = {
 }
 
 const typeColors = {
-    TASK: "text-green-600 bg-green-100 dark:bg-green-900/40",
-    BUG: "text-red-600 bg-red-100 dark:bg-red-900/40",
-    FEATURE: "text-blue-600 bg-blue-100 dark:bg-blue-900/40",
-    IMPROVEMENT: "text-purple-600 bg-purple-100 dark:bg-purple-900/40",
-    OTHER: "text-amber-600 bg-amber-100 dark:bg-amber-900/40",
+    MEETING: "text-blue-600 bg-blue-100 dark:bg-blue-900/40",
+    WRITING: "text-amber-600 bg-amber-100 dark:bg-amber-900/40",
+    STRATEGY: "text-purple-600 bg-purple-100 dark:bg-purple-900/40",
+    DESIGN: "text-pink-600 bg-pink-100 dark:bg-pink-900/40",
+    ADMIN: "text-zinc-600 bg-zinc-100 dark:bg-zinc-800",
+    OTHER: "text-green-600 bg-green-100 dark:bg-green-900/40",
 }
 
 // Inline editable text field
@@ -104,7 +105,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const fetchComments = async () => {
         setLoadingComments(true)
         const { data, error } = await supabase
-            .from("task_comments")
+            .from("xpm_task_comments")
             .select("*, author:profiles(id, name, email)")
             .eq("task_id", taskId)
             .order("created_at", { ascending: true })
@@ -114,7 +115,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
     const fetchSubtasks = async () => {
         const { data } = await supabase
-            .from("tasks")
+            .from("xpm_tasks")
             .select("id, title, status")
             .eq("parent_task_id", taskId)
             .order("created_at", { ascending: true })
@@ -126,13 +127,13 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         setAddingSubtask(true)
         try {
             const { data, error } = await supabase
-                .from("tasks")
+                .from("xpm_tasks")
                 .insert({
                     workspace_id: currentWorkspace.id,
                     project_id: projectId,
                     title: newSubtask.trim(),
                     status: "TODO",
-                    type: "TASK",
+                    type: "OTHER",
                     priority: "MEDIUM",
                     parent_task_id: taskId,
                     created_by: user.id,
@@ -152,7 +153,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const toggleSubtaskStatus = async (subtask) => {
         const newStatus = subtask.status === "DONE" ? "TODO" : "DONE"
         const { error } = await supabase
-            .from("tasks")
+            .from("xpm_tasks")
             .update({ status: newStatus })
             .eq("id", subtask.id)
         if (!error) {
@@ -180,7 +181,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
     const fetchLinks = async () => {
         const { data } = await supabase
-            .from("task_links")
+            .from("xpm_task_links")
             .select("*")
             .eq("task_id", taskId)
             .order("created_at", { ascending: true })
@@ -193,7 +194,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         try {
             const url = newLinkUrl.startsWith("http") ? newLinkUrl : `https://${newLinkUrl}`
             const { data, error } = await supabase
-                .from("task_links")
+                .from("xpm_task_links")
                 .insert({ task_id: taskId, url, label: newLinkLabel.trim() || null, created_by: user.id })
                 .select()
                 .single()
@@ -210,7 +211,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     }
 
     const handleDeleteLink = async (linkId) => {
-        await supabase.from("task_links").delete().eq("id", linkId)
+        await supabase.from("xpm_task_links").delete().eq("id", linkId)
         setLinks((prev) => prev.filter((l) => l.id !== linkId))
     }
 
@@ -307,7 +308,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     ]
 
     const handleRecurrenceSave = async () => {
-        const { error } = await supabase.from("tasks").update({
+        const { error } = await supabase.from("xpm_tasks").update({
             recurrence_rule: recurrenceRule || null,
             recurrence_anchor_date: recurrenceRule && recurrenceAnchor ? recurrenceAnchor : null,
             updated_at: new Date().toISOString(),
@@ -342,7 +343,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
     const handleFieldUpdate = async (field, value) => {
         const { error } = await supabase
-            .from("tasks")
+            .from("xpm_tasks")
             .update({ [field]: value, updated_at: new Date().toISOString() })
             .eq("id", taskId)
 
@@ -353,7 +354,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
         // Fetch updated task and patch Redux state
         const { data } = await supabase
-            .from("tasks")
+            .from("xpm_tasks")
             .select("id, project_id, title, description, status, type, priority, assignee_id, due_date, created_at, updated_at, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!tasks_assignee_id_fkey(id, name, email, avatar_url)")
             .eq("id", taskId)
             .single()
@@ -381,7 +382,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         setSubmittingComment(true)
         try {
             const { data, error } = await supabase
-                .from("task_comments")
+                .from("xpm_task_comments")
                 .insert({ task_id: taskId, author_id: user.id, body: newComment.trim() })
                 .select("*, author:profiles(id, name, email)")
                 .single()
@@ -478,9 +479,15 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                         {/* Type */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Type</p>
-                            <span className={`text-xs px-2 py-1 rounded font-medium ${typeColors[task.type] || typeColors.TASK}`}>
-                                {task.type || "TASK"}
-                            </span>
+                            <select
+                                value={task.type || "MEETING"}
+                                onChange={(e) => handleFieldUpdate("type", e.target.value)}
+                                className={`text-xs px-2 py-1 rounded font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${typeColors[task.type] || typeColors.MEETING}`}
+                            >
+                                {["MEETING","WRITING","STRATEGY","DESIGN","ADMIN","OTHER"].map((t) => (
+                                    <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* Assignee */}

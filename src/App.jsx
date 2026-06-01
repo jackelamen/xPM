@@ -2,14 +2,18 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./pages/Layout";
 import { Toaster } from "react-hot-toast";
 import Dashboard from "./pages/Dashboard";
+import MyTasks from "./pages/MyTasks";
 import Projects from "./pages/Projects";
 import Team from "./pages/Team";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProfileSettings from "./pages/ProfileSettings";
 import CRM from "./pages/CRM";
 import Workload from "./pages/Workload";
+import Spaces from "./pages/Spaces";
+import SpaceDashboard from "./pages/SpaceDashboard";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
+import Archive from "./pages/Archive";
 import { useAuth } from "./context/AuthContext";
 import { Loader2Icon } from "lucide-react";
 
@@ -40,13 +44,17 @@ const App = () => {
                     </ProtectedRoute>
                 }>
                     <Route index element={<Dashboard />} />
+                    <Route path="my-tasks" element={<MyTasks />} />
                     <Route path="team" element={<Team />} />
+                    <Route path="spaces" element={<Spaces />} />
+                    <Route path="spaces/:spaceId" element={<SpaceDashboard />} />
                     <Route path="projects" element={<Projects />} />
                     <Route path="projectsDetail" element={<ProjectDetails />} />
                     <Route path="taskDetails" element={<Navigate to="/projects" replace />} />
                     <Route path="settings" element={<ProfileSettings />} />
                     <Route path="crm" element={<CRM />} />
                     <Route path="workload" element={<Workload />} />
+                    <Route path="archive" element={<Archive />} />
                 </Route>
             </Routes>
         </>
