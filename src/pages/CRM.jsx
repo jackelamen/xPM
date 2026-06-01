@@ -48,7 +48,7 @@ function TablePanel({ toolbar, children, footer }) {
     return (
         <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
             {toolbar && (
-                <div className="px-5 py-3.5 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-900 flex items-center justify-between gap-3">
+                <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-900 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     {toolbar}
                 </div>
             )}
@@ -78,7 +78,7 @@ function TableHead({ cols }) {
 
 function SearchInput({ value, onChange, placeholder }) {
     return (
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 dark:text-zinc-500" />
             <input
                 value={value}
@@ -955,7 +955,7 @@ function CRMDashboard({ workspaceId }) {
             </div>
 
             {/* 4 stat cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {[
                     { label: "Total Contacts", value: stats.contactCount, Icon: UserIcon, accent: false },
                     { label: "Total Companies", value: stats.companyCount, Icon: BuildingIcon, accent: false },
@@ -974,8 +974,8 @@ function CRMDashboard({ workspaceId }) {
             </div>
 
             {/* Pipeline value + Won value */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 sm:p-6">
                     <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Pipeline Value</p>
                     <p className="text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
                         ${stats.totalPipelineValue.toLocaleString()}
@@ -1093,15 +1093,15 @@ export default function CRM() {
     if (!currentWorkspace) return null;
 
     return (
-        <div className="max-w-6xl mx-auto flex flex-col gap-6 pb-12">
-            {/* Sub-nav tabs */}
-            <div className="border-b border-gray-200 dark:border-zinc-800">
-                <div className="flex gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col gap-5 sm:gap-6 pb-12">
+            {/* Sub-nav tabs — scrollable on mobile */}
+            <div className="border-b border-gray-200 dark:border-zinc-800 overflow-x-auto no-scrollbar">
+                <div className="flex gap-4 sm:gap-6 min-w-max">
                     {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-3 text-[15px] font-medium border-b-2 transition-colors -mb-px ${
+                            className={`pb-3 text-[14px] sm:text-[15px] font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
                                 activeTab === tab
                                     ? "border-gray-900 dark:border-white text-gray-900 dark:text-white"
                                     : "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"

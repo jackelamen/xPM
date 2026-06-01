@@ -229,7 +229,7 @@ export default function ProfileSettings() {
     const initials = (name || contextDisplayName || '?')[0].toUpperCase()
 
     return (
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto space-y-4 pb-8">
             {/* Page title */}
             <div className="mb-6">
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Settings</h1>

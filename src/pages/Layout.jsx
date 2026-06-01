@@ -129,10 +129,17 @@ const Layout = () => {
 
     return (
         <div className="flex gradient-mesh dark:gradient-mesh text-gray-900 dark:text-slate-100 min-h-screen">
+            {/* Sidebar overlay backdrop on mobile */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/30 z-[9] sm:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
             <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-            <div className="flex-1 flex flex-col h-screen">
+            <div className="flex-1 flex flex-col h-screen min-w-0">
                 <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-                <div className="flex-1 h-full p-6 xl:p-8 overflow-y-scroll bg-transparent">
+                <div className="flex-1 h-full p-4 sm:p-6 xl:p-8 overflow-y-scroll bg-transparent">
                     <Outlet context={{ setIsSidebarOpen }} />
                 </div>
             </div>

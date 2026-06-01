@@ -76,7 +76,7 @@ const Team = () => {
     ];
 
     return (
-        <div className="flex flex-col gap-8 max-w-6xl mx-auto pb-12">
+        <div className="flex flex-col gap-5 sm:gap-8 max-w-6xl mx-auto pb-12">
 
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -99,7 +99,7 @@ const Team = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 {stats.map((stat) => (
                     <div
                         key={stat.label}

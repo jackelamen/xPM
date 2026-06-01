@@ -48,7 +48,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }, [setIsSidebarOpen])
 
     return (
-        <div ref={sidebarRef} className={`z-10 bg-white/70 dark:bg-black/40 backdrop-blur-xl min-w-[220px] flex flex-col h-screen border-r border-white/50 dark:border-white/[0.06] max-sm:absolute transition-all ${isSidebarOpen ? 'left-0' : '-left-full'}`}>
+        <div ref={sidebarRef} className={`z-10 bg-white/70 dark:bg-black/40 backdrop-blur-xl w-[220px] flex-shrink-0 flex flex-col h-screen border-r border-white/50 dark:border-white/[0.06] transition-all duration-200 sm:relative sm:translate-x-0 max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:z-10 ${isSidebarOpen ? 'max-sm:translate-x-0' : 'max-sm:-translate-x-full'}`}>
             <WorkspaceDropdown />
             <div className='flex-1 overflow-y-scroll no-scrollbar flex flex-col py-3'>
                 <div className='px-3'>
