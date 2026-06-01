@@ -662,44 +662,54 @@ function Deals({ workspaceId }) {
     if (loading) return <div className="flex justify-center py-16"><Loader2Icon className="size-5 animate-spin text-gray-300" /></div>;
 
     const totalPipelineValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
+    const isClosedStage = (name) => name === "Closed Won" || name === "Closed Lost";
 
     return (
-        <div className="space-y-4">
-            {/* Pipeline bar */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                    {pipelines.map((p) => (
-                        <button key={p.id} onClick={() => switchPipeline(p)}
-                            className={`px-3 py-1.5 text-sm rounded-lg border transition ${activePipeline?.id === p.id ? "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium" : "border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:border-gray-400"}`}>
-                            {p.name}
-                        </button>
-                    ))}
-                    {showPipelineForm ? (
-                        <form onSubmit={handleCreatePipeline} className="flex gap-2">
-                            <input value={pipelineName} onChange={(e) => setPipelineName(e.target.value)} placeholder="Pipeline name" autoFocus
-                                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-400" required />
-                            <button type="submit" disabled={saving} className="px-3 py-1.5 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-50">Create</button>
-                            <button type="button" onClick={() => setShowPipelineForm(false)} className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-500">Cancel</button>
-                        </form>
-                    ) : (
-                        <button onClick={() => setShowPipelineForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-dashed border-gray-300 dark:border-zinc-600 text-gray-500 dark:text-zinc-400 hover:border-gray-500 hover:text-gray-700 transition">
-                            <PlusIcon className="size-3.5" /> Pipeline
-                        </button>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    {totalPipelineValue > 0 && (
-                        <span className="text-sm text-gray-500 dark:text-zinc-400">
-                            Total: <span className="font-semibold text-gray-800 dark:text-zinc-200">${totalPipelineValue.toLocaleString()}</span>
-                        </span>
-                    )}
+        <div className="flex flex-col gap-4 -mx-0">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-3 flex-wrap bg-white/60 dark:bg-zinc-900/60 backdrop-blur border border-gray-200 dark:border-zinc-800 rounded-xl px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                    {/* Pipeline switcher */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {pipelines.map((p) => (
+                            <button key={p.id} onClick={() => switchPipeline(p)}
+                                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wide rounded-lg border transition ${activePipeline?.id === p.id ? "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900" : "border-gray-200 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:border-gray-400"}`}>
+                                {p.name}
+                            </button>
+                        ))}
+                        {showPipelineForm ? (
+                            <form onSubmit={handleCreatePipeline} className="flex gap-2">
+                                <input value={pipelineName} onChange={(e) => setPipelineName(e.target.value)} placeholder="Pipeline name" autoFocus
+                                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-400" required />
+                                <button type="submit" disabled={saving} className="px-3 py-1.5 text-xs rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-50">Create</button>
+                                <button type="button" onClick={() => setShowPipelineForm(false)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-500">Cancel</button>
+                            </form>
+                        ) : (
+                            <button onClick={() => setShowPipelineForm(true)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide rounded-lg border border-dashed border-gray-300 dark:border-zinc-600 text-gray-400 hover:border-gray-500 hover:text-gray-600 transition">
+                                <PlusIcon className="size-3" /> Pipeline
+                            </button>
+                        )}
+                    </div>
+                    <div className="w-px h-5 bg-gray-200 dark:bg-zinc-700" />
                     <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter deals..." />
+                </div>
+                <div className="flex items-center gap-3">
+                    {totalPipelineValue > 0 && (
+                        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
+                            <span>Total: <span className="text-gray-700 dark:text-zinc-300">${totalPipelineValue.toLocaleString()}</span></span>
+                            <span>Deals: <span className="text-gray-700 dark:text-zinc-300">{deals.length}</span></span>
+                        </div>
+                    )}
                     {activePipeline && (
                         <button onClick={() => setShowStageManager(true)} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800" title="Manage stages">
                             <SettingsIcon className="size-4" />
                         </button>
                     )}
-                    {activePipeline && <PrimaryBtn onClick={() => setShowDealForm(true)}><PlusIcon className="size-3.5" /> New Deal</PrimaryBtn>}
+                    {activePipeline && (
+                        <PrimaryBtn onClick={() => setShowDealForm(true)}>
+                            <PlusIcon className="size-3.5" /> New Deal
+                        </PrimaryBtn>
+                    )}
                 </div>
             </div>
 
@@ -747,8 +757,9 @@ function Deals({ workspaceId }) {
                 <StageManager pipeline={{ ...activePipeline, stages }} onClose={() => setShowStageManager(false)} onSaved={(s) => setStages(s)} />
             )}
 
+            {/* Kanban board */}
             {pipelines.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="flex flex-col items-center justify-center py-24 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
                         <TrendingUpIcon className="size-7 text-gray-400 dark:text-zinc-500" />
                     </div>
@@ -756,54 +767,80 @@ function Deals({ workspaceId }) {
                     <p className="text-xs text-gray-400 dark:text-zinc-500">Use the "+ Pipeline" button above to create one</p>
                 </div>
             ) : (
-                <div className="flex gap-4 overflow-x-auto pb-4">
+                <div className="flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: "thin" }}>
                     {stages.map((stage) => {
                         const stageDeals = filteredDeals.filter((d) => d.stage_id === stage.id);
                         const total = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0);
                         const isDragOver = dragOverStage === stage.id;
+                        const closed = isClosedStage(stage.name);
                         return (
-                            <div key={stage.id} className="flex-shrink-0 w-64"
+                            <div
+                                key={stage.id}
+                                className={`flex-shrink-0 w-72 flex flex-col rounded-xl border p-2 transition-opacity ${closed ? "opacity-70 border-gray-100 dark:border-zinc-800/50 bg-gray-50/40 dark:bg-zinc-900/20" : "border-gray-200 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-900/40"}`}
                                 onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
                                 onDragLeave={() => setDragOverStage(null)}
-                                onDrop={() => { if (draggingDeal) { handleMoveDeal(draggingDeal, stage.id); setDragOverStage(null); } }}>
-                                <div className="flex items-center gap-2 mb-2 px-1">
-                                    <div className="size-2 rounded-full" style={{ backgroundColor: stage.color || "#6366f1" }} />
-                                    <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{stage.name}</span>
-                                    <span className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full">{stageDeals.length}</span>
+                                onDrop={() => { if (draggingDeal) { handleMoveDeal(draggingDeal, stage.id); setDragOverStage(null); } }}
+                            >
+                                {/* Column header */}
+                                <div className="flex items-center justify-between px-2 py-2 mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color || "#6366f1" }} />
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400">{stage.name}</span>
+                                        <span className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">{stageDeals.length}</span>
+                                    </div>
+                                    {total > 0 && (
+                                        <span className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500">
+                                            ${total >= 1000000 ? (total / 1000000).toFixed(1) + "M" : total >= 1000 ? Math.round(total / 1000) + "k" : total}
+                                        </span>
+                                    )}
                                 </div>
-                                {total > 0 && <p className="text-xs text-gray-400 dark:text-zinc-500 mb-2 px-1">${total.toLocaleString()}</p>}
-                                <div className={`space-y-2 min-h-16 rounded-xl p-2 transition ${isDragOver ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300" : "bg-gray-50 dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800"}`}>
+
+                                {/* Cards */}
+                                <div className={`flex-1 space-y-2.5 min-h-[3rem] rounded-lg p-1.5 transition-colors ${isDragOver ? "bg-blue-50 dark:bg-blue-900/20 ring-2 ring-dashed ring-blue-300 dark:ring-blue-700" : ""}`}>
                                     {stageDeals.map((deal) => {
                                         const urgency = getDealUrgency(deal);
                                         return (
-                                            <div key={deal.id} draggable
+                                            <div
+                                                key={deal.id}
+                                                draggable
                                                 onDragStart={() => setDraggingDeal(deal.id)}
                                                 onDragEnd={() => { setDraggingDeal(null); setDragOverStage(null); }}
                                                 onClick={() => setSelectedDealId(deal.id)}
-                                                className={`bg-white dark:bg-zinc-900 border rounded-xl p-3 cursor-pointer hover:shadow-sm transition group ${urgency === "overdue" ? "border-red-200 dark:border-red-800" : urgency === "soon" ? "border-amber-200 dark:border-amber-800" : "border-gray-200 dark:border-zinc-700"}`}>
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <p className="text-sm font-medium text-gray-800 dark:text-zinc-100 leading-snug">{deal.name}</p>
-                                                    <button onClick={(e) => handleDeleteDeal(deal.id, e)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition flex-shrink-0">
+                                                className={`bg-white dark:bg-zinc-900 rounded-lg p-3.5 cursor-grab active:cursor-grabbing border-l-4 border border-gray-100 dark:border-zinc-800 hover:-translate-y-0.5 hover:shadow-md transition-all group relative ${closed ? "opacity-75" : ""}`}
+                                                style={{ borderLeftColor: stage.color || "#6366f1" }}
+                                            >
+                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                    <p className={`text-[14px] font-semibold text-gray-900 dark:text-white leading-snug ${closed ? "line-through decoration-gray-400" : ""}`}>
+                                                        {deal.name}
+                                                    </p>
+                                                    <button onClick={(e) => handleDeleteDeal(deal.id, e)} className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-red-500 transition flex-shrink-0 -mt-0.5 -mr-0.5">
                                                         <XIcon className="size-3.5" />
                                                     </button>
                                                 </div>
-                                                {deal.value && <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">${Number(deal.value).toLocaleString()}</p>}
                                                 {(deal.company?.name || deal.contact?.name) && (
-                                                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{deal.company?.name || deal.contact?.name}</p>
+                                                    <p className="text-[12px] text-gray-400 dark:text-zinc-500 mb-3">{deal.company?.name || deal.contact?.name}</p>
                                                 )}
-                                                {deal.expected_close_date && (
-                                                    <div className={`flex items-center gap-1 mt-1.5 text-xs ${urgency === "overdue" ? "text-red-500" : urgency === "soon" ? "text-amber-500" : "text-gray-400 dark:text-zinc-500"}`}>
-                                                        <ClockIcon className="size-3" />
-                                                        {format(new Date(deal.expected_close_date), "MMM d")}
-                                                        {urgency === "overdue" && " · Overdue"}
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center justify-between pt-2.5 border-t border-gray-50 dark:border-zinc-800">
+                                                    <span className={`text-[12px] font-bold ${closed ? "text-emerald-600 dark:text-emerald-400" : "text-gray-800 dark:text-zinc-200"}`}>
+                                                        {deal.value ? `$${Number(deal.value).toLocaleString()}` : "—"}
+                                                    </span>
+                                                    {deal.expected_close_date && (
+                                                        <span className={`flex items-center gap-1 text-[11px] ${urgency === "overdue" ? "text-red-500" : urgency === "soon" ? "text-amber-500" : "text-gray-400 dark:text-zinc-500"}`}>
+                                                            {urgency === "overdue" ? <AlertCircleIcon className="size-3" /> : <ClockIcon className="size-3" />}
+                                                            {format(new Date(deal.expected_close_date), "MMM d")}
+                                                            {urgency === "overdue" && " · Overdue"}
+                                                        </span>
+                                                    )}
+                                                    {closed && <span className="text-[11px] text-gray-400 dark:text-zinc-500">Closed</span>}
+                                                </div>
                                             </div>
                                         );
                                     })}
                                     {stageDeals.length === 0 && (
-                                        <div className="flex items-center justify-center h-12 text-xs text-gray-400 dark:text-zinc-600">
-                                            {isDragOver ? "Drop here" : "Empty"}
+                                        <div className="flex flex-col items-center justify-center h-16 text-center opacity-50">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-600">
+                                                {isDragOver ? "Drop here" : "No deals"}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
