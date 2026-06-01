@@ -912,76 +912,137 @@ function CRMDashboard({ workspaceId }) {
     if (loading) return <div className="flex justify-center py-16"><Loader2Icon className="size-5 animate-spin text-gray-300" /></div>;
     if (!stats) return null;
 
-    const summaryCards = [
-        { label: "Contacts", value: stats.contactCount, color: "bg-blue-50 dark:bg-blue-900/20 text-blue-500", Icon: UserIcon },
-        { label: "Companies", value: stats.companyCount, color: "bg-purple-50 dark:bg-purple-900/20 text-purple-500", Icon: BuildingIcon },
-        { label: "Open Deals", value: stats.openDealCount, color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500", Icon: TrendingUpIcon },
-        { label: "Won Deals", value: stats.wonDealCount, color: "bg-amber-50 dark:bg-amber-900/20 text-amber-500", Icon: CheckIcon },
-    ];
+    const urgent = overdue.length + closingSoon.length;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
+            {/* Header */}
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">CRM Overview</h2>
+                <p className="text-sm text-gray-400 dark:text-zinc-500 mt-0.5">Real-time pipeline metrics and activity.</p>
+            </div>
+
+            {/* 4 stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {summaryCards.map(item => (
-                    <div key={item.label} className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 hover:-translate-y-0.5 transition-transform">
-                        <div className={`inline-flex p-2 rounded-xl mb-3 ${item.color}`}><item.Icon className="size-4" /></div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{item.value}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{item.label}</p>
+                {[
+                    { label: "Total Contacts", value: stats.contactCount, Icon: UserIcon, accent: false },
+                    { label: "Total Companies", value: stats.companyCount, Icon: BuildingIcon, accent: false },
+                    { label: "Open Deals", value: stats.openDealCount, Icon: TrendingUpIcon, accent: false },
+                    { label: "Won Deals", value: stats.wonDealCount, Icon: CheckIcon, accent: true },
+                ].map(item => (
+                    <div key={item.label} className={`relative bg-white dark:bg-zinc-900 border rounded-2xl p-5 overflow-hidden ${item.accent ? "border-indigo-200 dark:border-indigo-800" : "border-gray-200 dark:border-zinc-800"}`}>
+                        {item.accent && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 rounded-l-2xl" />}
+                        <div className="flex items-start justify-between mb-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">{item.label}</p>
+                            <item.Icon className={`size-4 ${item.accent ? "text-indigo-400" : "text-gray-300 dark:text-zinc-600"}`} />
+                        </div>
+                        <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{item.value}</p>
                     </div>
                 ))}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
-                    <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Pipeline Value</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${stats.totalPipelineValue.toLocaleString()}</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">Across {stats.openDealCount} open deals</p>
+
+            {/* Pipeline value + Won value */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Pipeline Value</p>
+                    <p className="text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
+                        ${stats.totalPipelineValue.toLocaleString()}
+                    </p>
+                    <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500">
+                        <AlertCircleIcon className="size-3.5" />
+                        Across {stats.openDealCount} open deals in the pipeline
+                    </p>
                 </div>
-                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
-                    <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Won Value</p>
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${stats.wonValue.toLocaleString()}</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">From {stats.wonDealCount} won deals</p>
+                <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-6">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Won Value</p>
+                    <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mb-3">
+                        ${stats.wonValue.toLocaleString()}
+                    </p>
+                    <p className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500">
+                        <CheckIcon className="size-3.5" />
+                        From {stats.wonDealCount} successfully closed deals
+                    </p>
                 </div>
             </div>
+
+            {/* Stage breakdown + Needs attention */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {stats.stageBreakdown.length > 0 && (
-                    <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
-                        <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Deals by Stage</p>
-                        <div className="space-y-2">
-                            {stats.stageBreakdown.map(s => (
-                                <div key={s.name} className="flex items-center gap-3">
-                                    <div className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color || "#6366f1" }} />
-                                    <span className="text-sm text-gray-700 dark:text-zinc-300 flex-1">{s.name}</span>
-                                    <span className="text-xs text-gray-400">{s.count} deal{s.count !== 1 ? "s" : ""}</span>
-                                    {s.value > 0 && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">${s.value.toLocaleString()}</span>}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* Stage breakdown */}
                 <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
-                    <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Needs Attention</p>
-                    {overdue.length === 0 && closingSoon.length === 0 ? (
-                        <p className="text-sm text-gray-400 dark:text-zinc-500">No urgent deals right now.</p>
+                    <div className="flex items-center gap-2 mb-4">
+                        <TrendingUpIcon className="size-4 text-indigo-500" />
+                        <p className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Pipeline Breakdown</p>
+                    </div>
+                    {stats.stageBreakdown.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center opacity-50">
+                            <div className="size-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mb-2">
+                                <CheckIcon className="size-5 text-gray-400" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">No open deals yet</p>
+                        </div>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
+                            {stats.stageBreakdown.map(s => {
+                                const maxVal = Math.max(...stats.stageBreakdown.map(x => x.count));
+                                const pct = Math.round((s.count / maxVal) * 100);
+                                return (
+                                    <div key={s.name}>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-2">
+                                                <div className="size-2 rounded-full" style={{ backgroundColor: s.color || "#6366f1" }} />
+                                                <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{s.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs text-gray-400">{s.count} deal{s.count !== 1 ? "s" : ""}</span>
+                                                {s.value > 0 && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">${s.value.toLocaleString()}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="h-1 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: s.color || "#6366f1" }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Needs attention */}
+                <div className={`rounded-2xl p-5 border ${urgent > 0 ? "bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/40" : "bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800"}`}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <AlertCircleIcon className={`size-4 ${urgent > 0 ? "text-red-500" : "text-gray-400"}`} />
+                        <p className={`text-sm font-semibold ${urgent > 0 ? "text-red-700 dark:text-red-400" : "text-gray-800 dark:text-zinc-200"}`}>
+                            Needs Attention {urgent > 0 && <span className="ml-1 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{urgent}</span>}
+                        </p>
+                    </div>
+                    {urgent === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <div className="size-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
+                                <CheckIcon className="size-5 text-gray-400 dark:text-zinc-500" />
+                            </div>
+                            <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300">You're all caught up!</p>
+                            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">No urgent deals or tasks require your immediate attention.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2.5">
                             {overdue.map(d => (
-                                <div key={d.id} className="flex items-start gap-2">
+                                <div key={d.id} className="flex items-start gap-2.5 p-2.5 bg-white/70 dark:bg-zinc-900/50 rounded-xl border border-red-100 dark:border-red-900/30">
                                     <AlertCircleIcon className="size-4 text-red-500 flex-shrink-0 mt-0.5" />
-                                    <div className="min-w-0">
-                                        <p className="text-sm text-gray-800 dark:text-zinc-200 truncate">{d.name}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">{d.name}</p>
                                         <p className="text-xs text-red-500">Overdue · {d.expected_close_date && format(new Date(d.expected_close_date), "MMM d")}</p>
                                     </div>
-                                    {d.value && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 ml-auto flex-shrink-0">${Number(d.value).toLocaleString()}</span>}
+                                    {d.value && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0">${Number(d.value).toLocaleString()}</span>}
                                 </div>
                             ))}
                             {closingSoon.map(d => (
-                                <div key={d.id} className="flex items-start gap-2">
+                                <div key={d.id} className="flex items-start gap-2.5 p-2.5 bg-white/70 dark:bg-zinc-900/50 rounded-xl border border-amber-100 dark:border-amber-900/30">
                                     <ClockIcon className="size-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                                    <div className="min-w-0">
-                                        <p className="text-sm text-gray-800 dark:text-zinc-200 truncate">{d.name}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">{d.name}</p>
                                         <p className="text-xs text-amber-500">Closing soon · {d.expected_close_date && format(new Date(d.expected_close_date), "MMM d")}</p>
                                     </div>
-                                    {d.value && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 ml-auto flex-shrink-0">${Number(d.value).toLocaleString()}</span>}
+                                    {d.value && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0">${Number(d.value).toLocaleString()}</span>}
                                 </div>
                             ))}
                         </div>
