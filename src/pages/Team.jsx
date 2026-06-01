@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
-import { UsersIcon, Search, UserPlus, Shield, Activity } from "lucide-react";
+import { UsersIcon, Search, UserPlus, Shield, Activity, Trash2 } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchWorkspaceDetail } from "../features/workspaceSlice";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 const Team = () => {
 
@@ -9,8 +13,31 @@ const Team = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [users, setUsers] = useState([]);
+    const [removingId, setRemovingId] = useState(null);
     const currentWorkspace = useSelector((state) => state?.workspace?.currentWorkspace || null);
     const projects = currentWorkspace?.projects || [];
+    const dispatch = useDispatch();
+    const { user: currentUser } = useAuth();
+
+    const handleRemove = async (member) => {
+        if (member.user_id === currentUser?.id) {
+            toast.error("You can't remove yourself.");
+            return;
+        }
+        if (!window.confirm(`Remove ${member.user?.name || member.user?.email} from this workspace?`)) return;
+        setRemovingId(member.id);
+        const { error } = await supabase
+            .from("workspace_members")
+            .delete()
+            .eq("id", member.id);
+        if (error) {
+            toast.error("Failed to remove member.");
+        } else {
+            toast.success("Member removed.");
+            dispatch(fetchWorkspaceDetail(currentWorkspace.id));
+        }
+        setRemovingId(null);
+    };
 
     const filteredUsers = users.filter(
         (user) =>
@@ -123,6 +150,7 @@ const Team = () => {
                                         <th className="px-6 py-2.5 text-left font-medium text-sm">
                                             Role
                                         </th>
+                                        <th className="px-6 py-2.5" />
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
@@ -152,6 +180,18 @@ const Team = () => {
                                                     {user.role || "User"}
                                                 </span>
                                             </td>
+                                            <td className="px-6 py-2.5 whitespace-nowrap text-right">
+                                                {user.user_id !== currentUser?.id && (
+                                                    <button
+                                                        onClick={() => handleRemove(user)}
+                                                        disabled={removingId === user.id}
+                                                        className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                                                        title="Remove member"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -178,7 +218,7 @@ const Team = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div className="flex items-center justify-between">
                                         <span
                                             className={`px-2 py-1 text-xs rounded-md ${user.role === "ADMIN"
                                                     ? "bg-purple-100 dark:bg-purple-500/20 text-purple-500 dark:text-purple-400"
@@ -187,6 +227,15 @@ const Team = () => {
                                         >
                                             {user.role || "User"}
                                         </span>
+                                        {user.user_id !== currentUser?.id && (
+                                            <button
+                                                onClick={() => handleRemove(user)}
+                                                disabled={removingId === user.id}
+                                                className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
