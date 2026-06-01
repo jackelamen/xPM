@@ -7,7 +7,7 @@ import {
     XIcon, Loader2Icon, TrashIcon, ExternalLinkIcon,
     SearchIcon, PencilIcon, CheckIcon, SettingsIcon,
     LayoutDashboardIcon, AlertCircleIcon, ClockIcon,
-    ChevronRightIcon, DollarSignIcon
+    ChevronLeftIcon, ChevronRightIcon, FilterIcon, MoreHorizontalIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ContactDetail, CompanyDetail, DealDetail } from "../components/CRMDetailPanel";
@@ -15,8 +15,100 @@ import { format, isPast, isWithinInterval, addDays } from "date-fns";
 
 const TABS = ["Contacts", "Companies", "Deals", "Dashboard"];
 
-const inputCls = "w-full px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mt-1";
-const labelCls = "text-sm text-zinc-600 dark:text-zinc-400";
+const inputCls = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-zinc-500 mt-1";
+const labelCls = "text-xs font-medium text-gray-500 dark:text-zinc-400";
+
+const STATUS_STYLES = {
+    Customer:       "bg-green-100 text-green-800 border border-green-200",
+    "Qualified Lead": "bg-blue-100 text-blue-800 border border-blue-200",
+    Partner:        "bg-purple-100 text-purple-800 border border-purple-200",
+    Lead:           "bg-gray-100 text-gray-700 border border-gray-200",
+    Prospect:       "bg-amber-100 text-amber-800 border border-amber-200",
+};
+
+// ─── Shared modal wrapper ─────────────────────────────────────────────────────
+function Modal({ title, onClose, children }) {
+    return (
+        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-xl">
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">{title}</h2>
+                    <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                        <XIcon className="size-4 text-gray-400" />
+                    </button>
+                </div>
+                {children}
+            </div>
+        </div>
+    );
+}
+
+// ─── Table panel wrapper ──────────────────────────────────────────────────────
+function TablePanel({ toolbar, children, footer }) {
+    return (
+        <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+            {toolbar && (
+                <div className="px-5 py-3.5 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-900 flex items-center justify-between gap-3">
+                    {toolbar}
+                </div>
+            )}
+            <div className="overflow-x-auto">{children}</div>
+            {footer && (
+                <div className="px-6 py-3 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900 flex items-center justify-between text-xs text-gray-400 dark:text-zinc-500">
+                    {footer}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function TableHead({ cols }) {
+    return (
+        <thead>
+            <tr className="border-b border-gray-100 dark:border-zinc-800">
+                {cols.map((col, i) => (
+                    <th key={i} className={`px-5 py-3 text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider ${col.right ? "text-right" : "text-left"}`}>
+                        {col.label}
+                    </th>
+                ))}
+            </tr>
+        </thead>
+    );
+}
+
+function SearchInput({ value, onChange, placeholder }) {
+    return (
+        <div className="relative w-64">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 dark:text-zinc-500" />
+            <input
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-zinc-500"
+            />
+        </div>
+    );
+}
+
+function Avatar({ name, color = "from-blue-500 to-indigo-600", size = "size-8", text = "text-xs" }) {
+    return (
+        <div className={`${size} rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white ${text} font-semibold flex-shrink-0`}>
+            {(name || "?")[0].toUpperCase()}
+        </div>
+    );
+}
+
+function PrimaryBtn({ onClick, children, disabled }) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90 transition shadow-sm disabled:opacity-50"
+        >
+            {children}
+        </button>
+    );
+}
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
 function Contacts({ workspaceId }) {
@@ -78,123 +170,111 @@ function Contacts({ workspaceId }) {
         toast.success("Contact deleted");
     };
 
-    const filtered = useMemo(() => {
-        return contacts.filter(c => {
-            const matchQ = !query || c.name.toLowerCase().includes(query.toLowerCase()) || (c.email && c.email.toLowerCase().includes(query.toLowerCase()));
-            const matchCo = !filterCompany || c.company_id === filterCompany;
-            return matchQ && matchCo;
-        });
-    }, [contacts, query, filterCompany]);
+    const filtered = useMemo(() => contacts.filter(c => {
+        const matchQ = !query || c.name.toLowerCase().includes(query.toLowerCase()) || (c.email && c.email.toLowerCase().includes(query.toLowerCase()));
+        const matchCo = !filterCompany || c.company_id === filterCompany;
+        return matchQ && matchCo;
+    }), [contacts, query, filterCompany]);
 
-    if (loading) return <div className="flex justify-center py-12"><Loader2Icon className="size-6 animate-spin text-zinc-400" /></div>;
+    if (loading) return <div className="flex justify-center py-16"><Loader2Icon className="size-5 animate-spin text-gray-300" /></div>;
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
-                    <input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search contacts..."
-                        className="w-full pl-9 pr-3 py-2 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-                <select
-                    value={filterCompany}
-                    onChange={(e) => setFilterCompany(e.target.value)}
-                    className="text-sm px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                    <option value="">All Companies</option>
-                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition whitespace-nowrap">
-                    <PlusIcon className="size-4" /> New Contact
-                </button>
-            </div>
-
             {showForm && (
-                <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold text-zinc-900 dark:text-white">New Contact</h2>
-                            <button onClick={() => setShowForm(false)}><XIcon className="size-4 text-zinc-400" /></button>
+                <Modal title="New Contact" onClose={() => setShowForm(false)}>
+                    <form onSubmit={handleSave} className="space-y-3">
+                        <div><label className={labelCls}>Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div><label className={labelCls}>Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></div>
                         </div>
-                        <form onSubmit={handleSave} className="space-y-3">
-                            <div><label className={labelCls}>Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className={labelCls}>Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></div>
-                                <div><label className={labelCls}>Phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div><label className={labelCls}>Title</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} /></div>
+                            <div>
+                                <label className={labelCls}>Company</label>
+                                <select value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })} className={inputCls}>
+                                    <option value="">None</option>
+                                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className={labelCls}>Title</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} /></div>
-                                <div>
-                                    <label className={labelCls}>Company</label>
-                                    <select value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })} className={inputCls}>
-                                        <option value="">None</option>
-                                        {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
-                            <div className="flex justify-end gap-2 pt-1">
-                                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Cancel</button>
-                                <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60">
-                                    {saving && <Loader2Icon className="size-3.5 animate-spin" />} Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        </div>
+                        <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition">Cancel</button>
+                            <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium disabled:opacity-50">
+                                {saving && <Loader2Icon className="size-3.5 animate-spin" />} Save
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
 
-            {filtered.length === 0 ? (
-                <div className="text-center py-16 text-zinc-400 dark:text-zinc-500">
-                    <UserIcon className="size-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">{query || filterCompany ? "No contacts match your filters" : "No contacts yet"}</p>
-                </div>
-            ) : (
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                            <tr>
-                                <th className="px-4 py-3 text-left">Name</th>
-                                <th className="px-4 py-3 text-left">Title</th>
-                                <th className="px-4 py-3 text-left">Company</th>
-                                <th className="px-4 py-3 text-left">Email</th>
-                                <th className="px-4 py-3 text-left">Phone</th>
-                                <th className="px-4 py-3"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <TablePanel
+                toolbar={
+                    <>
+                        <div className="flex items-center gap-2">
+                            <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts..." />
+                            {companies.length > 0 && (
+                                <select value={filterCompany} onChange={(e) => setFilterCompany(e.target.value)}
+                                    className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 focus:outline-none">
+                                    <option value="">All Companies</option>
+                                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            )}
+                        </div>
+                        <PrimaryBtn onClick={() => setShowForm(true)}>
+                            <PlusIcon className="size-3.5" /> New Contact
+                        </PrimaryBtn>
+                    </>
+                }
+                footer={
+                    <>
+                        <span>Showing {filtered.length} of {contacts.length} contacts</span>
+                        <div className="flex items-center gap-1">
+                            <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40" disabled><ChevronLeftIcon className="size-4" /></button>
+                            <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40" disabled><ChevronRightIcon className="size-4" /></button>
+                        </div>
+                    </>
+                }
+            >
+                {filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+                            <UserIcon className="size-7 text-gray-400 dark:text-zinc-500" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{query || filterCompany ? "No contacts match your filters" : "No contacts yet"}</p>
+                        <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Add your first contact to get started</p>
+                    </div>
+                ) : (
+                    <table className="w-full text-left">
+                        <TableHead cols={[
+                            { label: "Name" }, { label: "Company" }, { label: "Email" },
+                            { label: "Phone" }, { label: "Title" }, { label: "", right: true }
+                        ]} />
+                        <tbody className="divide-y divide-gray-50 dark:divide-zinc-800/60">
                             {filtered.map((c) => (
-                                <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition cursor-pointer">
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="size-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                                {c.name[0].toUpperCase()}
-                                            </div>
-                                            <span className="font-medium text-zinc-800 dark:text-zinc-200">{c.name}</span>
+                                <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
+                                    <td className="px-5 py-3.5">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar name={c.name} />
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{c.title || "—"}</td>
-                                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{c.company?.name || "—"}</td>
-                                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{c.email || "—"}</td>
-                                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{c.phone || "—"}</td>
-                                    <td className="px-4 py-3">
-                                        <button onClick={(e) => handleDelete(c.id, e)} className="text-zinc-400 hover:text-red-500 transition">
-                                            <TrashIcon className="size-4" />
+                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.company?.name || "—"}</td>
+                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.email || "—"}</td>
+                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.phone || "—"}</td>
+                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.title || "—"}</td>
+                                    <td className="px-5 py-3.5 text-right">
+                                        <button onClick={(e) => handleDelete(c.id, e)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                            <TrashIcon className="size-3.5" />
                                         </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                    <div className="px-4 py-2 bg-zinc-50 dark:bg-zinc-900/30 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-400">
-                        {filtered.length} of {contacts.length} contacts
-                    </div>
-                </div>
-            )}
+                )}
+            </TablePanel>
 
             {selectedId && (
                 <ContactDetail
@@ -262,115 +342,105 @@ function Companies({ workspaceId }) {
     };
 
     const industries = useMemo(() => [...new Set(companies.map(c => c.industry).filter(Boolean))].sort(), [companies]);
-
     const filtered = useMemo(() => companies.filter(c => {
         const matchQ = !query || c.name.toLowerCase().includes(query.toLowerCase());
         const matchI = !filterIndustry || c.industry === filterIndustry;
         return matchQ && matchI;
     }), [companies, query, filterIndustry]);
 
-    if (loading) return <div className="flex justify-center py-12"><Loader2Icon className="size-6 animate-spin text-zinc-400" /></div>;
+    if (loading) return <div className="flex justify-center py-16"><Loader2Icon className="size-5 animate-spin text-gray-300" /></div>;
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
-                    <input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search companies..."
-                        className="w-full pl-9 pr-3 py-2 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-                {industries.length > 0 && (
-                    <select value={filterIndustry} onChange={(e) => setFilterIndustry(e.target.value)}
-                        className="text-sm px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        <option value="">All Industries</option>
-                        {industries.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
-                )}
-                <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition whitespace-nowrap">
-                    <PlusIcon className="size-4" /> New Company
-                </button>
-            </div>
-
             {showForm && (
-                <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold text-zinc-900 dark:text-white">New Company</h2>
-                            <button onClick={() => setShowForm(false)}><XIcon className="size-4 text-zinc-400" /></button>
+                <Modal title="New Company" onClose={() => setShowForm(false)}>
+                    <form onSubmit={handleSave} className="space-y-3">
+                        <div><label className={labelCls}>Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div><label className={labelCls}>Website</label><input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={inputCls} placeholder="https://" /></div>
+                            <div><label className={labelCls}>Industry</label><input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputCls} /></div>
                         </div>
-                        <form onSubmit={handleSave} className="space-y-3">
-                            <div><label className={labelCls}>Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className={labelCls}>Website</label><input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={inputCls} placeholder="https://" /></div>
-                                <div><label className={labelCls}>Industry</label><input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputCls} /></div>
-                            </div>
-                            <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
-                            <div className="flex justify-end gap-2 pt-1">
-                                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Cancel</button>
-                                <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60">
-                                    {saving && <Loader2Icon className="size-3.5 animate-spin" />} Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition">Cancel</button>
+                            <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium disabled:opacity-50">
+                                {saving && <Loader2Icon className="size-3.5 animate-spin" />} Save
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
 
-            {filtered.length === 0 ? (
-                <div className="text-center py-16 text-zinc-400 dark:text-zinc-500">
-                    <BuildingIcon className="size-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">{query || filterIndustry ? "No companies match your filters" : "No companies yet"}</p>
-                </div>
-            ) : (
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                            <tr>
-                                <th className="px-4 py-3 text-left">Name</th>
-                                <th className="px-4 py-3 text-left">Industry</th>
-                                <th className="px-4 py-3 text-left">Size</th>
-                                <th className="px-4 py-3 text-left">Website</th>
-                                <th className="px-4 py-3"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <TablePanel
+                toolbar={
+                    <>
+                        <div className="flex items-center gap-2">
+                            <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search companies..." />
+                            {industries.length > 0 && (
+                                <select value={filterIndustry} onChange={(e) => setFilterIndustry(e.target.value)}
+                                    className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 focus:outline-none">
+                                    <option value="">All Industries</option>
+                                    {industries.map(i => <option key={i} value={i}>{i}</option>)}
+                                </select>
+                            )}
+                        </div>
+                        <PrimaryBtn onClick={() => setShowForm(true)}>
+                            <PlusIcon className="size-3.5" /> New Company
+                        </PrimaryBtn>
+                    </>
+                }
+                footer={
+                    <>
+                        <span>Showing {filtered.length} of {companies.length} companies</span>
+                        <div className="flex items-center gap-1">
+                            <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40" disabled><ChevronLeftIcon className="size-4" /></button>
+                            <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40" disabled><ChevronRightIcon className="size-4" /></button>
+                        </div>
+                    </>
+                }
+            >
+                {filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+                            <BuildingIcon className="size-7 text-gray-400 dark:text-zinc-500" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{query || filterIndustry ? "No companies match your filters" : "No companies yet"}</p>
+                    </div>
+                ) : (
+                    <table className="w-full text-left">
+                        <TableHead cols={[
+                            { label: "Name" }, { label: "Industry" }, { label: "Size" },
+                            { label: "Website" }, { label: "", right: true }
+                        ]} />
+                        <tbody className="divide-y divide-gray-50 dark:divide-zinc-800/60">
                             {filtered.map((c) => (
-                                <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition cursor-pointer">
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="size-7 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                                {c.name[0].toUpperCase()}
-                                            </div>
-                                            <span className="font-medium text-zinc-800 dark:text-zinc-200">{c.name}</span>
+                                <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
+                                    <td className="px-5 py-3.5">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar name={c.name} color="from-purple-500 to-violet-600" />
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{c.industry || "—"}</td>
-                                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{c.size || "—"}</td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.industry || "—"}</td>
+                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.size || "—"}</td>
+                                    <td className="px-5 py-3.5">
                                         {c.website ? (
                                             <a href={c.website.startsWith("http") ? c.website : `https://${c.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-blue-500 hover:underline text-sm">
                                                 {c.website.replace(/^https?:\/\//, "").replace(/\/$/, "")} <ExternalLinkIcon className="size-3" />
                                             </a>
-                                        ) : "—"}
+                                        ) : <span className="text-gray-400 dark:text-zinc-500 text-sm">—</span>}
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <button onClick={(e) => handleDelete(c.id, e)} className="text-zinc-400 hover:text-red-500 transition">
-                                            <TrashIcon className="size-4" />
+                                    <td className="px-5 py-3.5 text-right">
+                                        <button onClick={(e) => handleDelete(c.id, e)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                            <TrashIcon className="size-3.5" />
                                         </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                    <div className="px-4 py-2 bg-zinc-50 dark:bg-zinc-900/30 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-400">
-                        {filtered.length} of {companies.length} companies
-                    </div>
-                </div>
-            )}
+                )}
+            </TablePanel>
 
             {selectedId && (
                 <CompanyDetail
@@ -384,14 +454,13 @@ function Companies({ workspaceId }) {
     );
 }
 
-// ─── Pipeline Stage Manager ───────────────────────────────────────────────────
+// ─── Stage Manager ────────────────────────────────────────────────────────────
 function StageManager({ pipeline, onClose, onSaved }) {
     const [stages, setStages] = useState([...(pipeline.stages || [])].sort((a, b) => a.position - b.position));
     const [newStageName, setNewStageName] = useState("");
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [saving, setSaving] = useState(false);
-
     const STAGE_COLORS = ["#6366f1", "#3b82f6", "#f59e0b", "#f97316", "#10b981", "#ef4444", "#8b5cf6", "#06b6d4"];
 
     const handleAdd = async () => {
@@ -401,10 +470,7 @@ function StageManager({ pipeline, onClose, onSaved }) {
         const { data, error } = await supabase.from("pipeline_stages")
             .insert({ pipeline_id: pipeline.id, name: newStageName.trim(), position: stages.length, color })
             .select().single();
-        if (!error && data) {
-            setStages(prev => [...prev, data]);
-            setNewStageName("");
-        }
+        if (!error && data) { setStages(prev => [...prev, data]); setNewStageName(""); }
         setSaving(false);
     };
 
@@ -422,54 +488,40 @@ function StageManager({ pipeline, onClose, onSaved }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-zinc-900 dark:text-white">Manage Stages — {pipeline.name}</h2>
-                    <button onClick={() => { onSaved(stages); onClose(); }}><XIcon className="size-4 text-zinc-400" /></button>
-                </div>
-                <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-                    {stages.map((stage, i) => (
-                        <div key={stage.id} className="flex items-center gap-2 p-2 rounded bg-zinc-50 dark:bg-zinc-900 group">
-                            <div className="size-3 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color || "#6366f1" }} />
-                            {editingId === stage.id ? (
-                                <input
-                                    autoFocus
-                                    value={editingName}
-                                    onChange={(e) => setEditingName(e.target.value)}
-                                    onBlur={() => handleRename(stage.id)}
-                                    onKeyDown={(e) => { if (e.key === "Enter") handleRename(stage.id); if (e.key === "Escape") setEditingId(null); }}
-                                    className="flex-1 text-sm px-1 py-0.5 rounded border border-blue-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none"
-                                />
-                            ) : (
-                                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">{stage.name}</span>
-                            )}
-                            <button onClick={() => { setEditingId(stage.id); setEditingName(stage.name); }} className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition">
-                                <PencilIcon className="size-3.5" />
-                            </button>
-                            <button onClick={() => handleDelete(stage.id)} className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition">
-                                <TrashIcon className="size-3.5" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-                <div className="flex gap-2">
-                    <input
-                        value={newStageName}
-                        onChange={(e) => setNewStageName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                        placeholder="New stage name..."
-                        className="flex-1 px-3 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <button onClick={handleAdd} disabled={saving || !newStageName.trim()} className="px-3 py-2 text-sm rounded bg-blue-500 text-white disabled:opacity-60 hover:bg-blue-600 transition">
-                        {saving ? <Loader2Icon className="size-4 animate-spin" /> : "Add"}
-                    </button>
-                </div>
-                <div className="flex justify-end mt-4">
-                    <button onClick={() => { onSaved(stages); onClose(); }} className="px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition">Done</button>
-                </div>
+        <Modal title={`Manage Stages — ${pipeline.name}`} onClose={() => { onSaved(stages); onClose(); }}>
+            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                {stages.map((stage) => (
+                    <div key={stage.id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-zinc-900 group">
+                        <div className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color || "#6366f1" }} />
+                        {editingId === stage.id ? (
+                            <input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)}
+                                onBlur={() => handleRename(stage.id)}
+                                onKeyDown={(e) => { if (e.key === "Enter") handleRename(stage.id); if (e.key === "Escape") setEditingId(null); }}
+                                className="flex-1 text-sm px-2 py-0.5 rounded border border-blue-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none" />
+                        ) : (
+                            <span className="flex-1 text-sm text-gray-700 dark:text-zinc-300">{stage.name}</span>
+                        )}
+                        <button onClick={() => { setEditingId(stage.id); setEditingName(stage.name); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition">
+                            <PencilIcon className="size-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(stage.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition">
+                            <TrashIcon className="size-3.5" />
+                        </button>
+                    </div>
+                ))}
             </div>
-        </div>
+            <div className="flex gap-2">
+                <input value={newStageName} onChange={(e) => setNewStageName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                    placeholder="New stage name..."
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-400" />
+                <button onClick={handleAdd} disabled={saving || !newStageName.trim()} className="px-3 py-2 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-50">
+                    {saving ? <Loader2Icon className="size-4 animate-spin" /> : "Add"}
+                </button>
+            </div>
+            <div className="flex justify-end mt-4">
+                <button onClick={() => { onSaved(stages); onClose(); }} className="px-4 py-2 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 transition">Done</button>
+            </div>
+        </Modal>
     );
 }
 
@@ -511,17 +563,13 @@ function Deals({ workspaceId }) {
             setActivePipeline(pipe);
             setStages((pipe.stages || []).sort((a, b) => a.position - b.position));
             fetchDeals(pipe.id);
-        } else {
-            setLoading(false);
-        }
+        } else { setLoading(false); }
     };
 
     const fetchDeals = async (pipelineId) => {
-        const { data } = await supabase
-            .from("deals")
+        const { data } = await supabase.from("deals")
             .select("*, contact:contacts(id, name), company:companies(id, name)")
-            .eq("pipeline_id", pipelineId)
-            .order("created_at");
+            .eq("pipeline_id", pipelineId).order("created_at");
         setDeals(data || []);
         setLoading(false);
     };
@@ -546,9 +594,7 @@ function Deals({ workspaceId }) {
             fetchAll();
         } catch (err) {
             toast.error(err.message || "Failed to create pipeline");
-        } finally {
-            setSaving(false);
-        }
+        } finally { setSaving(false); }
     };
 
     const handleCreateDeal = async (e) => {
@@ -574,9 +620,7 @@ function Deals({ workspaceId }) {
             fetchDeals(activePipeline.id);
         } catch (err) {
             toast.error(err.message || "Failed to create deal");
-        } finally {
-            setSaving(false);
-        }
+        } finally { setSaving(false); }
     };
 
     const handleMoveDeal = async (dealId, newStageId) => {
@@ -615,122 +659,101 @@ function Deals({ workspaceId }) {
             d.contact?.name?.toLowerCase().includes(query.toLowerCase()));
     }, [deals, query]);
 
-    if (loading) return <div className="flex justify-center py-12"><Loader2Icon className="size-6 animate-spin text-zinc-400" /></div>;
+    if (loading) return <div className="flex justify-center py-16"><Loader2Icon className="size-5 animate-spin text-gray-300" /></div>;
 
     const totalPipelineValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
 
     return (
         <div className="space-y-4">
+            {/* Pipeline bar */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
                     {pipelines.map((p) => (
-                        <button
-                            key={p.id}
-                            onClick={() => switchPipeline(p)}
-                            className={`px-3 py-1.5 text-sm rounded border transition ${activePipeline?.id === p.id ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"}`}
-                        >
+                        <button key={p.id} onClick={() => switchPipeline(p)}
+                            className={`px-3 py-1.5 text-sm rounded-lg border transition ${activePipeline?.id === p.id ? "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium" : "border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:border-gray-400"}`}>
                             {p.name}
                         </button>
                     ))}
                     {showPipelineForm ? (
                         <form onSubmit={handleCreatePipeline} className="flex gap-2">
                             <input value={pipelineName} onChange={(e) => setPipelineName(e.target.value)} placeholder="Pipeline name" autoFocus
-                                className="px-3 py-1.5 text-sm rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" required />
-                            <button type="submit" disabled={saving} className="px-3 py-1.5 text-sm rounded bg-blue-500 text-white disabled:opacity-60">Create</button>
-                            <button type="button" onClick={() => setShowPipelineForm(false)} className="px-3 py-1.5 text-sm rounded border border-zinc-200 dark:border-zinc-700 text-zinc-500">Cancel</button>
+                                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-400" required />
+                            <button type="submit" disabled={saving} className="px-3 py-1.5 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-50">Create</button>
+                            <button type="button" onClick={() => setShowPipelineForm(false)} className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-500">Cancel</button>
                         </form>
                     ) : (
-                        <button onClick={() => setShowPipelineForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded border border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400 hover:border-blue-400 hover:text-blue-500 transition">
+                        <button onClick={() => setShowPipelineForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-dashed border-gray-300 dark:border-zinc-600 text-gray-500 dark:text-zinc-400 hover:border-gray-500 hover:text-gray-700 transition">
                             <PlusIcon className="size-3.5" /> Pipeline
                         </button>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
                     {totalPipelineValue > 0 && (
-                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                            Total: <span className="font-medium text-zinc-800 dark:text-zinc-200">${totalPipelineValue.toLocaleString()}</span>
+                        <span className="text-sm text-gray-500 dark:text-zinc-400">
+                            Total: <span className="font-semibold text-gray-800 dark:text-zinc-200">${totalPipelineValue.toLocaleString()}</span>
                         </span>
                     )}
-                    <div className="relative">
-                        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-zinc-400" />
-                        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter deals..."
-                            className="pl-8 pr-3 py-1.5 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500 w-40" />
-                    </div>
+                    <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter deals..." />
                     {activePipeline && (
-                        <button onClick={() => setShowStageManager(true)} className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition rounded hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Manage stages">
+                        <button onClick={() => setShowStageManager(true)} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800" title="Manage stages">
                             <SettingsIcon className="size-4" />
                         </button>
                     )}
-                    {activePipeline && (
-                        <button onClick={() => setShowDealForm(true)} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition">
-                            <PlusIcon className="size-4" /> New Deal
-                        </button>
-                    )}
+                    {activePipeline && <PrimaryBtn onClick={() => setShowDealForm(true)}><PlusIcon className="size-3.5" /> New Deal</PrimaryBtn>}
                 </div>
             </div>
 
-            {/* New deal form modal */}
             {showDealForm && (
-                <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold text-zinc-900 dark:text-white">New Deal</h2>
-                            <button onClick={() => setShowDealForm(false)}><XIcon className="size-4 text-zinc-400" /></button>
+                <Modal title="New Deal" onClose={() => setShowDealForm(false)}>
+                    <form onSubmit={handleCreateDeal} className="space-y-3">
+                        <div><label className={labelCls}>Deal Name *</label><input value={dealForm.name} onChange={(e) => setDealForm({ ...dealForm, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>Stage</label>
+                                <select value={dealForm.stage_id} onChange={(e) => setDealForm({ ...dealForm, stage_id: e.target.value })} className={inputCls}>
+                                    {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                            </div>
+                            <div><label className={labelCls}>Value ($)</label><input type="number" value={dealForm.value} onChange={(e) => setDealForm({ ...dealForm, value: e.target.value })} className={inputCls} /></div>
                         </div>
-                        <form onSubmit={handleCreateDeal} className="space-y-3">
-                            <div><label className={labelCls}>Deal Name *</label><input value={dealForm.name} onChange={(e) => setDealForm({ ...dealForm, name: e.target.value })} className={inputCls} required autoFocus /></div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className={labelCls}>Stage</label>
-                                    <select value={dealForm.stage_id} onChange={(e) => setDealForm({ ...dealForm, stage_id: e.target.value })} className={inputCls}>
-                                        {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
-                                </div>
-                                <div><label className={labelCls}>Value ($)</label><input type="number" value={dealForm.value} onChange={(e) => setDealForm({ ...dealForm, value: e.target.value })} className={inputCls} /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>Contact</label>
+                                <select value={dealForm.contact_id} onChange={(e) => setDealForm({ ...dealForm, contact_id: e.target.value })} className={inputCls}>
+                                    <option value="">None</option>
+                                    {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className={labelCls}>Contact</label>
-                                    <select value={dealForm.contact_id} onChange={(e) => setDealForm({ ...dealForm, contact_id: e.target.value })} className={inputCls}>
-                                        <option value="">None</option>
-                                        {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Company</label>
-                                    <select value={dealForm.company_id} onChange={(e) => setDealForm({ ...dealForm, company_id: e.target.value })} className={inputCls}>
-                                        <option value="">None</option>
-                                        {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
+                            <div>
+                                <label className={labelCls}>Company</label>
+                                <select value={dealForm.company_id} onChange={(e) => setDealForm({ ...dealForm, company_id: e.target.value })} className={inputCls}>
+                                    <option value="">None</option>
+                                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
                             </div>
-                            <div><label className={labelCls}>Expected Close</label><input type="date" value={dealForm.expected_close_date} onChange={(e) => setDealForm({ ...dealForm, expected_close_date: e.target.value })} className={inputCls} /></div>
-                            <div className="flex justify-end gap-2 pt-1">
-                                <button type="button" onClick={() => setShowDealForm(false)} className="px-4 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Cancel</button>
-                                <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60">
-                                    {saving && <Loader2Icon className="size-3.5 animate-spin" />} Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        </div>
+                        <div><label className={labelCls}>Expected Close</label><input type="date" value={dealForm.expected_close_date} onChange={(e) => setDealForm({ ...dealForm, expected_close_date: e.target.value })} className={inputCls} /></div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button type="button" onClick={() => setShowDealForm(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition">Cancel</button>
+                            <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium disabled:opacity-50">
+                                {saving && <Loader2Icon className="size-3.5 animate-spin" />} Save
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
 
-            {/* Stage manager */}
             {showStageManager && activePipeline && (
-                <StageManager
-                    pipeline={{ ...activePipeline, stages }}
-                    onClose={() => setShowStageManager(false)}
-                    onSaved={(newStages) => setStages(newStages)}
-                />
+                <StageManager pipeline={{ ...activePipeline, stages }} onClose={() => setShowStageManager(false)} onSaved={(s) => setStages(s)} />
             )}
 
-            {/* Kanban board */}
             {pipelines.length === 0 ? (
-                <div className="text-center py-16">
-                    <TrendingUpIcon className="size-10 mx-auto mb-3 text-zinc-300 dark:text-zinc-600" />
-                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">No pipelines yet</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Use the "+ Pipeline" button above to create one</p>
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+                        <TrendingUpIcon className="size-7 text-gray-400 dark:text-zinc-500" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">No pipelines yet</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">Use the "+ Pipeline" button above to create one</p>
                 </div>
             ) : (
                 <div className="flex gap-4 overflow-x-auto pb-4">
@@ -739,44 +762,38 @@ function Deals({ workspaceId }) {
                         const total = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0);
                         const isDragOver = dragOverStage === stage.id;
                         return (
-                            <div
-                                key={stage.id}
-                                className="flex-shrink-0 w-64"
+                            <div key={stage.id} className="flex-shrink-0 w-64"
                                 onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }}
                                 onDragLeave={() => setDragOverStage(null)}
-                                onDrop={() => { if (draggingDeal) { handleMoveDeal(draggingDeal, stage.id); setDragOverStage(null); } }}
-                            >
-                                <div className="flex items-center gap-2 mb-2">
+                                onDrop={() => { if (draggingDeal) { handleMoveDeal(draggingDeal, stage.id); setDragOverStage(null); } }}>
+                                <div className="flex items-center gap-2 mb-2 px-1">
                                     <div className="size-2 rounded-full" style={{ backgroundColor: stage.color || "#6366f1" }} />
-                                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{stage.name}</span>
-                                    <span className="ml-auto text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full">{stageDeals.length}</span>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{stage.name}</span>
+                                    <span className="ml-auto text-xs text-gray-400 bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full">{stageDeals.length}</span>
                                 </div>
-                                {total > 0 && <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-2">${total.toLocaleString()}</p>}
-                                <div className={`space-y-2 min-h-16 rounded-lg p-2 transition ${isDragOver ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300 dark:border-blue-700" : "bg-zinc-50 dark:bg-zinc-900/50"}`}>
+                                {total > 0 && <p className="text-xs text-gray-400 dark:text-zinc-500 mb-2 px-1">${total.toLocaleString()}</p>}
+                                <div className={`space-y-2 min-h-16 rounded-xl p-2 transition ${isDragOver ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300" : "bg-gray-50 dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800"}`}>
                                     {stageDeals.map((deal) => {
                                         const urgency = getDealUrgency(deal);
                                         return (
-                                            <div
-                                                key={deal.id}
-                                                draggable
+                                            <div key={deal.id} draggable
                                                 onDragStart={() => setDraggingDeal(deal.id)}
                                                 onDragEnd={() => { setDraggingDeal(null); setDragOverStage(null); }}
                                                 onClick={() => setSelectedDealId(deal.id)}
-                                                className={`bg-white dark:bg-zinc-900 border rounded-lg p-3 cursor-pointer hover:shadow-sm transition group ${urgency === "overdue" ? "border-red-200 dark:border-red-800" : urgency === "soon" ? "border-amber-200 dark:border-amber-800" : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"}`}
-                                            >
+                                                className={`bg-white dark:bg-zinc-900 border rounded-xl p-3 cursor-pointer hover:shadow-sm transition group ${urgency === "overdue" ? "border-red-200 dark:border-red-800" : urgency === "soon" ? "border-amber-200 dark:border-amber-800" : "border-gray-200 dark:border-zinc-700"}`}>
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100 leading-snug">{deal.name}</p>
-                                                    <button onClick={(e) => handleDeleteDeal(deal.id, e)} className="opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-red-500 transition flex-shrink-0">
+                                                    <p className="text-sm font-medium text-gray-800 dark:text-zinc-100 leading-snug">{deal.name}</p>
+                                                    <button onClick={(e) => handleDeleteDeal(deal.id, e)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition flex-shrink-0">
                                                         <XIcon className="size-3.5" />
                                                     </button>
                                                 </div>
                                                 {deal.value && <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">${Number(deal.value).toLocaleString()}</p>}
                                                 {(deal.company?.name || deal.contact?.name) && (
-                                                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{deal.company?.name || deal.contact?.name}</p>
+                                                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{deal.company?.name || deal.contact?.name}</p>
                                                 )}
                                                 {deal.expected_close_date && (
-                                                    <div className={`flex items-center gap-1 mt-1.5 text-xs ${urgency === "overdue" ? "text-red-500" : urgency === "soon" ? "text-amber-500" : "text-zinc-400 dark:text-zinc-500"}`}>
-                                                        {urgency === "overdue" ? <AlertCircleIcon className="size-3" /> : urgency === "soon" ? <ClockIcon className="size-3" /> : <ClockIcon className="size-3" />}
+                                                    <div className={`flex items-center gap-1 mt-1.5 text-xs ${urgency === "overdue" ? "text-red-500" : urgency === "soon" ? "text-amber-500" : "text-gray-400 dark:text-zinc-500"}`}>
+                                                        <ClockIcon className="size-3" />
                                                         {format(new Date(deal.expected_close_date), "MMM d")}
                                                         {urgency === "overdue" && " · Overdue"}
                                                     </div>
@@ -785,7 +802,7 @@ function Deals({ workspaceId }) {
                                         );
                                     })}
                                     {stageDeals.length === 0 && (
-                                        <div className="flex items-center justify-center h-12 text-xs text-zinc-400 dark:text-zinc-600">
+                                        <div className="flex items-center justify-center h-12 text-xs text-gray-400 dark:text-zinc-600">
                                             {isDragOver ? "Drop here" : "Empty"}
                                         </div>
                                     )}
@@ -797,15 +814,9 @@ function Deals({ workspaceId }) {
             )}
 
             {selectedDealId && (
-                <DealDetail
-                    id={selectedDealId}
-                    stages={stages}
-                    contacts={contacts}
-                    companies={companies}
-                    workspaceId={workspaceId}
-                    onClose={() => setSelectedDealId(null)}
-                    onDeleted={() => { setDeals((prev) => prev.filter((d) => d.id !== selectedDealId)); setSelectedDealId(null); }}
-                />
+                <DealDetail id={selectedDealId} stages={stages} contacts={contacts} companies={companies}
+                    workspaceId={workspaceId} onClose={() => setSelectedDealId(null)}
+                    onDeleted={() => { setDeals((prev) => prev.filter((d) => d.id !== selectedDealId)); setSelectedDealId(null); }} />
             )}
         </div>
     );
@@ -830,116 +841,97 @@ function CRMDashboard({ workspaceId }) {
         ]);
 
         const allDeals = deals || [];
-        const closedWonStageIds = new Set();
-        const closedLostStageIds = new Set();
+        const closedWonIds = new Set();
+        const closedLostIds = new Set();
         (pipelines || []).forEach(p => {
             (p.stages || []).forEach(s => {
-                if (s.name === "Closed Won") closedWonStageIds.add(s.id);
-                if (s.name === "Closed Lost") closedLostStageIds.add(s.id);
+                if (s.name === "Closed Won") closedWonIds.add(s.id);
+                if (s.name === "Closed Lost") closedLostIds.add(s.id);
             });
         });
 
-        const openDeals = allDeals.filter(d => !closedWonStageIds.has(d.stage_id) && !closedLostStageIds.has(d.stage_id));
-        const wonDeals = allDeals.filter(d => closedWonStageIds.has(d.stage_id));
+        const openDeals = allDeals.filter(d => !closedWonIds.has(d.stage_id) && !closedLostIds.has(d.stage_id));
+        const wonDeals = allDeals.filter(d => closedWonIds.has(d.stage_id));
         const totalPipelineValue = openDeals.reduce((s, d) => s + (d.value || 0), 0);
         const wonValue = wonDeals.reduce((s, d) => s + (d.value || 0), 0);
-
         const overdueDeals = openDeals.filter(d => d.expected_close_date && isPast(new Date(d.expected_close_date)));
         const soonDeals = openDeals.filter(d => d.expected_close_date && !isPast(new Date(d.expected_close_date)) &&
             isWithinInterval(new Date(d.expected_close_date), { start: new Date(), end: addDays(new Date(), 7) }));
 
-        // Stage breakdown for all open deals across all pipelines
         const stageMap = {};
         (pipelines || []).forEach(p => {
             (p.stages || []).forEach(s => {
-                const stageDeals = openDeals.filter(d => d.stage_id === s.id);
-                if (stageDeals.length > 0) {
-                    stageMap[s.id] = { name: s.name, color: s.color, count: stageDeals.length, value: stageDeals.reduce((sum, d) => sum + (d.value || 0), 0) };
-                }
+                const sd = openDeals.filter(d => d.stage_id === s.id);
+                if (sd.length > 0) stageMap[s.id] = { name: s.name, color: s.color, count: sd.length, value: sd.reduce((sum, d) => sum + (d.value || 0), 0) };
             });
         });
 
-        setStats({
-            contactCount: contacts?.length || 0,
-            companyCount: companies?.length || 0,
-            openDealCount: openDeals.length,
-            wonDealCount: wonDeals.length,
-            totalPipelineValue,
-            wonValue,
-            stageBreakdown: Object.values(stageMap),
-        });
+        setStats({ contactCount: contacts?.length || 0, companyCount: companies?.length || 0, openDealCount: openDeals.length, wonDealCount: wonDeals.length, totalPipelineValue, wonValue, stageBreakdown: Object.values(stageMap) });
         setOverdue(overdueDeals);
         setClosingSoon(soonDeals);
         setLoading(false);
     };
 
-    if (loading) return <div className="flex justify-center py-12"><Loader2Icon className="size-6 animate-spin text-zinc-400" /></div>;
+    if (loading) return <div className="flex justify-center py-16"><Loader2Icon className="size-5 animate-spin text-gray-300" /></div>;
     if (!stats) return null;
+
+    const summaryCards = [
+        { label: "Contacts", value: stats.contactCount, color: "bg-blue-50 dark:bg-blue-900/20 text-blue-500", Icon: UserIcon },
+        { label: "Companies", value: stats.companyCount, color: "bg-purple-50 dark:bg-purple-900/20 text-purple-500", Icon: BuildingIcon },
+        { label: "Open Deals", value: stats.openDealCount, color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500", Icon: TrendingUpIcon },
+        { label: "Won Deals", value: stats.wonDealCount, color: "bg-amber-50 dark:bg-amber-900/20 text-amber-500", Icon: CheckIcon },
+    ];
 
     return (
         <div className="space-y-6">
-            {/* Summary cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: "Contacts", value: stats.contactCount, icon: UserIcon, color: "text-blue-500 bg-blue-50 dark:bg-blue-900/20" },
-                    { label: "Companies", value: stats.companyCount, icon: BuildingIcon, color: "text-purple-500 bg-purple-50 dark:bg-purple-900/20" },
-                    { label: "Open Deals", value: stats.openDealCount, icon: TrendingUpIcon, color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" },
-                    { label: "Won Deals", value: stats.wonDealCount, icon: CheckIcon, color: "text-amber-500 bg-amber-50 dark:bg-amber-900/20" },
-                ].map(item => (
-                    <div key={item.label} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-                        <div className={`inline-flex p-2 rounded-lg mb-2 ${item.color}`}>
-                            <item.icon className="size-4" />
-                        </div>
-                        <p className="text-2xl font-bold text-zinc-900 dark:text-white">{item.value}</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{item.label}</p>
+                {summaryCards.map(item => (
+                    <div key={item.label} className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 hover:-translate-y-0.5 transition-transform">
+                        <div className={`inline-flex p-2 rounded-xl mb-3 ${item.color}`}><item.Icon className="size-4" /></div>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{item.value}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{item.label}</p>
                     </div>
                 ))}
             </div>
-
-            {/* Pipeline value */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Pipeline Value</p>
-                    <p className="text-2xl font-bold text-zinc-900 dark:text-white">${stats.totalPipelineValue.toLocaleString()}</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Across {stats.openDealCount} open deals</p>
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
+                    <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Pipeline Value</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${stats.totalPipelineValue.toLocaleString()}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">Across {stats.openDealCount} open deals</p>
                 </div>
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Won Value</p>
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
+                    <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Won Value</p>
                     <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${stats.wonValue.toLocaleString()}</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">From {stats.wonDealCount} won deals</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">From {stats.wonDealCount} won deals</p>
                 </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Stage breakdown */}
                 {stats.stageBreakdown.length > 0 && (
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Deals by Stage</p>
+                    <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
+                        <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Deals by Stage</p>
                         <div className="space-y-2">
                             {stats.stageBreakdown.map(s => (
                                 <div key={s.name} className="flex items-center gap-3">
                                     <div className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color || "#6366f1" }} />
-                                    <span className="text-sm text-zinc-700 dark:text-zinc-300 flex-1">{s.name}</span>
-                                    <span className="text-xs text-zinc-400">{s.count} deal{s.count !== 1 ? "s" : ""}</span>
+                                    <span className="text-sm text-gray-700 dark:text-zinc-300 flex-1">{s.name}</span>
+                                    <span className="text-xs text-gray-400">{s.count} deal{s.count !== 1 ? "s" : ""}</span>
                                     {s.value > 0 && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">${s.value.toLocaleString()}</span>}
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
-
-                {/* Attention needed */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Needs Attention</p>
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5">
+                    <p className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Needs Attention</p>
                     {overdue.length === 0 && closingSoon.length === 0 ? (
-                        <p className="text-sm text-zinc-400 dark:text-zinc-500">No urgent deals right now.</p>
+                        <p className="text-sm text-gray-400 dark:text-zinc-500">No urgent deals right now.</p>
                     ) : (
                         <div className="space-y-2">
                             {overdue.map(d => (
                                 <div key={d.id} className="flex items-start gap-2">
                                     <AlertCircleIcon className="size-4 text-red-500 flex-shrink-0 mt-0.5" />
                                     <div className="min-w-0">
-                                        <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">{d.name}</p>
+                                        <p className="text-sm text-gray-800 dark:text-zinc-200 truncate">{d.name}</p>
                                         <p className="text-xs text-red-500">Overdue · {d.expected_close_date && format(new Date(d.expected_close_date), "MMM d")}</p>
                                     </div>
                                     {d.value && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 ml-auto flex-shrink-0">${Number(d.value).toLocaleString()}</span>}
@@ -949,7 +941,7 @@ function CRMDashboard({ workspaceId }) {
                                 <div key={d.id} className="flex items-start gap-2">
                                     <ClockIcon className="size-4 text-amber-500 flex-shrink-0 mt-0.5" />
                                     <div className="min-w-0">
-                                        <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">{d.name}</p>
+                                        <p className="text-sm text-gray-800 dark:text-zinc-200 truncate">{d.name}</p>
                                         <p className="text-xs text-amber-500">Closing soon · {d.expected_close_date && format(new Date(d.expected_close_date), "MMM d")}</p>
                                     </div>
                                     {d.value && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 ml-auto flex-shrink-0">${Number(d.value).toLocaleString()}</span>}
@@ -970,34 +962,25 @@ export default function CRM() {
 
     if (!currentWorkspace) return null;
 
-    const tabIcons = {
-        Contacts: UserIcon,
-        Companies: BuildingIcon,
-        Deals: TrendingUpIcon,
-        Dashboard: LayoutDashboardIcon,
-    };
-
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
-            <div>
-                <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">CRM</h1>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Manage your contacts, companies, and deals</p>
-            </div>
-
-            <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
-                {TABS.map((tab) => {
-                    const Icon = tabIcons[tab];
-                    return (
+        <div className="max-w-6xl mx-auto flex flex-col gap-6 pb-12">
+            {/* Sub-nav tabs */}
+            <div className="border-b border-gray-200 dark:border-zinc-800">
+                <div className="flex gap-6">
+                    {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition -mb-px ${activeTab === tab ? "border-blue-500 text-blue-600 dark:text-blue-400" : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"}`}
+                            className={`pb-3 text-[15px] font-medium border-b-2 transition-colors -mb-px ${
+                                activeTab === tab
+                                    ? "border-gray-900 dark:border-white text-gray-900 dark:text-white"
+                                    : "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+                            }`}
                         >
-                            <Icon className="size-3.5" />
                             {tab}
                         </button>
-                    );
-                })}
+                    ))}
+                </div>
             </div>
 
             {activeTab === "Contacts" && <Contacts workspaceId={currentWorkspace.id} />}
