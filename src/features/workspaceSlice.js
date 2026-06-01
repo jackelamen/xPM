@@ -7,26 +7,25 @@ export const fetchWorkspaces = createAsyncThunk(
     "workspace/fetchWorkspaces",
     async (_, { rejectWithValue }) => {
         try {
-            // Single query: join workspace_members → workspaces to avoid RLS edge cases
-            const { data, error } = await supabase
+            // Step 1: get workspace IDs the current user belongs to
+            const { data: memberships, error: memberError } = await supabase
                 .from("workspace_members")
-                .select("workspace:workspaces(*)")
+                .select("workspace_id")
 
-            console.log("[fetchWorkspaces] data:", data, "error:", error)
+            if (memberError) throw memberError
+            if (!memberships || memberships.length === 0) return []
 
-            if (error) throw error
+            const workspaceIds = memberships.map((m) => m.workspace_id)
 
-            // Flatten and deduplicate workspaces
-            const workspaces = (data || [])
-                .map((m) => m.workspace)
-                .filter(Boolean)
-                .filter((w, i, arr) => arr.findIndex((x) => x.id === w.id) === i)
+            // Step 2: fetch workspaces by ID (avoids recursive RLS on workspaces policy)
+            const { data: workspaces, error: wsError } = await supabase
+                .from("workspaces")
+                .select("*")
+                .in("id", workspaceIds)
 
-            console.log("[fetchWorkspaces] resolved workspaces:", workspaces)
-
-            return workspaces
+            if (wsError) throw wsError
+            return workspaces || []
         } catch (err) {
-            console.error("[fetchWorkspaces] caught:", err)
             return rejectWithValue(err.message)
         }
     }
