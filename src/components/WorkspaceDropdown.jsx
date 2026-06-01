@@ -30,13 +30,12 @@ function WorkspaceDropdown() {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    const onSelectWorkspace = async (wsId) => {
+    const onSelectWorkspace = (wsId) => {
         if (currentWorkspace?.id === wsId) { setIsOpen(false); return }
-        dispatch(setCurrentWorkspace(wsId))
         setIsOpen(false)
+        dispatch(setCurrentWorkspace(wsId))
+        dispatch(fetchWorkspaceDetail(wsId))
         navigate('/')
-        // Small delay so Redux state settles before fetching detail
-        setTimeout(() => dispatch(fetchWorkspaceDetail(wsId)), 50)
     }
 
     const handleCreateWorkspace = async (e) => {

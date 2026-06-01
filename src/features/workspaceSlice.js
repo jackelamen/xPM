@@ -353,7 +353,10 @@ const workspaceSlice = createSlice({
     reducers: {
         setCurrentWorkspace: (state, action) => {
             const ws = state.workspaces.find((w) => w.id === action.payload)
-            if (ws) state.currentWorkspace = ws
+            if (ws) {
+                state.currentWorkspace = { ...ws, members: state.currentWorkspace?.members || [], projects: state.currentWorkspace?.projects || [] }
+                try { localStorage.setItem('xpm_last_workspace_id', action.payload) } catch {}
+            }
         },
         clearWorkspaces: (state) => {
             state.workspaces = []
@@ -377,7 +380,11 @@ const workspaceSlice = createSlice({
             state.workspaces = action.payload
             state.loading = false
             if (!state.currentWorkspace && action.payload.length > 0) {
-                state.currentWorkspace = { ...action.payload[0], members: [], projects: [] }
+                // Restore last selected workspace, fall back to first
+                let lastId = null
+                try { lastId = localStorage.getItem('xpm_last_workspace_id') } catch {}
+                const preferred = lastId && action.payload.find((w) => w.id === lastId)
+                state.currentWorkspace = { ...(preferred || action.payload[0]), members: [], projects: [] }
             }
         })
         builder.addCase(fetchWorkspaces.rejected, (state, action) => { state.loading = false; state.error = action.payload })
