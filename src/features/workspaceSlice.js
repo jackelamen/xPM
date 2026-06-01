@@ -12,6 +12,8 @@ export const fetchWorkspaces = createAsyncThunk(
                 .from("workspace_members")
                 .select("workspace:workspaces(*)")
 
+            console.log("[fetchWorkspaces] data:", data, "error:", error)
+
             if (error) throw error
 
             // Flatten and deduplicate workspaces
@@ -20,8 +22,11 @@ export const fetchWorkspaces = createAsyncThunk(
                 .filter(Boolean)
                 .filter((w, i, arr) => arr.findIndex((x) => x.id === w.id) === i)
 
+            console.log("[fetchWorkspaces] resolved workspaces:", workspaces)
+
             return workspaces
         } catch (err) {
+            console.error("[fetchWorkspaces] caught:", err)
             return rejectWithValue(err.message)
         }
     }
