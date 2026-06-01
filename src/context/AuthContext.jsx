@@ -19,10 +19,19 @@ export const AuthProvider = ({ children }) => {
     }
 
     useEffect(() => {
+        // Safety net — never spin forever on slow/offline mobile connections
+        const timeout = setTimeout(() => setLoading(false), 5000)
+
         supabase.auth.getSession().then(({ data: { session } }) => {
             const u = session?.user ?? null
             setUser(u)
-            fetchProfile(u?.id).finally(() => setLoading(false))
+            fetchProfile(u?.id).finally(() => {
+                clearTimeout(timeout)
+                setLoading(false)
+            })
+        }).catch(() => {
+            clearTimeout(timeout)
+            setLoading(false)
         })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -31,7 +40,10 @@ export const AuthProvider = ({ children }) => {
             fetchProfile(u?.id)
         })
 
-        return () => subscription.unsubscribe()
+        return () => {
+            clearTimeout(timeout)
+            subscription.unsubscribe()
+        }
     }, [])
 
     const signIn = (email, password) =>
