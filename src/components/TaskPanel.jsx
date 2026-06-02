@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { updateTaskStatus, deleteTasks, patchTask } from "../features/workspaceSlice"
 import { supabase } from "../lib/supabase"
 import { useAuth } from "../context/AuthContext"
+import UserAvatar from "./UserAvatar"
 import { format } from "date-fns"
 import {
     XIcon, CalendarIcon, UserIcon, FlagIcon,
@@ -803,9 +804,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             <div className="space-y-3">
                                 {comments.map((comment) => (
                                     <div key={comment.id} className="flex gap-3">
-                                        <div className="size-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                            {(comment.author?.email || "?")[0].toUpperCase()}
-                                        </div>
+                                        <UserAvatar user={comment.author} size={28} />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">

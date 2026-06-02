@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Search, UserPlus, Folder, CheckSquare, Users, Trash2, Edit2 } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
+import UserAvatar from "../components/UserAvatar";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchWorkspaceDetail } from "../features/workspaceSlice";
 import { supabase } from "../lib/supabase";
@@ -166,9 +167,7 @@ const Team = () => {
                                     <tr key={user.id} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors">
                                         <td className="px-6 py-3.5">
                                             <div className="flex items-center gap-3">
-                                                <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-sm">
-                                                    {(user.user?.name || user.user?.email || "?")[0].toUpperCase()}
-                                                </div>
+                                                <UserAvatar user={user.user} size={32} />
                                                 <div>
                                                     <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
                                                         {user.user?.name || user.user?.email || "Unknown"}

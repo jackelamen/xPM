@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { deleteTasks, updateTaskStatus, archiveTasks } from "../features/workspaceSlice";
 import { CalendarIcon, MessageSquare, CheckCircle2, Circle, Trash, XIcon, DownloadIcon, Users, PenLine, Lightbulb, Palette, ClipboardList, ArchiveIcon } from "lucide-react";
 import SavedViews from "./SavedViews";
+import UserAvatar from "./UserAvatar";
 
 import FieldManager, { BUILTIN_FIELDS } from "./FieldManager";
 
@@ -20,13 +21,7 @@ const typeIcons = {
 
 const AssigneeAvatar = ({ assignee }) => {
     if (!assignee) return null;
-    if (assignee.image) return <img src={assignee.image} className="size-5 rounded-full" alt="avatar" />;
-    const initials = assignee.name ? assignee.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : "?";
-    return (
-        <span className="size-5 rounded-full bg-violet-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
-            {initials}
-        </span>
-    );
+    return <UserAvatar user={assignee} size={20} />;
 };
 
 const priorityTexts = {

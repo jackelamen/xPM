@@ -5,7 +5,8 @@ import {
     Loader2Icon, UserIcon, ChevronDownIcon, ChevronRightIcon,
     AlertCircleIcon, CheckCircle2Icon, ClockIcon, CircleDotIcon, CircleIcon
 } from "lucide-react"
-import { format, isToday, isPast, isWithinInterval, addDays, startOfWeek, endOfWeek, startOfDay } from "date-fns"
+import { format, isToday, isPast, isWithinInterval, endOfWeek, startOfDay } from "date-fns"
+import UserAvatar from "./UserAvatar"
 
 const STATUS_ICONS = {
     TODO: { icon: CircleIcon, cls: "text-zinc-400" },
@@ -34,10 +35,11 @@ function capacityLabel(count) {
     return { text: "Overloaded", cls: "text-red-600 dark:text-red-400" }
 }
 
-function AssigneeRow({ person, tasks, onTaskClick }) {
+function AssigneeRow({ user, tasks, onTaskClick }) {
     const [expanded, setExpanded] = useState(false)
     const today = startOfDay(new Date())
     const weekEnd = endOfWeek(today)
+    const person = user?.name || user?.email || "Unknown"
 
     const activeTasks = tasks.filter(t => t.status !== "DONE")
     const overdueTasks = tasks.filter(t => t.status !== "DONE" && t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date)))
@@ -49,7 +51,6 @@ function AssigneeRow({ person, tasks, onTaskClick }) {
 
     const { text: capLabel, cls: capCls } = capacityLabel(activeTasks.length)
     const barWidth = Math.min(100, (activeTasks.length / (CAPACITY_THRESHOLDS.warning + 2)) * 100)
-    const initials = person.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
 
     return (
         <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
@@ -59,9 +60,7 @@ function AssigneeRow({ person, tasks, onTaskClick }) {
                 onClick={() => setExpanded(!expanded)}
             >
                 {/* Avatar */}
-                <div className="size-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                    {initials || <UserIcon className="size-4" />}
-                </div>
+                <UserAvatar user={user} size={36} />
 
                 {/* Name + capacity */}
                 <div className="flex-1 min-w-0">
@@ -180,12 +179,13 @@ export default function WorkloadView({ onTaskClick }) {
         const [{ data: memberData }, { data: taskData }] = await Promise.all([
             supabase
                 .from("workspace_members")
-                .select("*, user:profiles(id, name, email)")
+                .select("*, user:profiles(id, name, email, avatar_url)")
                 .eq("workspace_id", currentWorkspace.id),
             supabase
                 .from("xpm_tasks")
-                .select("id, title, status, priority, due_date, assignee_id, project_id, project:projects(id, name), assignee:profiles!tasks_assignee_id_fkey(id, name)")
+                .select("id, title, status, priority, due_date, assignee_id, project_id, project:projects(id, name), assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
                 .eq("workspace_id", currentWorkspace.id)
+                .is("archived_at", null)
                 .order("due_date", { ascending: true, nullsFirst: false }),
         ])
         setMembers(memberData || [])
@@ -204,27 +204,24 @@ export default function WorkloadView({ onTaskClick }) {
         return matchProject && matchStatus
     }), [tasks, filterProject, filterStatus])
 
-    // Group by assignee
+    // Group by assignee user_id (not name — avoids mismatches)
     const assigneeGroups = useMemo(() => {
+        // Build a user map from members
+        const userMap = {}
+        members.forEach(m => { if (m.user) userMap[m.user_id] = m.user })
+
         const groups = {}
-        // Seed with all workspace members
-        members.forEach(m => {
-            const name = m.user?.name || m.user?.email || "Unknown"
-            if (!groups[name]) groups[name] = { tasks: [], userId: m.user_id }
-        })
-        // Only include assigned tasks
         filteredTasks.forEach(t => {
             if (!t.assignee_id) return
-            const name = t.assignee?.name || t.assignee?.email || "Unknown"
-            if (!groups[name]) groups[name] = { tasks: [], userId: t.assignee_id }
-            groups[name].tasks.push(t)
+            if (!groups[t.assignee_id]) {
+                // Prefer member profile, fall back to task assignee profile
+                const user = userMap[t.assignee_id] || t.assignee || { id: t.assignee_id, name: "Unknown" }
+                groups[t.assignee_id] = { user, tasks: [] }
+            }
+            groups[t.assignee_id].tasks.push(t)
         })
 
-        // Remove members with no tasks
-        Object.keys(groups).forEach(k => { if (groups[k].tasks.length === 0) delete groups[k] })
-
-        return Object.entries(groups).sort(([, a], [, b]) => {
-            // Sort overloaded first
+        return Object.values(groups).sort((a, b) => {
             const aActive = a.tasks.filter(t => t.status !== "DONE").length
             const bActive = b.tasks.filter(t => t.status !== "DONE").length
             return bActive - aActive
@@ -292,10 +289,10 @@ export default function WorkloadView({ onTaskClick }) {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {assigneeGroups.map(([person, { tasks: personTasks }]) => (
+                    {assigneeGroups.map(({ user, tasks: personTasks }) => (
                         <AssigneeRow
-                            key={person}
-                            person={person}
+                            key={user.id || user.email}
+                            user={user}
                             tasks={personTasks}
                             onTaskClick={onTaskClick}
                         />

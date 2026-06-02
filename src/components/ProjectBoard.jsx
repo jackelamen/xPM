@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useDispatch } from "react-redux"
 import { updateTaskStatus } from "../features/workspaceSlice"
+import UserAvatar from "./UserAvatar"
 import {
     DndContext,
     DragOverlay,
@@ -85,13 +86,10 @@ function TaskCard({ task, onTaskClick, isDragging }) {
                             {format(new Date(task.due_date), "MMM d")}
                         </div>
                     )}
-                    {task.assignee ? (
-                        <div className="size-5 rounded-full bg-gray-800 dark:bg-zinc-500 flex items-center justify-center text-white text-[9px] font-semibold">
-                            {(task.assignee.name || task.assignee.email || "?")[0].toUpperCase()}
-                        </div>
-                    ) : (
-                        <div className="size-5 rounded-full border border-dashed border-gray-300 dark:border-zinc-600" />
-                    )}
+                    {task.assignee
+                        ? <UserAvatar user={task.assignee} size={20} />
+                        : <div className="size-5 rounded-full border border-dashed border-gray-300 dark:border-zinc-600" />
+                    }
                 </div>
             </div>
         </div>

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { updateTask } from '../features/workspaceSlice'
 import TaskPanel from '../components/TaskPanel'
+import UserAvatar from '../components/UserAvatar'
 import toast from 'react-hot-toast'
 import { getPulseEnabled } from './ProfileSettings'
 import { supabase } from '../lib/supabase'
@@ -232,7 +233,7 @@ function AssigneeCell({ task, members, onSave }) {
                 <button className="flex items-center gap-1.5 text-xs text-zinc-500 hover:underline">
                     {name ? (
                         <>
-                            <span className="w-5 h-5 rounded-full bg-violet-500 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0">{name[0].toUpperCase()}</span>
+                            <UserAvatar user={member?.user} size={18} />
                             <span className="truncate max-w-[80px]">{name}</span>
                         </>
                     ) : <span className="text-zinc-300 dark:text-zinc-700 opacity-0 group-hover:opacity-100">Assign</span>}
@@ -247,7 +248,7 @@ function AssigneeCell({ task, members, onSave }) {
                     return (
                         <button key={m.user_id} onClick={() => { onSave({ assignee_id: m.user_id }); close() }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                            <span className="w-5 h-5 rounded-full bg-violet-500 text-white text-[9px] flex items-center justify-center font-bold">{n[0].toUpperCase()}</span>
+                            <UserAvatar user={m.user} size={18} />
                             <span className="text-xs text-zinc-700 dark:text-zinc-300 truncate">{n}</span>
                         </button>
                     )
@@ -741,9 +742,7 @@ export default function MyTasks() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-base font-bold text-zinc-600 dark:text-zinc-300">
-                        {displayName[0].toUpperCase()}
-                    </div>
+                    <UserAvatar name={displayName} size={40} />
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">My Tasks</h1>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400">{activeTasks.length} open · {doneTasks.length} completed</p>

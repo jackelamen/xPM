@@ -1,13 +1,22 @@
 import { PanelLeft } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
+import UserAvatar from './UserAvatar'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 const Navbar = ({ setIsSidebarOpen }) => {
-    const { displayName } = useAuth()
+    const { displayName, user } = useAuth()
     const navigate = useNavigate()
+    const [avatarUrl, setAvatarUrl] = useState(null)
 
-    const initials = displayName.charAt(0).toUpperCase()
+    useEffect(() => {
+        if (!user?.id) return
+        supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
+            .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url) })
+    }, [user?.id])
 
     return (
         <div className="w-full bg-white/60 dark:bg-black/30 backdrop-blur-xl border-b border-white/50 dark:border-white/[0.06] px-5 py-2 flex-shrink-0 sticky top-0 z-40">
@@ -21,18 +30,15 @@ const Navbar = ({ setIsSidebarOpen }) => {
                     <PanelLeft size={16} />
                 </button>
 
-                {/* Search — takes remaining space */}
+                {/* Search */}
                 <div className="flex-1 min-w-0">
                     <GlobalSearch />
                 </div>
 
                 {/* Avatar — links to settings */}
-                <button
-                    onClick={() => navigate('/settings')}
-                    className="size-8 rounded-full bg-gray-900 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-gray-900 text-[12px] font-bold flex-shrink-0 hover:opacity-80 transition-opacity"
-                    title="Settings"
-                >
-                    {initials}
+                <button onClick={() => navigate('/settings')} title="Settings"
+                    className="hover:opacity-80 transition-opacity flex-shrink-0">
+                    <UserAvatar name={displayName} avatarUrl={avatarUrl} size={32} />
                 </button>
             </div>
         </div>
