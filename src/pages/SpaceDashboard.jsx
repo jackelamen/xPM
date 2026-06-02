@@ -5,8 +5,9 @@ import { format, isAfter, isBefore, addDays, parseISO } from "date-fns"
 import {
     ArrowLeft, FolderOpen, CheckCircle2, Circle,
     AlertTriangle, Layers, ChevronDown, ChevronRight,
-    CalendarIcon, ArrowUpDown, TrendingUp,
+    CalendarIcon, ArrowUpDown, TrendingUp, Plus,
 } from "lucide-react"
+import CreateProjectDialog from "../components/CreateProjectDialog"
 
 const statusConfig = {
     ACTIVE:    { label: "On Track",  badge: "bg-emerald-100 text-emerald-700 border border-emerald-200",  bar: "bg-emerald-500" },
@@ -48,6 +49,7 @@ export default function SpaceDashboard() {
     const [projectSort, setProjectSort] = useState("priority")
     const [expandedProjects, setExpandedProjects] = useState({})
     const [upcomingDays, setUpcomingDays] = useState(7)
+    const [createProjectOpen, setCreateProjectOpen] = useState(false)
 
     const toggleExpand = (id) => setExpandedProjects((prev) => ({ ...prev, [id]: !prev[id] }))
 
@@ -110,9 +112,18 @@ export default function SpaceDashboard() {
                     <span>/</span>
                     <span>Spaces</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
-                    <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">{space.name}</h1>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
+                        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">{space.name}</h1>
+                    </div>
+                    <button
+                        onClick={() => setCreateProjectOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
+                    >
+                        <Plus className="size-4" />
+                        New Project
+                    </button>
                 </div>
                 {space.description && <p className="text-sm text-zinc-500 dark:text-zinc-400 ml-7">{space.description}</p>}
             </div>
@@ -154,7 +165,7 @@ export default function SpaceDashboard() {
                             <div className="flex flex-col items-center justify-center py-12 gap-2">
                                 <FolderOpen className="size-8 text-zinc-300" />
                                 <p className="text-sm text-zinc-400">No projects in this space</p>
-                                <Link to="/projects" className="text-xs text-blue-600 hover:underline">Create a project</Link>
+                                <button onClick={() => setCreateProjectOpen(true)} className="text-xs text-blue-600 hover:underline">Create a project</button>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
@@ -300,5 +311,11 @@ export default function SpaceDashboard() {
                 </div>
             </div>
         </div>
+
+        <CreateProjectDialog
+            isDialogOpen={createProjectOpen}
+            setIsDialogOpen={setCreateProjectOpen}
+            defaultSpaceId={spaceId}
+        />
     )
 }
