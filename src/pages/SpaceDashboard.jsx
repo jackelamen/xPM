@@ -98,6 +98,7 @@ export default function SpaceDashboard() {
     )
 
     return (
+        <>
         <div className="max-w-6xl mx-auto space-y-8">
 
             {/* Breadcrumb + title */}
@@ -317,5 +318,6 @@ export default function SpaceDashboard() {
             setIsDialogOpen={setCreateProjectOpen}
             defaultSpaceId={spaceId}
         />
+        </>
     )
 }
