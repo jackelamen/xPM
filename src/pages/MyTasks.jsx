@@ -35,27 +35,23 @@ const TYPE_CFG = Object.fromEntries(
     TYPE_OPTIONS.map((t) => [t, { label: t[0] + t.slice(1).toLowerCase(), cls: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400' }])
 )
 
-// columns — key, label, col-span (out of 12)
+// columns — w is the <col> width passed to colgroup
 const ALL_COLS = [
-    { key: 'status',        label: 'Status',     width: '90px',  defaultOn: true },
-    { key: 'title',         label: 'Title',      width: '1fr',   defaultOn: true, fixed: true },
-    { key: 'priority',      label: 'Priority',   width: '88px',  defaultOn: true },
-    { key: 'type',          label: 'Type',       width: '88px',  defaultOn: true },
-    { key: 'due_date',      label: 'Due Date',   width: '110px', defaultOn: true },
-    { key: 'start_date',    label: 'Start Date', width: '110px', defaultOn: false },
-    { key: 'project',       label: 'Project',    width: '110px', defaultOn: true },
-    { key: 'assignee',      label: 'Assignee',   width: '110px', defaultOn: false },
-    { key: 'section',       label: 'Section',    width: '88px',  defaultOn: false },
-    { key: 'tags',          label: 'Tags',       width: '80px',  defaultOn: false },
-    { key: 'send_to_pulse', label: 'Pulse',      width: '44px',  defaultOn: false, pulseOnly: true },
+    { key: 'status',        label: 'Status',     w: '100px', defaultOn: true },
+    { key: 'title',         label: 'Title',      w: null,    defaultOn: true, fixed: true }, // null = auto (fills remaining)
+    { key: 'priority',      label: 'Priority',   w: '96px',  defaultOn: true },
+    { key: 'type',          label: 'Type',       w: '96px',  defaultOn: true },
+    { key: 'due_date',      label: 'Due Date',   w: '116px', defaultOn: true },
+    { key: 'start_date',    label: 'Start Date', w: '116px', defaultOn: false },
+    { key: 'project',       label: 'Project',    w: '120px', defaultOn: true },
+    { key: 'assignee',      label: 'Assignee',   w: '120px', defaultOn: false },
+    { key: 'section',       label: 'Section',    w: '96px',  defaultOn: false },
+    { key: 'tags',          label: 'Tags',       w: '80px',  defaultOn: false },
+    { key: 'send_to_pulse', label: 'Pulse',      w: '48px',  defaultOn: false, pulseOnly: true },
 ]
 
 function visibleCols(colVis) {
     return ALL_COLS.filter((c) => c.fixed || colVis[c.key] !== false)
-}
-
-function gridTemplate(cols) {
-    return cols.map((c) => c.width).join(' ')
 }
 
 function getGroup(task) {
@@ -369,21 +365,21 @@ function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) 
                 return <StatusCell task={task} onSave={save} />
             case 'title':
                 return (
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
                         <button onClick={(e) => { e.stopPropagation(); save({ status: isDone ? 'TODO' : 'DONE' }) }}
                             className={`flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600 hover:text-emerald-400'}`}>
-                            {isDone ? <CheckCircle2 size={16} strokeWidth={1.75} /> : <Circle size={16} strokeWidth={1.75} />}
+                            {isDone ? <CheckCircle2 size={15} strokeWidth={1.75} /> : <Circle size={15} strokeWidth={1.75} />}
                         </button>
                         <button onClick={() => onRowClick(task)}
-                            className={`text-sm font-medium truncate text-left hover:underline ${isDone ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                            className={`text-sm truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${isDone ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
                             {task.title}
                         </button>
                     </div>
                 )
             case 'priority':
-                return <BadgeCell value={task.priority} cfgMap={PRIORITY_CFG} options={PRIORITY_OPTIONS} onSave={(v) => save({ priority: v })} placeholder="Priority" />
+                return <BadgeCell value={task.priority} cfgMap={PRIORITY_CFG} options={PRIORITY_OPTIONS} onSave={(v) => save({ priority: v })} placeholder="—" />
             case 'type':
-                return <BadgeCell value={task.type} cfgMap={TYPE_CFG} options={TYPE_OPTIONS} onSave={(v) => save({ type: v })} placeholder="Type" />
+                return <BadgeCell value={task.type} cfgMap={TYPE_CFG} options={TYPE_OPTIONS} onSave={(v) => save({ type: v })} placeholder="—" />
             case 'due_date':
                 return <DateCell value={task.due_date} onSave={(v) => save({ due_date: v })} />
             case 'start_date':
@@ -393,9 +389,9 @@ function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) 
             case 'assignee':
                 return <AssigneeCell task={task} members={members} onSave={save} />
             case 'section':
-                return <TextCell value={task.custom_fields?.section} onSave={(v) => save({ custom_fields: { ...task.custom_fields, section: v } })} placeholder="Section" />
+                return <TextCell value={task.custom_fields?.section} onSave={(v) => save({ custom_fields: { ...task.custom_fields, section: v } })} placeholder="—" />
             case 'tags':
-                return <TextCell value={task.custom_fields?.tags} onSave={(v) => save({ custom_fields: { ...task.custom_fields, tags: v } })} placeholder="Tags" />
+                return <TextCell value={task.custom_fields?.tags} onSave={(v) => save({ custom_fields: { ...task.custom_fields, tags: v } })} placeholder="—" />
             case 'send_to_pulse':
                 return <SendToPulseCell task={task} userId={userId} />
             default:
@@ -404,14 +400,15 @@ function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) 
     }
 
     return (
-        <div className={`group grid border-t border-zinc-200 dark:border-white/[0.08] hover:bg-zinc-50/80 dark:hover:bg-white/[0.02] hover:-translate-y-px hover:shadow-sm transition-all duration-150 cursor-pointer ${isDone ? 'opacity-60' : ''}`}
-            style={{ gridTemplateColumns: gridTemplate(cols) }}>
+        <tr className={`group border-t border-zinc-100 dark:border-white/[0.06] hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors ${isDone ? 'opacity-50' : ''}`}>
             {cols.map((col) => (
-                <div key={col.key} className="px-3 py-3 flex items-center min-w-0 overflow-hidden">
-                    {renderCell(col)}
-                </div>
+                <td key={col.key} className="px-4 py-2.5 align-middle overflow-hidden max-w-0">
+                    <div className="truncate">
+                        {renderCell(col)}
+                    </div>
+                </td>
             ))}
-        </div>
+        </tr>
     )
 }
 
@@ -475,25 +472,21 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
     )
 }
 
-// ── section ───────────────────────────────────────────────────────────────────
+// ── section header row (renders inside <tbody>) ───────────────────────────────
 
-function Section({ title, tasks, cols, members, projects, defaultOpen = true, accent, onRowClick, onSave, userId, mobile }) {
-    const [open, setOpen] = useState(defaultOpen)
+function SectionHeaderRow({ title, count, colCount, open, onToggle, accent }) {
     return (
-        <div className="border-t border-zinc-100 dark:border-white/[0.05] first:border-t-0">
-            <button onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 w-full text-left px-4 sm:px-6 py-4 hover:bg-zinc-50/60 dark:hover:bg-white/[0.02] transition-colors">
-                {open ? <ChevronDown size={14} className="text-zinc-400" /> : <ChevronRight size={14} className="text-zinc-400" />}
-                <span className={`text-xs font-bold uppercase tracking-widest ${accent || 'text-zinc-500 dark:text-zinc-400'}`}>{title}</span>
-                <span className="text-xs text-zinc-400 dark:text-zinc-600 ml-1 tabular-nums">{tasks.length}</span>
-            </button>
-            {open && tasks.map((t) => (
-                mobile
-                    ? <MobileTaskCard key={t.id} task={t} onRowClick={onRowClick} onSave={onSave} />
-                    : <TaskRow key={t.id} task={t} cols={cols} members={members} projects={projects}
-                        onRowClick={onRowClick} onSave={onSave} userId={userId} />
-            ))}
-        </div>
+        <tr className="border-t border-zinc-100 dark:border-white/[0.05]">
+            <td colSpan={colCount} className="px-4 py-2">
+                <button onClick={onToggle} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                    {open
+                        ? <ChevronDown size={13} className="text-zinc-400 flex-shrink-0" />
+                        : <ChevronRight size={13} className="text-zinc-400 flex-shrink-0" />}
+                    <span className={`text-[11px] font-bold uppercase tracking-widest ${accent || 'text-zinc-500 dark:text-zinc-400'}`}>{title}</span>
+                    <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{count}</span>
+                </button>
+            </td>
+        </tr>
     )
 }
 
@@ -510,7 +503,7 @@ export default function MyTasks() {
 
     const [selectedTaskId, setSelectedTaskId] = useState(null)
     const [selectedProjectId, setSelectedProjectId] = useState(null)
-    const [showDone] = useState(true)
+
 
     const [colVis, setColVis] = useState(() => {
         try {
@@ -569,59 +562,95 @@ export default function MyTasks() {
         return () => window.removeEventListener('resize', handler)
     }, [])
 
-    const sectionProps = { members, projects, defaultOpen: true, onRowClick: openPanel, onSave: handleSave, userId: user?.id, mobile: isMobile }
+    // Section open/close state
+    const [sectionOpen, setSectionOpen] = useState({ today: true, tomorrow: true, later: true, done: true })
+    const toggleSection = (key) => setSectionOpen((s) => ({ ...s, [key]: !s[key] }))
+
+    const rowProps = { cols, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id }
+
+    const renderSectionRows = (key, title, tasks, accent) => <>
+        <SectionHeaderRow
+            title={title} count={tasks.length} colCount={cols.length}
+            open={sectionOpen[key]} onToggle={() => toggleSection(key)} accent={accent}
+        />
+        {sectionOpen[key] && tasks.map((t) => <TaskRow key={t.id} task={t} {...rowProps} />)}
+    </>
 
     return (
         <div className="max-w-full">
             {/* Header */}
-            <div className="flex items-center justify-between mb-5 sm:mb-8">
-                <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-base sm:text-lg font-bold text-zinc-600 dark:text-zinc-300">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-base font-bold text-zinc-600 dark:text-zinc-300">
                         {displayName[0].toUpperCase()}
                     </div>
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">My Tasks</h1>
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{activeTasks.length} open · {doneTasks.length} completed</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">My Tasks</h1>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">{activeTasks.length} open · {doneTasks.length} completed</p>
                     </div>
                 </div>
-                {/* Fields picker only shown on desktop */}
                 <div className="hidden sm:block">
                     <FieldPicker colVis={colVis} onChange={handleColVis} />
                 </div>
             </div>
 
-            {/* Table / List */}
-            <div className="glass-panel rounded-xl overflow-hidden">
-                {/* Desktop: column headers */}
-                {!isMobile && (
-                    <div className="grid border-b border-zinc-200 dark:border-white/[0.07] bg-zinc-50/80 dark:bg-white/[0.02]"
-                        style={{ gridTemplateColumns: gridTemplate(cols) }}>
-                        {cols.map((col) => (
-                            <div key={col.key} className="px-3 py-3">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">{col.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+            {/* Mobile list */}
+            {isMobile ? (
+                <div className="glass-panel rounded-xl overflow-hidden">
+                    {grouped.today.map((t) => <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />)}
+                    {grouped.tomorrow.map((t) => <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />)}
+                    {grouped.later.map((t) => <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />)}
+                    {activeTasks.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-16 gap-3">
+                            <CheckCircle2 className="size-10 text-zinc-200 dark:text-zinc-700" />
+                            <p className="text-sm text-zinc-400">You're all caught up</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* Desktop table */
+                <div className="glass-panel rounded-xl overflow-x-auto">
+                    <table className="w-full table-fixed border-collapse text-sm">
+                        {/* Column widths */}
+                        <colgroup>
+                            {cols.map((col) => (
+                                <col key={col.key} style={col.w ? { width: col.w } : {}} />
+                            ))}
+                        </colgroup>
 
-                {/* Sections */}
-                <Section title="Do Today"    tasks={grouped.today}    cols={cols} {...sectionProps} />
-                <Section title="Do Tomorrow" tasks={grouped.tomorrow} cols={cols} {...sectionProps} />
-                <Section title="Later"       tasks={grouped.later}    cols={cols} {...sectionProps} />
+                        {/* Header */}
+                        <thead>
+                            <tr className="border-b border-zinc-200 dark:border-white/[0.08] bg-zinc-50/80 dark:bg-white/[0.02]">
+                                {cols.map((col) => (
+                                    <th key={col.key} className="px-4 py-2.5 text-left font-semibold text-[11px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+                                        {col.label}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
 
-                {/* Empty state */}
-                {activeTasks.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3">
-                        <CheckCircle2 className="size-10 text-zinc-200 dark:text-zinc-700" />
-                        <p className="text-sm text-zinc-400">You're all caught up</p>
-                    </div>
-                )}
+                        {/* Body */}
+                        <tbody>
+                            {renderSectionRows('today',    'Do Today',    grouped.today)}
+                            {renderSectionRows('tomorrow', 'Do Tomorrow', grouped.tomorrow)}
+                            {renderSectionRows('later',    'Later',       grouped.later)}
 
-                {/* Completed */}
-                {doneTasks.length > 0 && (
-                    <Section title="Completed" tasks={doneTasks} cols={cols} {...sectionProps} defaultOpen={showDone} />
-                )}
-            </div>
+                            {activeTasks.length === 0 && (
+                                <tr>
+                                    <td colSpan={cols.length} className="py-16 text-center">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <CheckCircle2 className="size-9 text-zinc-200 dark:text-zinc-700" />
+                                            <span className="text-sm text-zinc-400">You're all caught up</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+
+                            {doneTasks.length > 0 && renderSectionRows('done', 'Completed', doneTasks)}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {selectedTaskId && selectedProjectId && (
                 <TaskPanel taskId={selectedTaskId} projectId={selectedProjectId}
