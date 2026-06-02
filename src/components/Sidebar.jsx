@@ -144,7 +144,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                     {bottomItems.map((i) => iconLink(i.href, i.icon, i.name))}
                 </div>
 
-                {/* Bottom: settings + expand */}
+                {/* Bottom: settings + toggle */}
                 <div className="flex flex-col items-center px-[7px] py-3 border-t border-gray-200/80 dark:border-white/[0.06] gap-0.5">
                     <Tip label="Settings">
                         <NavLink to="/settings"
@@ -155,7 +155,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             <SettingsIcon size={14} strokeWidth={1.75} />
                         </NavLink>
                     </Tip>
-                    <Tip label="Expand sidebar">
+                    <Tip label="Expand">
                         <button onClick={toggleCollapsed}
                             className={`flex items-center justify-center w-9 h-9 rounded-lg transition-all ${inactiveClass}`}>
                             <PanelLeftOpenIcon size={15} strokeWidth={1.75} />
@@ -169,16 +169,8 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     // ── Expanded mode ─────────────────────────────────────────────────────────
     return (
         <div ref={sidebarRef} className={`${wrapperBase} w-[220px]`}>
-            {/* Workspace dropdown (original, unmodified) */}
+            {/* Workspace dropdown */}
             <WorkspaceDropdown />
-
-            {/* Collapse button row */}
-            <div className="flex items-center justify-end px-3 pb-1">
-                <button onClick={toggleCollapsed} title="Collapse sidebar"
-                    className={`p-1 rounded-md transition-all ${inactiveClass}`}>
-                    <PanelLeftCloseIcon size={15} strokeWidth={1.75} />
-                </button>
-            </div>
 
             <div className='flex-1 overflow-y-scroll no-scrollbar flex flex-col py-3'>
                 <div className='px-3'>
@@ -255,11 +247,15 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </div>
             </div>
 
-            <div className='px-3 py-3 border-t border-gray-200/80 dark:border-white/[0.06]'>
-                <NavLink to='/settings' className={navLinkClass}>
+            <div className='px-3 py-3 border-t border-gray-200/80 dark:border-white/[0.06] flex items-center gap-1'>
+                <NavLink to='/settings' className={({ isActive }) => `${baseClass} flex-1 ${isActive ? activeClass : inactiveClass}`}>
                     <SettingsIcon size={14} strokeWidth={1.75} />
                     <span>Settings</span>
                 </NavLink>
+                <button onClick={toggleCollapsed} title="Collapse sidebar"
+                    className={`p-2 rounded-lg transition-all flex-shrink-0 ${inactiveClass}`}>
+                    <PanelLeftCloseIcon size={15} strokeWidth={1.75} />
+                </button>
             </div>
         </div>
     )
