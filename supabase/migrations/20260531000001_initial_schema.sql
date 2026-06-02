@@ -153,11 +153,21 @@ create policy "workspaces_update" on public.workspaces for update
         where workspace_id = workspaces.id and user_id = auth.uid() and role = 'admin'
     ));
 
--- Workspace members
+-- Workspace members: see all members of any workspace you belong to
 create policy "workspace_members_select" on public.workspace_members for select
-    using (user_id = auth.uid());
+    using (
+        workspace_id in (
+            select workspace_id from public.workspace_members
+            where user_id = auth.uid()
+        )
+    );
 create policy "workspace_members_insert" on public.workspace_members for insert
-    with check (user_id = auth.uid());
+    with check (
+        workspace_id in (
+            select workspace_id from public.workspace_members
+            where user_id = auth.uid()
+        )
+    );
 
 -- Projects: workspace members see shared projects; private projects only to owner
 create policy "projects_select" on public.projects for select
