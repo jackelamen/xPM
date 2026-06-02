@@ -447,11 +447,12 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
         >
             {/* Drag handle cell (first col) */}
             {cols.map((col, i) => (
-                <td key={col.key} style={{ width: colWidths?.[col.key], minWidth: colWidths?.[col.key] }} className="px-4 py-2.5 align-middle overflow-hidden">
+                <td key={col.key} style={{ width: colWidths?.[col.key], minWidth: colWidths?.[col.key] }}
+                    className={`px-4 py-2.5 align-middle overflow-hidden ${col.key === 'title' ? 'max-w-0' : ''}`}>
                     {i === 0
-                        ? <div className="flex items-center gap-1.5">
+                        ? <div className="flex items-center gap-1.5 min-w-0">
                             <GripVertical size={12} className="text-zinc-300 dark:text-zinc-700 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="truncate">{renderCell(col)}</div>
+                            <div className="truncate min-w-0 flex-1">{renderCell(col)}</div>
                           </div>
                         : <div className="truncate">{renderCell(col)}</div>
                     }
@@ -795,14 +796,23 @@ export default function MyTasks() {
                                 const open = sectionOpen[sec.id] !== false
                                 return (
                                     <React.Fragment key={sec.id}>
+                                        {/* Spacer between sections (not before the first) */}
+                                        {idx > 0 && (
+                                            <tr aria-hidden="true">
+                                                <td colSpan={cols.length} className="py-2 bg-zinc-50/60 dark:bg-white/[0.01]">
+                                                    <div className="h-px bg-zinc-100 dark:bg-white/[0.06] mx-4" />
+                                                </td>
+                                            </tr>
+                                        )}
+
                                         {/* Section header — droppable for task drop AND draggable for reorder */}
                                         <tr
-                                            className={`border-t border-zinc-100 dark:border-white/[0.05] transition-colors ${dragOverSection === sec.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${dragOverSectionIdx === idx ? 'outline outline-2 outline-blue-400' : ''}`}
+                                            className={`transition-colors ${dragOverSection === sec.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${dragOverSectionIdx === idx ? 'outline outline-2 outline-blue-400' : ''}`}
                                             onDragOver={(e) => { onSectionDragOver(e, sec.id); onSectionHeaderDragOver(e, idx) }}
                                             onDrop={(e) => { onSectionDrop(e, sec.id); onSectionHeaderDrop(e, idx) }}
                                             onDragLeave={() => { setDragOverSection(null); setDragOverSectionIdx(null) }}
                                         >
-                                            <td colSpan={cols.length} className="px-4 py-1.5">
+                                            <td colSpan={cols.length} className="px-4 pt-3 pb-1.5">
                                                 <SectionHeaderRow
                                                     section={sec}
                                                     count={tasks.length}
