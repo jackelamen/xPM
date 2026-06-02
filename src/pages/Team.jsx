@@ -100,29 +100,25 @@ const Team = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {stats.map((stat) => (
                     <div
                         key={stat.label}
-                        className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 flex items-center gap-4 group hover:-translate-y-0.5 transition-transform duration-150"
+                        className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group hover:-translate-y-0.5 transition-transform duration-150"
                     >
-                        <div className={`p-3 rounded-xl ${stat.iconBg} flex-shrink-0`}>
+                        <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${stat.iconBg} flex-shrink-0 self-start sm:self-auto`}>
                             {stat.icon}
                         </div>
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">{stat.label}</p>
-                            <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
-                        </div>
-                        {/* subtle background watermark icon */}
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.04] scale-[2.5] pointer-events-none group-hover:opacity-[0.07] transition-opacity">
-                            {stat.icon}
+                        <div className="min-w-0">
+                            <p className="text-[9px] sm:text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5 truncate">{stat.label}</p>
+                            <p className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Table Panel */}
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
 
                 {/* Toolbar */}
                 <div className="px-5 py-3.5 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3 bg-gray-50/60 dark:bg-zinc-900">

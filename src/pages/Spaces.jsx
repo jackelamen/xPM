@@ -34,14 +34,14 @@ export default function Spaces() {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-7">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-7">
                 <div>
                     <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Spaces</h1>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Group projects by client or area of work</p>
                 </div>
                 <button
                     onClick={() => { setEditSpace(null); setIsDialogOpen(true) }}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition flex-shrink-0"
                 >
                     <Plus className="size-3.5" /> New Space
                 </button>
@@ -69,7 +69,7 @@ export default function Spaces() {
                         return (
                             <div
                                 key={space.id}
-                                className="bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.07] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer group relative"
+                                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer group relative"
                                 onClick={() => navigate(`/spaces/${space.id}`)}
                             >
                                 {/* Color bar */}

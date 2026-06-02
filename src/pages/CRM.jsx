@@ -246,33 +246,53 @@ function Contacts({ workspaceId }) {
                         <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Add your first contact to get started</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left">
-                        <TableHead cols={[
-                            { label: "Name" }, { label: "Company" }, { label: "Email" },
-                            { label: "Phone" }, { label: "Title" }, { label: "", right: true }
-                        ]} />
-                        <tbody className="divide-y divide-gray-50 dark:divide-zinc-800/60">
+                    <>
+                        {/* Mobile: card list */}
+                        <div className="sm:hidden divide-y divide-gray-100 dark:divide-zinc-800">
                             {filtered.map((c) => (
-                                <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
-                                    <td className="px-5 py-3.5">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar name={c.name} />
-                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.company?.name || "—"}</td>
-                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.email || "—"}</td>
-                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.phone || "—"}</td>
-                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.title || "—"}</td>
-                                    <td className="px-5 py-3.5 text-right">
-                                        <button onClick={(e) => handleDelete(c.id, e)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
-                                            <TrashIcon className="size-3.5" />
-                                        </button>
-                                    </td>
-                                </tr>
+                                <div key={c.id} onClick={() => setSelectedId(c.id)}
+                                    className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors">
+                                    <Avatar name={c.name} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.name}</p>
+                                        <p className="text-xs text-gray-400 dark:text-zinc-500 truncate">{c.company?.name || c.title || c.email || "—"}</p>
+                                    </div>
+                                    <button onClick={(e) => handleDelete(c.id, e)}
+                                        className="p-1.5 rounded-lg text-gray-300 dark:text-zinc-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex-shrink-0">
+                                        <TrashIcon className="size-3.5" />
+                                    </button>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                        {/* Desktop: table */}
+                        <table className="hidden sm:table w-full text-left">
+                            <TableHead cols={[
+                                { label: "Name" }, { label: "Company" }, { label: "Email" },
+                                { label: "Phone" }, { label: "Title" }, { label: "", right: true }
+                            ]} />
+                            <tbody className="divide-y divide-gray-50 dark:divide-zinc-800/60">
+                                {filtered.map((c) => (
+                                    <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
+                                        <td className="px-5 py-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar name={c.name} />
+                                                <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.company?.name || "—"}</td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.email || "—"}</td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.phone || "—"}</td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.title || "—"}</td>
+                                        <td className="px-5 py-3.5 text-right">
+                                            <button onClick={(e) => handleDelete(c.id, e)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                                <TrashIcon className="size-3.5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </>
                 )}
             </TablePanel>
 
@@ -427,50 +447,75 @@ function Companies({ workspaceId }) {
                         <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{query || filterIndustry ? "No companies match your filters" : "No companies yet"}</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left">
-                        <TableHead cols={[
-                            { label: "Name" }, { label: "Industry" }, { label: "Size" },
-                            { label: "Website" }, { label: "", right: true }
-                        ]} />
-                        <tbody className="divide-y divide-gray-50 dark:divide-zinc-800/60">
+                    <>
+                        {/* Mobile: card list */}
+                        <div className="sm:hidden divide-y divide-gray-100 dark:divide-zinc-800">
                             {filtered.map((c) => (
-                                <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
-                                    <td className="px-5 py-3.5">
-                                        <div className="flex items-center gap-3">
-                                            <label className="relative cursor-pointer flex-shrink-0 group/logo" title="Upload logo" onClick={e => e.stopPropagation()}>
-                                                <div className="size-8 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
-                                                    {c.logo_url
-                                                        ? <img src={c.logo_url} alt={c.name} className="w-full h-full object-contain" />
-                                                        : <Avatar name={c.name} color="from-purple-500 to-violet-600" size="size-8" />
-                                                    }
-                                                </div>
-                                                <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <UploadIcon className="size-3 text-white" />
-                                                </div>
-                                                <input type="file" accept="image/*" className="hidden"
-                                                    onChange={e => handleLogoUpload(c.id, e.target.files?.[0])} />
-                                            </label>
-                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.industry || "—"}</td>
-                                    <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.size || "—"}</td>
-                                    <td className="px-5 py-3.5">
-                                        {c.website ? (
-                                            <a href={c.website.startsWith("http") ? c.website : `https://${c.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-blue-500 hover:underline text-sm">
-                                                {c.website.replace(/^https?:\/\//, "").replace(/\/$/, "")} <ExternalLinkIcon className="size-3" />
-                                            </a>
-                                        ) : <span className="text-gray-400 dark:text-zinc-500 text-sm">—</span>}
-                                    </td>
-                                    <td className="px-5 py-3.5 text-right">
-                                        <button onClick={(e) => handleDelete(c.id, e)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
-                                            <TrashIcon className="size-3.5" />
-                                        </button>
-                                    </td>
-                                </tr>
+                                <div key={c.id} onClick={() => setSelectedId(c.id)}
+                                    className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors">
+                                    <div className="size-9 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                                        {c.logo_url
+                                            ? <img src={c.logo_url} alt={c.name} className="w-full h-full object-contain" />
+                                            : <Avatar name={c.name} color="from-purple-500 to-violet-600" size="size-9" />
+                                        }
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.name}</p>
+                                        <p className="text-xs text-gray-400 dark:text-zinc-500 truncate">{c.industry || c.size || "—"}</p>
+                                    </div>
+                                    <button onClick={(e) => handleDelete(c.id, e)}
+                                        className="p-1.5 rounded-lg text-gray-300 dark:text-zinc-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex-shrink-0">
+                                        <TrashIcon className="size-3.5" />
+                                    </button>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                        {/* Desktop: table */}
+                        <table className="hidden sm:table w-full text-left">
+                            <TableHead cols={[
+                                { label: "Name" }, { label: "Industry" }, { label: "Size" },
+                                { label: "Website" }, { label: "", right: true }
+                            ]} />
+                            <tbody className="divide-y divide-gray-50 dark:divide-zinc-800/60">
+                                {filtered.map((c) => (
+                                    <tr key={c.id} onClick={() => setSelectedId(c.id)} className="hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group">
+                                        <td className="px-5 py-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <label className="relative cursor-pointer flex-shrink-0 group/logo" title="Upload logo" onClick={e => e.stopPropagation()}>
+                                                    <div className="size-8 rounded-lg overflow-hidden border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
+                                                        {c.logo_url
+                                                            ? <img src={c.logo_url} alt={c.name} className="w-full h-full object-contain" />
+                                                            : <Avatar name={c.name} color="from-purple-500 to-violet-600" size="size-8" />
+                                                        }
+                                                    </div>
+                                                    <div className="absolute inset-0 rounded-lg bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <UploadIcon className="size-3 text-white" />
+                                                    </div>
+                                                    <input type="file" accept="image/*" className="hidden"
+                                                        onChange={e => handleLogoUpload(c.id, e.target.files?.[0])} />
+                                                </label>
+                                                <span className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.industry || "—"}</td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-zinc-400">{c.size || "—"}</td>
+                                        <td className="px-5 py-3.5">
+                                            {c.website ? (
+                                                <a href={c.website.startsWith("http") ? c.website : `https://${c.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-blue-500 hover:underline text-sm">
+                                                    {c.website.replace(/^https?:\/\//, "").replace(/\/$/, "")} <ExternalLinkIcon className="size-3" />
+                                                </a>
+                                            ) : <span className="text-gray-400 dark:text-zinc-500 text-sm">—</span>}
+                                        </td>
+                                        <td className="px-5 py-3.5 text-right">
+                                            <button onClick={(e) => handleDelete(c.id, e)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                                <TrashIcon className="size-3.5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </>
                 )}
             </TablePanel>
 
