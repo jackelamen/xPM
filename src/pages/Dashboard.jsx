@@ -19,24 +19,26 @@ const Dashboard = () => {
     return (
         <div className='max-w-[1400px] mx-auto'>
             {/* Header */}
-            <div className="flex items-center justify-between mb-5 sm:mb-7 gap-3">
-                <div className="min-w-0">
-                    <p className="hidden sm:block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
-                        Manage and track your projects
-                    </p>
-                    <h1 className="text-[22px] sm:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight leading-snug truncate">
-                        {greeting}, {displayName}
-                    </h1>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <QuickCapture variant="inline" />
-                    <button
-                        onClick={() => setIsDialogOpen(true)}
-                        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors shadow-sm whitespace-nowrap"
-                    >
-                        <span className="hidden sm:inline">+ New Project</span>
-                        <span className="sm:hidden">+</span>
-                    </button>
+            <div className="mb-5 sm:mb-7">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="hidden sm:block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
+                            Manage and track your projects
+                        </p>
+                        <h1 className="text-[22px] sm:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight leading-snug">
+                            {greeting}, {displayName}
+                        </h1>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+                        <QuickCapture variant="inline" />
+                        <button
+                            onClick={() => setIsDialogOpen(true)}
+                            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors shadow-sm whitespace-nowrap"
+                        >
+                            <span className="hidden sm:inline">+ New Project</span>
+                            <span className="sm:hidden">+</span>
+                        </button>
+                    </div>
                 </div>
                 <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
