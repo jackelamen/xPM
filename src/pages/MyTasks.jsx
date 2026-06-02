@@ -35,19 +35,19 @@ const TYPE_CFG = Object.fromEntries(
     TYPE_OPTIONS.map((t) => [t, { label: t[0] + t.slice(1).toLowerCase(), cls: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400' }])
 )
 
-// columns — w is the <col> width passed to colgroup
+// columns — defaultW is the initial pixel width (title is min-width, grows to fill)
 const ALL_COLS = [
-    { key: 'status',        label: 'Status',     w: '100px', defaultOn: true },
-    { key: 'title',         label: 'Title',      w: null,    defaultOn: true, fixed: true }, // null = auto (fills remaining)
-    { key: 'priority',      label: 'Priority',   w: '96px',  defaultOn: true },
-    { key: 'type',          label: 'Type',       w: '96px',  defaultOn: true },
-    { key: 'due_date',      label: 'Due Date',   w: '116px', defaultOn: true },
-    { key: 'start_date',    label: 'Start Date', w: '116px', defaultOn: false },
-    { key: 'project',       label: 'Project',    w: '120px', defaultOn: true },
-    { key: 'assignee',      label: 'Assignee',   w: '120px', defaultOn: false },
-    { key: 'section',       label: 'Section',    w: '96px',  defaultOn: false },
-    { key: 'tags',          label: 'Tags',       w: '80px',  defaultOn: false },
-    { key: 'send_to_pulse', label: 'Pulse',      w: '48px',  defaultOn: false, pulseOnly: true },
+    { key: 'status',        label: 'Status',     defaultW: 110, defaultOn: true },
+    { key: 'title',         label: 'Title',      defaultW: 260, defaultOn: true, fixed: true },
+    { key: 'priority',      label: 'Priority',   defaultW: 96,  defaultOn: true },
+    { key: 'type',          label: 'Type',       defaultW: 96,  defaultOn: true },
+    { key: 'due_date',      label: 'Due Date',   defaultW: 116, defaultOn: true },
+    { key: 'start_date',    label: 'Start Date', defaultW: 116, defaultOn: false },
+    { key: 'project',       label: 'Project',    defaultW: 120, defaultOn: true },
+    { key: 'assignee',      label: 'Assignee',   defaultW: 130, defaultOn: false },
+    { key: 'section',       label: 'Section',    defaultW: 96,  defaultOn: false },
+    { key: 'tags',          label: 'Tags',       defaultW: 80,  defaultOn: false },
+    { key: 'send_to_pulse', label: 'Pulse',      defaultW: 52,  defaultOn: false, pulseOnly: true },
 ]
 
 function visibleCols(colVis) {
@@ -267,13 +267,39 @@ function xpmPriorityToPulse(p) {
 
 async function sendTaskToPulse(task, userId) {
     try {
+        // Find or create a Pulse list matching the xPM project name
+        let listId = null
+        if (task.projectName) {
+            const { data: existing } = await supabase
+                .from('lists')
+                .select('id')
+                .eq('user_id', userId)
+                .ilike('name', task.projectName)
+                .is('deleted_at', null)
+                .maybeSingle()
+
+            if (existing) {
+                listId = existing.id
+            } else {
+                const { data: created } = await supabase
+                    .from('lists')
+                    .insert({ user_id: userId, name: task.projectName })
+                    .select('id')
+                    .single()
+                if (created) listId = created.id
+            }
+        }
+
         const { error } = await supabase.from('tasks').insert({
             user_id: userId,
             title: task.title,
             notes: task.description || null,
-            due_at: task.due_date ? new Date(task.due_date).toISOString() : null,
+            due_at: task.due_date ? new Date(task.due_date + 'T00:00:00').toISOString() : null,
             status: 'todo',
             priority: xpmPriorityToPulse(task.priority),
+            duration_minutes: 30,
+            list_id: listId,
+            tags: task.projectName ? [task.projectName] : [],
         })
         if (error) throw error
         return true
@@ -353,9 +379,45 @@ function FieldPicker({ colVis, onChange }) {
     )
 }
 
+// ── resizable th ─────────────────────────────────────────────────────────────
+
+function ResizableTh({ width, onResize, children }) {
+    const startX = useRef(null)
+    const startW = useRef(null)
+
+    const onMouseDown = (e) => {
+        e.preventDefault()
+        startX.current = e.clientX
+        startW.current = width
+
+        const onMove = (ev) => {
+            const delta = ev.clientX - startX.current
+            onResize(Math.max(48, startW.current + delta))
+        }
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    return (
+        <th style={{ width, minWidth: width }} className="relative px-4 py-2.5 text-left font-semibold text-[11px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 whitespace-nowrap select-none">
+            {children}
+            <div
+                onMouseDown={onMouseDown}
+                className="absolute right-0 top-0 h-full w-2 cursor-col-resize flex items-center justify-center group"
+            >
+                <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 group-hover:bg-blue-400 transition-colors" />
+            </div>
+        </th>
+    )
+}
+
 // ── task row ──────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) {
+function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId }) {
     const isDone = task.status === 'DONE'
     const save = useCallback((fields) => onSave(task, fields), [task, onSave])
 
@@ -402,7 +464,7 @@ function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) 
     return (
         <tr className={`group border-t border-zinc-100 dark:border-white/[0.06] hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors ${isDone ? 'opacity-50' : ''}`}>
             {cols.map((col) => (
-                <td key={col.key} className="px-4 py-2.5 align-middle overflow-hidden max-w-0">
+                <td key={col.key} style={{ width: colWidths?.[col.key], minWidth: colWidths?.[col.key] }} className="px-4 py-2.5 align-middle overflow-hidden">
                     <div className="truncate">
                         {renderCell(col)}
                     </div>
@@ -504,6 +566,12 @@ export default function MyTasks() {
     const [selectedTaskId, setSelectedTaskId] = useState(null)
     const [selectedProjectId, setSelectedProjectId] = useState(null)
 
+    // Column widths for resize
+    const [colWidths, setColWidths] = useState(() =>
+        Object.fromEntries(ALL_COLS.map((c) => [c.key, c.defaultW]))
+    )
+    const setColWidth = (key, w) => setColWidths((prev) => ({ ...prev, [key]: w }))
+
 
     const [colVis, setColVis] = useState(() => {
         try {
@@ -566,7 +634,7 @@ export default function MyTasks() {
     const [sectionOpen, setSectionOpen] = useState({ today: true, tomorrow: true, later: true, done: true })
     const toggleSection = (key) => setSectionOpen((s) => ({ ...s, [key]: !s[key] }))
 
-    const rowProps = { cols, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id }
+    const rowProps = { cols, colWidths, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id }
 
     const renderSectionRows = (key, title, tasks, accent) => <>
         <SectionHeaderRow
@@ -610,21 +678,19 @@ export default function MyTasks() {
             ) : (
                 /* Desktop table */
                 <div className="glass-panel rounded-xl overflow-x-auto">
-                    <table className="w-full table-fixed border-collapse text-sm">
-                        {/* Column widths */}
-                        <colgroup>
-                            {cols.map((col) => (
-                                <col key={col.key} style={col.w ? { width: col.w } : {}} />
-                            ))}
-                        </colgroup>
-
+                    <table className="border-collapse text-sm" style={{ width: 'max-content', minWidth: '100%' }}>
                         {/* Header */}
                         <thead>
                             <tr className="border-b border-zinc-200 dark:border-white/[0.08] bg-zinc-50/80 dark:bg-white/[0.02]">
                                 {cols.map((col) => (
-                                    <th key={col.key} className="px-4 py-2.5 text-left font-semibold text-[11px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+                                    <ResizableTh
+                                        key={col.key}
+                                        col={col}
+                                        width={colWidths[col.key]}
+                                        onResize={(w) => setColWidth(col.key, w)}
+                                    >
                                         {col.label}
-                                    </th>
+                                    </ResizableTh>
                                 ))}
                             </tr>
                         </thead>
