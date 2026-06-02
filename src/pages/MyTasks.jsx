@@ -37,25 +37,25 @@ const TYPE_CFG = Object.fromEntries(
 
 // columns — key, label, col-span (out of 12)
 const ALL_COLS = [
-    { key: 'status',     label: 'Status',     span: 1, defaultOn: true },
-    { key: 'title',      label: 'Title',      span: 4, defaultOn: true, fixed: true },
-    { key: 'priority',   label: 'Priority',   span: 1, defaultOn: true },
-    { key: 'type',       label: 'Type',       span: 1, defaultOn: true },
-    { key: 'due_date',   label: 'Due Date',   span: 2, defaultOn: true },
-    { key: 'start_date', label: 'Start Date', span: 2, defaultOn: false },
-    { key: 'project',    label: 'Project',    span: 1, defaultOn: true },
-    { key: 'assignee',   label: 'Assignee',   span: 1, defaultOn: false },
-    { key: 'section',       label: 'Section',       span: 1, defaultOn: false },
-    { key: 'tags',          label: 'Tags',          span: 1, defaultOn: false },
-    { key: 'send_to_pulse', label: 'Send to Pulse', span: 1, defaultOn: false, pulseOnly: true },
+    { key: 'status',        label: 'Status',     width: '90px',  defaultOn: true },
+    { key: 'title',         label: 'Title',      width: '1fr',   defaultOn: true, fixed: true },
+    { key: 'priority',      label: 'Priority',   width: '88px',  defaultOn: true },
+    { key: 'type',          label: 'Type',       width: '88px',  defaultOn: true },
+    { key: 'due_date',      label: 'Due Date',   width: '110px', defaultOn: true },
+    { key: 'start_date',    label: 'Start Date', width: '110px', defaultOn: false },
+    { key: 'project',       label: 'Project',    width: '110px', defaultOn: true },
+    { key: 'assignee',      label: 'Assignee',   width: '110px', defaultOn: false },
+    { key: 'section',       label: 'Section',    width: '88px',  defaultOn: false },
+    { key: 'tags',          label: 'Tags',       width: '80px',  defaultOn: false },
+    { key: 'send_to_pulse', label: 'Pulse',      width: '44px',  defaultOn: false, pulseOnly: true },
 ]
 
 function visibleCols(colVis) {
     return ALL_COLS.filter((c) => c.fixed || colVis[c.key] !== false)
 }
 
-function totalSpan(cols) {
-    return cols.reduce((s, c) => s + c.span, 0)
+function gridTemplate(cols) {
+    return cols.map((c) => c.width).join(' ')
 }
 
 function getGroup(task) {
@@ -309,9 +309,8 @@ function SendToPulseCell({ task, userId }) {
         >
             {loading
                 ? <span className="size-3 border border-violet-400 border-t-transparent rounded-full animate-spin" />
-                : <ZapIcon size={12} className={sent ? 'text-violet-500' : ''} />
+                : <ZapIcon size={14} strokeWidth={2.5} fill={sent ? 'currentColor' : 'none'} className={sent ? 'text-violet-500' : 'text-zinc-400 hover:text-violet-500'} />
             }
-            {sent ? 'Sent' : 'Send'}
         </button>
     )
 }
@@ -356,7 +355,6 @@ function FieldPicker({ colVis, onChange }) {
 function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) {
     const isDone = task.status === 'DONE'
     const save = useCallback((fields) => onSave(task, fields), [task, onSave])
-    const span = totalSpan(cols)
 
     const renderCell = (col) => {
         switch (col.key) {
@@ -400,9 +398,9 @@ function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) 
 
     return (
         <div className={`group grid border-t border-zinc-200 dark:border-white/[0.08] hover:bg-zinc-50/80 dark:hover:bg-white/[0.02] hover:-translate-y-px hover:shadow-sm transition-all duration-150 cursor-pointer ${isDone ? 'opacity-60' : ''}`}
-            style={{ gridTemplateColumns: cols.map((c) => `${(c.span / span) * 100}%`).join(' ') }}>
+            style={{ gridTemplateColumns: gridTemplate(cols) }}>
             {cols.map((col) => (
-                <div key={col.key} className="px-6 py-3 flex items-center min-w-0">
+                <div key={col.key} className="px-3 py-3 flex items-center min-w-0 overflow-hidden">
                     {renderCell(col)}
                 </div>
             ))}
@@ -505,7 +503,7 @@ export default function MyTasks() {
 
     const [selectedTaskId, setSelectedTaskId] = useState(null)
     const [selectedProjectId, setSelectedProjectId] = useState(null)
-    const [showDone, setShowDone] = useState(true)
+    const [showDone] = useState(true)
 
     const [colVis, setColVis] = useState(() => {
         try {
@@ -555,7 +553,6 @@ export default function MyTasks() {
     const openPanel = (t) => { setSelectedTaskId(t.id); setSelectedProjectId(t.projectId) }
 
     const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'M'
-    const span = totalSpan(cols)
 
     // Detect mobile viewport
     const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640)
@@ -591,9 +588,9 @@ export default function MyTasks() {
                 {/* Desktop: column headers */}
                 {!isMobile && (
                     <div className="grid border-b border-zinc-200 dark:border-white/[0.07] bg-zinc-50/80 dark:bg-white/[0.02]"
-                        style={{ gridTemplateColumns: cols.map((c) => `${(c.span / span) * 100}%`).join(' ') }}>
+                        style={{ gridTemplateColumns: gridTemplate(cols) }}>
                         {cols.map((col) => (
-                            <div key={col.key} className="px-6 py-3">
+                            <div key={col.key} className="px-3 py-3">
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">{col.label}</span>
                             </div>
                         ))}
