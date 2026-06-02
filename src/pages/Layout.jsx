@@ -25,22 +25,12 @@ const Layout = () => {
 
     useEffect(() => {
         if (user) {
-            dispatch(fetchWorkspaces()).then((action) => {
-                // After workspaces load, always fetch detail for whichever workspace is current
-                const wsId = action.payload?.[0]?.id
-                // Get the preferred ID from localStorage
-                let preferredId = null
-                try { preferredId = localStorage.getItem('xpm_last_workspace_id') } catch {}
-                const targetId = preferredId && action.payload?.find((w) => w.id === preferredId)
-                    ? preferredId
-                    : wsId
-                if (targetId) dispatch(fetchWorkspaceDetail(targetId))
-            })
+            dispatch(fetchWorkspaces())
         }
     }, [user])
 
     useEffect(() => {
-        if (currentWorkspace?.id && !currentWorkspace?.projects) {
+        if (currentWorkspace?.id) {
             dispatch(fetchWorkspaceDetail(currentWorkspace.id))
         }
     }, [currentWorkspace?.id])
