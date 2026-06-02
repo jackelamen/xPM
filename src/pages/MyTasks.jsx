@@ -1,10 +1,12 @@
-import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { useAuth } from '../context/AuthContext'
 import { format, isToday, isTomorrow, isPast, startOfDay } from 'date-fns'
 import {
-    CheckCircle2, Circle, CircleDot, ChevronDown, ChevronRight, Settings2, Eye, EyeOff, ZapIcon,
+    CheckCircle2, Circle, CircleDot, ChevronDown, ChevronRight,
+    Settings2, Eye, EyeOff, ZapIcon, Plus, GripVertical,
+    Pencil, Trash2, Check, X,
 } from 'lucide-react'
 import { updateTask } from '../features/workspaceSlice'
 import TaskPanel from '../components/TaskPanel'
@@ -35,7 +37,7 @@ const TYPE_CFG = Object.fromEntries(
     TYPE_OPTIONS.map((t) => [t, { label: t[0] + t.slice(1).toLowerCase(), cls: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400' }])
 )
 
-// columns — defaultW is the initial pixel width (title is min-width, grows to fill)
+// columns
 const ALL_COLS = [
     { key: 'status',        label: 'Status',     defaultW: 110, defaultOn: true },
     { key: 'title',         label: 'Title',      defaultW: 260, defaultOn: true, fixed: true },
@@ -45,7 +47,6 @@ const ALL_COLS = [
     { key: 'start_date',    label: 'Start Date', defaultW: 116, defaultOn: false },
     { key: 'project',       label: 'Project',    defaultW: 120, defaultOn: true },
     { key: 'assignee',      label: 'Assignee',   defaultW: 130, defaultOn: false },
-    { key: 'section',       label: 'Section',    defaultW: 96,  defaultOn: false },
     { key: 'tags',          label: 'Tags',       defaultW: 80,  defaultOn: false },
     { key: 'send_to_pulse', label: 'Pulse',      defaultW: 52,  defaultOn: false, pulseOnly: true },
 ]
@@ -54,13 +55,35 @@ function visibleCols(colVis) {
     return ALL_COLS.filter((c) => c.fixed || colVis[c.key] !== false)
 }
 
-function getGroup(task) {
+// ── default sections ──────────────────────────────────────────────────────────
+
+const DEFAULT_SECTIONS = [
+    { id: 'today',    label: 'Do Today' },
+    { id: 'tomorrow', label: 'Do Tomorrow' },
+    { id: 'later',    label: 'Do Later' },
+]
+
+function getDefaultSection(task) {
     if (!task.due_date) return 'later'
     const d = new Date(task.due_date)
     if (isPast(startOfDay(d)) || isToday(d)) return 'today'
     if (isTomorrow(d)) return 'tomorrow'
     return 'later'
 }
+
+const SECTIONS_KEY   = 'mytasks_sections'
+const TASK_SEC_KEY   = 'mytasks_task_sections'
+const VIS_KEY        = 'mytasks_col_vis'
+
+function loadSections() {
+    try { return JSON.parse(localStorage.getItem(SECTIONS_KEY)) || DEFAULT_SECTIONS } catch { return DEFAULT_SECTIONS }
+}
+function saveSections(s) { localStorage.setItem(SECTIONS_KEY, JSON.stringify(s)) }
+
+function loadTaskSections() {
+    try { return JSON.parse(localStorage.getItem(TASK_SEC_KEY)) || {} } catch { return {} }
+}
+function saveTaskSections(m) { localStorage.setItem(TASK_SEC_KEY, JSON.stringify(m)) }
 
 // ── reusable dropdown ─────────────────────────────────────────────────────────
 
@@ -138,13 +161,13 @@ function StatusCell({ task, onSave }) {
     )
 }
 
-function BadgeCell({ value, cfgMap, options, onSave, placeholder = '—' }) {
+function BadgeCell({ value, cfgMap, options, onSave }) {
     const cfg = cfgMap[value]
     return (
         <Dropdown
             trigger={
                 <button className={`text-xs px-2 py-0.5 rounded font-medium transition-opacity hover:opacity-80 ${cfg?.cls || 'text-zinc-300 dark:text-zinc-700'}`}>
-                    {cfg?.label || <span className="opacity-40">{placeholder}</span>}
+                    {cfg?.label || <span className="opacity-30">—</span>}
                 </button>
             }
         >
@@ -234,7 +257,7 @@ function AssigneeCell({ task, members, onSave }) {
     )
 }
 
-function TextCell({ value, onSave, placeholder = '—' }) {
+function TextCell({ value, onSave }) {
     const [editing, setEditing] = useState(false)
     const [draft, setDraft] = useState(value || '')
     const commit = () => { onSave(draft); setEditing(false) }
@@ -250,14 +273,13 @@ function TextCell({ value, onSave, placeholder = '—' }) {
     return (
         <button onClick={(e) => { e.stopPropagation(); setEditing(true); setDraft(value || '') }}
             className={`text-xs text-left truncate hover:underline ${value ? 'text-zinc-500' : 'text-zinc-300 opacity-0 group-hover:opacity-100'}`}>
-            {value || placeholder}
+            {value || '—'}
         </button>
     )
 }
 
 // ── send to pulse ─────────────────────────────────────────────────────────────
 
-// Pulse priority: 0=none, 1=low, 2=medium, 3=high
 function xpmPriorityToPulse(p) {
     if (p === 'HIGH' || p === 'URGENT') return 3
     if (p === 'MEDIUM') return 2
@@ -267,29 +289,21 @@ function xpmPriorityToPulse(p) {
 
 async function sendTaskToPulse(task, userId) {
     try {
-        // Find or create a Pulse list matching the xPM project name
         let listId = null
         if (task.projectName) {
             const { data: existing } = await supabase
-                .from('lists')
-                .select('id')
-                .eq('user_id', userId)
-                .ilike('name', task.projectName)
-                .is('deleted_at', null)
-                .maybeSingle()
-
+                .from('lists').select('id')
+                .eq('user_id', userId).ilike('name', task.projectName)
+                .is('deleted_at', null).maybeSingle()
             if (existing) {
                 listId = existing.id
             } else {
                 const { data: created } = await supabase
-                    .from('lists')
-                    .insert({ user_id: userId, name: task.projectName })
-                    .select('id')
-                    .single()
+                    .from('lists').insert({ user_id: userId, name: task.projectName })
+                    .select('id').single()
                 if (created) listId = created.id
             }
         }
-
         const { error } = await supabase.from('tasks').insert({
             user_id: userId,
             title: task.title,
@@ -312,34 +326,21 @@ async function sendTaskToPulse(task, userId) {
 function SendToPulseCell({ task, userId }) {
     const [sent, setSent] = useState(!!task.custom_fields?.sent_to_pulse)
     const [loading, setLoading] = useState(false)
-
     const handle = async (e) => {
         e.stopPropagation()
         if (sent || loading) return
         setLoading(true)
         const ok = await sendTaskToPulse(task, userId)
-        if (ok) {
-            setSent(true)
-            toast.success('Task sent to Pulse')
-        }
+        if (ok) { setSent(true); toast.success('Task sent to Pulse') }
         setLoading(false)
     }
-
     return (
-        <button
-            onClick={handle}
-            disabled={sent || loading}
+        <button onClick={handle} disabled={sent || loading}
             title={sent ? 'Already sent to Pulse' : 'Send this task to Pulse'}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                sent
-                    ? 'text-violet-500 cursor-default'
-                    : 'text-zinc-400 hover:text-violet-500'
-            }`}
-        >
+            className={`transition-colors ${sent ? 'text-violet-500 cursor-default' : 'text-zinc-400 hover:text-violet-500'}`}>
             {loading
-                ? <span className="size-3 border border-violet-400 border-t-transparent rounded-full animate-spin" />
-                : <ZapIcon size={14} strokeWidth={2.5} fill={sent ? 'currentColor' : 'none'} className={sent ? 'text-violet-500' : 'text-zinc-400 hover:text-violet-500'} />
-            }
+                ? <span className="size-3 border border-violet-400 border-t-transparent rounded-full animate-spin inline-block" />
+                : <ZapIcon size={14} strokeWidth={2.5} fill={sent ? 'currentColor' : 'none'} />}
         </button>
     )
 }
@@ -384,31 +385,19 @@ function FieldPicker({ colVis, onChange }) {
 function ResizableTh({ width, onResize, children }) {
     const startX = useRef(null)
     const startW = useRef(null)
-
     const onMouseDown = (e) => {
         e.preventDefault()
         startX.current = e.clientX
         startW.current = width
-
-        const onMove = (ev) => {
-            const delta = ev.clientX - startX.current
-            onResize(Math.max(48, startW.current + delta))
-        }
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-        }
+        const onMove = (ev) => onResize(Math.max(48, startW.current + ev.clientX - startX.current))
+        const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
         window.addEventListener('mousemove', onMove)
         window.addEventListener('mouseup', onUp)
     }
-
     return (
         <th style={{ width, minWidth: width }} className="relative px-4 py-2.5 text-left font-semibold text-[11px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 whitespace-nowrap select-none">
             {children}
-            <div
-                onMouseDown={onMouseDown}
-                className="absolute right-0 top-0 h-full w-2 cursor-col-resize flex items-center justify-center group"
-            >
+            <div onMouseDown={onMouseDown} className="absolute right-0 top-0 h-full w-2 cursor-col-resize flex items-center justify-center group">
                 <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 group-hover:bg-blue-400 transition-colors" />
             </div>
         </th>
@@ -417,14 +406,13 @@ function ResizableTh({ width, onResize, children }) {
 
 // ── task row ──────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId }) {
+function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId, onDragStart, onDragEnd, isDragging }) {
     const isDone = task.status === 'DONE'
     const save = useCallback((fields) => onSave(task, fields), [task, onSave])
 
     const renderCell = (col) => {
         switch (col.key) {
-            case 'status':
-                return <StatusCell task={task} onSave={save} />
+            case 'status': return <StatusCell task={task} onSave={save} />
             case 'title':
                 return (
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -438,36 +426,35 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
                         </button>
                     </div>
                 )
-            case 'priority':
-                return <BadgeCell value={task.priority} cfgMap={PRIORITY_CFG} options={PRIORITY_OPTIONS} onSave={(v) => save({ priority: v })} placeholder="—" />
-            case 'type':
-                return <BadgeCell value={task.type} cfgMap={TYPE_CFG} options={TYPE_OPTIONS} onSave={(v) => save({ type: v })} placeholder="—" />
-            case 'due_date':
-                return <DateCell value={task.due_date} onSave={(v) => save({ due_date: v })} />
-            case 'start_date':
-                return <DateCell value={task.start_date} onSave={(v) => save({ start_date: v })} />
-            case 'project':
-                return <ProjectCell task={task} projects={projects} onSave={save} />
-            case 'assignee':
-                return <AssigneeCell task={task} members={members} onSave={save} />
-            case 'section':
-                return <TextCell value={task.custom_fields?.section} onSave={(v) => save({ custom_fields: { ...task.custom_fields, section: v } })} placeholder="—" />
-            case 'tags':
-                return <TextCell value={task.custom_fields?.tags} onSave={(v) => save({ custom_fields: { ...task.custom_fields, tags: v } })} placeholder="—" />
-            case 'send_to_pulse':
-                return <SendToPulseCell task={task} userId={userId} />
-            default:
-                return null
+            case 'priority': return <BadgeCell value={task.priority} cfgMap={PRIORITY_CFG} options={PRIORITY_OPTIONS} onSave={(v) => save({ priority: v })} />
+            case 'type':     return <BadgeCell value={task.type}     cfgMap={TYPE_CFG}      options={TYPE_OPTIONS}      onSave={(v) => save({ type: v })} />
+            case 'due_date':   return <DateCell value={task.due_date}   onSave={(v) => save({ due_date: v })} />
+            case 'start_date': return <DateCell value={task.start_date} onSave={(v) => save({ start_date: v })} />
+            case 'project':  return <ProjectCell task={task} projects={projects} onSave={save} />
+            case 'assignee': return <AssigneeCell task={task} members={members} onSave={save} />
+            case 'tags':     return <TextCell value={task.custom_fields?.tags} onSave={(v) => save({ custom_fields: { ...task.custom_fields, tags: v } })} />
+            case 'send_to_pulse': return <SendToPulseCell task={task} userId={userId} />
+            default: return null
         }
     }
 
     return (
-        <tr className={`group border-t border-zinc-100 dark:border-white/[0.06] hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors ${isDone ? 'opacity-50' : ''}`}>
-            {cols.map((col) => (
+        <tr
+            draggable
+            onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart(task.id) }}
+            onDragEnd={onDragEnd}
+            className={`group border-t border-zinc-100 dark:border-white/[0.06] hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''} ${isDragging ? 'opacity-30' : ''}`}
+        >
+            {/* Drag handle cell (first col) */}
+            {cols.map((col, i) => (
                 <td key={col.key} style={{ width: colWidths?.[col.key], minWidth: colWidths?.[col.key] }} className="px-4 py-2.5 align-middle overflow-hidden">
-                    <div className="truncate">
-                        {renderCell(col)}
-                    </div>
+                    {i === 0
+                        ? <div className="flex items-center gap-1.5">
+                            <GripVertical size={12} className="text-zinc-300 dark:text-zinc-700 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="truncate">{renderCell(col)}</div>
+                          </div>
+                        : <div className="truncate">{renderCell(col)}</div>
+                    }
                 </td>
             ))}
         </tr>
@@ -480,53 +467,29 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
     const isDone = task.status === 'DONE'
     const isOverdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))
     const priorityCfg = PRIORITY_CFG[task.priority]
-
-    const PRIORITY_DOT = {
-        LOW:    'bg-zinc-400',
-        MEDIUM: 'bg-amber-400',
-        HIGH:   'bg-emerald-500',
-        URGENT: 'bg-red-500',
-    }
-
+    const PRIORITY_DOT = { LOW: 'bg-zinc-400', MEDIUM: 'bg-amber-400', HIGH: 'bg-emerald-500', URGENT: 'bg-red-500' }
     return (
-        <div
-            onClick={() => onRowClick(task)}
-            className={`flex items-start gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-white/[0.06] active:bg-zinc-50 dark:active:bg-white/[0.03] transition-colors ${isDone ? 'opacity-50' : ''}`}
-        >
-            {/* Checkbox */}
-            <button
-                onClick={(e) => { e.stopPropagation(); onSave(task, { status: isDone ? 'TODO' : 'DONE' }) }}
-                className={`flex-shrink-0 mt-0.5 transition-colors ${isDone ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}`}
-            >
+        <div onClick={() => onRowClick(task)}
+            className={`flex items-start gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-white/[0.06] active:bg-zinc-50 dark:active:bg-white/[0.03] transition-colors ${isDone ? 'opacity-50' : ''}`}>
+            <button onClick={(e) => { e.stopPropagation(); onSave(task, { status: isDone ? 'TODO' : 'DONE' }) }}
+                className={`flex-shrink-0 mt-0.5 transition-colors ${isDone ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}`}>
                 {isDone ? <CheckCircle2 size={20} strokeWidth={1.75} /> : <Circle size={20} strokeWidth={1.75} />}
             </button>
-
-            {/* Content */}
             <div className="flex-1 min-w-0">
-                <p className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
-                    {task.title}
-                </p>
+                <p className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>{task.title}</p>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-[12px] text-zinc-400 dark:text-zinc-500 truncate">{task.projectName}</span>
-                    {task.priority && (
-                        <>
-                            <span className="text-zinc-300 dark:text-zinc-700">·</span>
-                            <span className="flex items-center gap-1 text-[12px] text-zinc-400 dark:text-zinc-500">
-                                <span className={`size-2 rounded-full ${PRIORITY_DOT[task.priority] || 'bg-zinc-400'}`} />
-                                {priorityCfg?.label}
-                            </span>
-                        </>
-                    )}
+                    {task.priority && <>
+                        <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                        <span className="flex items-center gap-1 text-[12px] text-zinc-400 dark:text-zinc-500">
+                            <span className={`size-2 rounded-full ${PRIORITY_DOT[task.priority] || 'bg-zinc-400'}`} />
+                            {priorityCfg?.label}
+                        </span>
+                    </>}
                 </div>
             </div>
-
-            {/* Due date badge */}
             {task.due_date && (
-                <span className={`flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg ${
-                    isOverdue
-                        ? 'bg-red-900/60 text-red-300'
-                        : 'bg-zinc-800 text-zinc-300 dark:bg-zinc-700 dark:text-zinc-200'
-                }`}>
+                <span className={`flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg ${isOverdue ? 'bg-red-900/60 text-red-300' : 'bg-zinc-800 text-zinc-300 dark:bg-zinc-700 dark:text-zinc-200'}`}>
                     {format(new Date(task.due_date), 'MMM d')}
                 </span>
             )}
@@ -534,64 +497,124 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
     )
 }
 
-// ── section header row (renders inside <tbody>) ───────────────────────────────
+// ── section header row ────────────────────────────────────────────────────────
 
-function SectionHeaderRow({ title, count, colCount, open, onToggle, accent }) {
+function SectionHeaderRow({
+    section, count, colCount, open, onToggle,
+    onRename, onDelete, onDragStart, onDragEnd,
+    isDragOver, isBeingDragged,
+}) {
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState(section.label)
+    const inputRef = useRef(null)
+
+    const commitRename = () => {
+        if (draft.trim() && draft.trim() !== section.label) onRename(draft.trim())
+        setEditing(false)
+    }
+
+    useEffect(() => { if (editing && inputRef.current) inputRef.current.focus() }, [editing])
+
     return (
-        <tr className="border-t border-zinc-100 dark:border-white/[0.05]">
-            <td colSpan={colCount} className="px-4 py-2">
-                <button onClick={onToggle} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-                    {open
-                        ? <ChevronDown size={13} className="text-zinc-400 flex-shrink-0" />
-                        : <ChevronRight size={13} className="text-zinc-400 flex-shrink-0" />}
-                    <span className={`text-[11px] font-bold uppercase tracking-widest ${accent || 'text-zinc-500 dark:text-zinc-400'}`}>{title}</span>
-                    <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{count}</span>
-                </button>
+        <tr
+            className={`border-t border-zinc-100 dark:border-white/[0.05] transition-colors ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isBeingDragged ? 'opacity-30' : ''}`}
+            draggable
+            onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart() }}
+            onDragEnd={onDragEnd}
+        >
+            <td colSpan={colCount} className="px-4 py-1.5">
+                <div className="flex items-center gap-1.5 group/header">
+                    {/* Section drag grip */}
+                    <GripVertical size={13} className="text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing opacity-0 group-hover/header:opacity-100 transition-opacity flex-shrink-0" />
+
+                    {/* Expand/collapse */}
+                    <button onClick={onToggle} className="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                    </button>
+
+                    {/* Label / edit */}
+                    {editing ? (
+                        <div className="flex items-center gap-1.5">
+                            <input
+                                ref={inputRef}
+                                value={draft}
+                                onChange={(e) => setDraft(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setEditing(false); setDraft(section.label) } }}
+                                className="text-[11px] font-bold uppercase tracking-widest bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded px-2 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 w-40"
+                            />
+                            <button onClick={commitRename} className="text-emerald-500 hover:text-emerald-600"><Check size={13} /></button>
+                            <button onClick={() => { setEditing(false); setDraft(section.label) }} className="text-zinc-400 hover:text-zinc-600"><X size={13} /></button>
+                        </div>
+                    ) : (
+                        <button onDoubleClick={() => setEditing(true)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{section.label}</span>
+                            <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{count}</span>
+                        </button>
+                    )}
+
+                    {/* Actions (hover) */}
+                    {!editing && (
+                        <div className="flex items-center gap-1 ml-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                            <button onClick={() => setEditing(true)} title="Rename section"
+                                className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors">
+                                <Pencil size={11} />
+                            </button>
+                            <button onClick={onDelete} title="Delete section"
+                                className="p-0.5 text-zinc-400 hover:text-red-500 rounded transition-colors">
+                                <Trash2 size={11} />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </td>
         </tr>
     )
 }
 
-// ── page ──────────────────────────────────────────────────────────────────────
+// ── drop zone row (shown when dragging a task over a section) ─────────────────
 
-const VIS_KEY = 'mytasks_col_vis'
+
+// ── page ──────────────────────────────────────────────────────────────────────
 
 export default function MyTasks() {
     const { user } = useAuth()
     const dispatch = useDispatch()
     const { currentWorkspace } = useSelector((s) => s.workspace)
-    const members = useSelector((s) => s.workspace.currentWorkspace?.members || [])
-    const projects = currentWorkspace?.projects || []
+    const members  = useSelector((s) => s.workspace.currentWorkspace?.members || [])
+    const rawProjects = useSelector((s) => s.workspace.currentWorkspace?.projects)
+    const projects = useMemo(() => rawProjects || [], [rawProjects])
 
     const [selectedTaskId, setSelectedTaskId] = useState(null)
     const [selectedProjectId, setSelectedProjectId] = useState(null)
 
-    // Column widths for resize
-    const [colWidths, setColWidths] = useState(() =>
-        Object.fromEntries(ALL_COLS.map((c) => [c.key, c.defaultW]))
-    )
+    // Column widths
+    const [colWidths, setColWidths] = useState(() => Object.fromEntries(ALL_COLS.map((c) => [c.key, c.defaultW])))
     const setColWidth = (key, w) => setColWidths((prev) => ({ ...prev, [key]: w }))
 
-
+    // Column visibility
     const [colVis, setColVis] = useState(() => {
         try {
             const saved = JSON.parse(localStorage.getItem(VIS_KEY)) || {}
-            // Apply defaults for any key not yet saved
             const defaults = Object.fromEntries(ALL_COLS.filter((c) => !c.fixed).map((c) => [c.key, c.defaultOn]))
             return { ...defaults, ...saved }
         } catch { return {} }
     })
-
     const handleColVis = (key, val) => {
-        setColVis((prev) => {
-            const next = { ...prev, [key]: val }
-            localStorage.setItem(VIS_KEY, JSON.stringify(next))
-            return next
-        })
+        setColVis((prev) => { const next = { ...prev, [key]: val }; localStorage.setItem(VIS_KEY, JSON.stringify(next)); return next })
     }
-
     const cols = visibleCols(colVis)
 
+    // Sections
+    const [sections, setSections] = useState(loadSections)
+    const [sectionOpen, setSectionOpen] = useState(() => Object.fromEntries(loadSections().map((s) => [s.id, true])))
+
+    // task → section assignment (localStorage)
+    const [taskSections, setTaskSections] = useState(loadTaskSections)
+
+    const persistSections = (s) => { saveSections(s); setSections(s) }
+    const persistTaskSections = (m) => { saveTaskSections(m); setTaskSections(m) }
+
+    // All my tasks
     const allMyTasks = useMemo(() => {
         if (!currentWorkspace || !user) return []
         return projects.flatMap((p) =>
@@ -599,50 +622,118 @@ export default function MyTasks() {
                 .filter((t) => !t.archived_at && (t.assignee_id === user.id || t.created_by === user.id))
                 .map((t) => ({ ...t, projectId: p.id, projectName: p.name }))
         )
-    }, [currentWorkspace, user])
+    }, [currentWorkspace, user, projects])
 
     const activeTasks = useMemo(() => allMyTasks.filter((t) => t.status !== 'DONE'), [allMyTasks])
     const doneTasks   = useMemo(() => allMyTasks.filter((t) => t.status === 'DONE'), [allMyTasks])
 
-    const grouped = useMemo(() => ({
-        today:    activeTasks.filter((t) => getGroup(t) === 'today'),
-        tomorrow: activeTasks.filter((t) => getGroup(t) === 'tomorrow'),
-        later:    activeTasks.filter((t) => getGroup(t) === 'later'),
-    }), [activeTasks])
+    // Assign each task to a section: use stored assignment, fall back to due-date heuristic
+    const tasksBySection = useMemo(() => {
+        const map = Object.fromEntries(sections.map((s) => [s.id, []]))
+        map['__done__'] = []
+        for (const t of allMyTasks) {
+            if (t.status === 'DONE') { map['__done__'].push(t); continue }
+            const secId = taskSections[t.id] || getDefaultSection(t)
+            // If stored section no longer exists, fall back
+            const target = sections.find((s) => s.id === secId) ? secId : sections[0]?.id || 'later'
+            if (!map[target]) map[target] = []
+            map[target].push(t)
+        }
+        return map
+    }, [allMyTasks, sections, taskSections])
 
     const handleSave = useCallback(async (task, fields) => {
-        try {
-            await dispatch(updateTask({ taskId: task.id, projectId: task.projectId, fields })).unwrap()
-        } catch (err) {
-            toast.error(err || 'Failed to save')
-        }
+        try { await dispatch(updateTask({ taskId: task.id, projectId: task.projectId, fields })).unwrap() }
+        catch (err) { toast.error(err || 'Failed to save') }
     }, [dispatch])
 
     const openPanel = (t) => { setSelectedTaskId(t.id); setSelectedProjectId(t.projectId) }
-
     const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'M'
 
-    // Detect mobile viewport
+    // Mobile
     const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640)
     useEffect(() => {
-        const handler = () => setIsMobile(window.innerWidth < 640)
-        window.addEventListener('resize', handler)
-        return () => window.removeEventListener('resize', handler)
+        const h = () => setIsMobile(window.innerWidth < 640)
+        window.addEventListener('resize', h)
+        return () => window.removeEventListener('resize', h)
     }, [])
 
-    // Section open/close state
-    const [sectionOpen, setSectionOpen] = useState({ today: true, tomorrow: true, later: true, done: true })
-    const toggleSection = (key) => setSectionOpen((s) => ({ ...s, [key]: !s[key] }))
+    // ── drag & drop ────────────────────────────────────────────────────────────
+    const draggingTaskId   = useRef(null)
+    const draggingSectionId = useRef(null) // for section reorder
+    const [dragOverSection, setDragOverSection] = useState(null) // section id task is hovering over
+    const [dragOverSectionIdx, setDragOverSectionIdx] = useState(null) // for section reorder
+
+    // Task drag handlers
+    const onTaskDragStart = (taskId) => { draggingTaskId.current = taskId; draggingSectionId.current = null }
+    const onTaskDragEnd   = () => { draggingTaskId.current = null; setDragOverSection(null) }
+
+    const onSectionDragOver = (e, sectionId) => {
+        if (!draggingTaskId.current) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        setDragOverSection(sectionId)
+    }
+
+    const onSectionDrop = (e, sectionId) => {
+        e.preventDefault()
+        if (!draggingTaskId.current) return
+        const newMap = { ...taskSections, [draggingTaskId.current]: sectionId }
+        persistTaskSections(newMap)
+        setDragOverSection(null)
+        draggingTaskId.current = null
+    }
+
+    // Section reorder drag handlers
+    const onSectionDragStart = (idx) => { draggingSectionId.current = idx; draggingTaskId.current = null }
+    const onSectionDragEnd   = () => { draggingSectionId.current = null; setDragOverSectionIdx(null) }
+
+    const onSectionHeaderDragOver = (e, idx) => {
+        if (draggingSectionId.current === null || draggingTaskId.current !== null) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        setDragOverSectionIdx(idx)
+    }
+
+    const onSectionHeaderDrop = (e, idx) => {
+        e.preventDefault()
+        const from = draggingSectionId.current
+        if (from === null || from === idx) { setDragOverSectionIdx(null); return }
+        const next = [...sections]
+        const [moved] = next.splice(from, 1)
+        next.splice(idx, 0, moved)
+        persistSections(next)
+        setDragOverSectionIdx(null)
+        draggingSectionId.current = null
+    }
+
+    // Section management
+    const addSection = () => {
+        const id = `sec_${Date.now()}`
+        const next = [...sections, { id, label: 'New Section' }]
+        persistSections(next)
+        setSectionOpen((p) => ({ ...p, [id]: true }))
+    }
+
+    const renameSection = (id, label) => {
+        persistSections(sections.map((s) => s.id === id ? { ...s, label } : s))
+    }
+
+    const deleteSection = (id) => {
+        if (sections.length <= 1) { toast.error('Need at least one section'); return }
+        // Reassign tasks from deleted section to first remaining
+        const fallback = sections.find((s) => s.id !== id)?.id || sections[0].id
+        const newMap = { ...taskSections }
+        for (const [tid, sid] of Object.entries(newMap)) {
+            if (sid === id) newMap[tid] = fallback
+        }
+        persistTaskSections(newMap)
+        persistSections(sections.filter((s) => s.id !== id))
+    }
 
     const rowProps = { cols, colWidths, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id }
 
-    const renderSectionRows = (key, title, tasks, accent) => <>
-        <SectionHeaderRow
-            title={title} count={tasks.length} colCount={cols.length}
-            open={sectionOpen[key]} onToggle={() => toggleSection(key)} accent={accent}
-        />
-        {sectionOpen[key] && tasks.map((t) => <TaskRow key={t.id} task={t} {...rowProps} />)}
-    </>
+    const [doneOpen, setDoneOpen] = useState(true)
 
     return (
         <div className="max-w-full">
@@ -657,17 +748,28 @@ export default function MyTasks() {
                         <p className="text-sm text-zinc-500 dark:text-zinc-400">{activeTasks.length} open · {doneTasks.length} completed</p>
                     </div>
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden sm:flex items-center gap-2">
+                    <button onClick={addSection}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] transition-colors">
+                        <Plus size={12} /> Add Section
+                    </button>
                     <FieldPicker colVis={colVis} onChange={handleColVis} />
                 </div>
             </div>
 
-            {/* Mobile list */}
+            {/* Mobile */}
             {isMobile ? (
                 <div className="glass-panel rounded-xl overflow-hidden">
-                    {grouped.today.map((t) => <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />)}
-                    {grouped.tomorrow.map((t) => <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />)}
-                    {grouped.later.map((t) => <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />)}
+                    {sections.map((sec) => (
+                        <div key={sec.id}>
+                            <div className="px-4 py-3 bg-zinc-50 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-white/[0.06]">
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{sec.label}</span>
+                            </div>
+                            {(tasksBySection[sec.id] || []).map((t) => (
+                                <MobileTaskCard key={t.id} task={t} onRowClick={openPanel} onSave={handleSave} />
+                            ))}
+                        </div>
+                    ))}
                     {activeTasks.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-16 gap-3">
                             <CheckCircle2 className="size-10 text-zinc-200 dark:text-zinc-700" />
@@ -676,31 +778,77 @@ export default function MyTasks() {
                     )}
                 </div>
             ) : (
-                /* Desktop table */
                 <div className="glass-panel rounded-xl overflow-x-auto">
                     <table className="border-collapse text-sm" style={{ width: 'max-content', minWidth: '100%' }}>
-                        {/* Header */}
                         <thead>
                             <tr className="border-b border-zinc-200 dark:border-white/[0.08] bg-zinc-50/80 dark:bg-white/[0.02]">
                                 {cols.map((col) => (
-                                    <ResizableTh
-                                        key={col.key}
-                                        col={col}
-                                        width={colWidths[col.key]}
-                                        onResize={(w) => setColWidth(col.key, w)}
-                                    >
+                                    <ResizableTh key={col.key} width={colWidths[col.key]} onResize={(w) => setColWidth(col.key, w)}>
                                         {col.label}
                                     </ResizableTh>
                                 ))}
                             </tr>
                         </thead>
-
-                        {/* Body */}
                         <tbody>
-                            {renderSectionRows('today',    'Do Today',    grouped.today)}
-                            {renderSectionRows('tomorrow', 'Do Tomorrow', grouped.tomorrow)}
-                            {renderSectionRows('later',    'Later',       grouped.later)}
+                            {sections.map((sec, idx) => {
+                                const tasks = tasksBySection[sec.id] || []
+                                const open = sectionOpen[sec.id] !== false
+                                return (
+                                    <React.Fragment key={sec.id}>
+                                        {/* Section header — droppable for task drop AND draggable for reorder */}
+                                        <tr
+                                            className={`border-t border-zinc-100 dark:border-white/[0.05] transition-colors ${dragOverSection === sec.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${dragOverSectionIdx === idx ? 'outline outline-2 outline-blue-400' : ''}`}
+                                            onDragOver={(e) => { onSectionDragOver(e, sec.id); onSectionHeaderDragOver(e, idx) }}
+                                            onDrop={(e) => { onSectionDrop(e, sec.id); onSectionHeaderDrop(e, idx) }}
+                                            onDragLeave={() => { setDragOverSection(null); setDragOverSectionIdx(null) }}
+                                        >
+                                            <td colSpan={cols.length} className="px-4 py-1.5">
+                                                <SectionHeaderRow
+                                                    section={sec}
+                                                    count={tasks.length}
+                                                    colCount={cols.length}
+                                                    open={open}
+                                                    onToggle={() => setSectionOpen((p) => ({ ...p, [sec.id]: !p[sec.id] }))}
+                                                    onRename={(label) => renameSection(sec.id, label)}
+                                                    onDelete={() => deleteSection(sec.id)}
+                                                    onDragStart={() => onSectionDragStart(idx)}
+                                                    onDragEnd={onSectionDragEnd}
+                                                    isDragOver={dragOverSection === sec.id}
+                                                    isBeingDragged={draggingSectionId.current === idx}
+                                                />
+                                            </td>
+                                        </tr>
 
+                                        {/* Drop indicator */}
+                                        {dragOverSection === sec.id && open && (
+                                            <tr><td colSpan={cols.length}><div className="h-0.5 mx-4 bg-blue-400 rounded-full" /></td></tr>
+                                        )}
+
+                                        {/* Task rows */}
+                                        {open && tasks.map((t) => (
+                                            <TaskRow key={t.id} task={t} {...rowProps}
+                                                onDragStart={onTaskDragStart}
+                                                onDragEnd={onTaskDragEnd}
+                                                isDragging={draggingTaskId.current === t.id}
+                                            />
+                                        ))}
+
+                                        {/* Empty drop zone */}
+                                        {open && tasks.length === 0 && (
+                                            <tr
+                                                onDragOver={(e) => { e.preventDefault(); setDragOverSection(sec.id) }}
+                                                onDrop={(e) => onSectionDrop(e, sec.id)}
+                                            >
+                                                <td colSpan={cols.length} className="px-8 py-2">
+                                                    <span className="text-xs text-zinc-300 dark:text-zinc-700 italic">No tasks — drag one here</span>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                )
+                            })}
+
+                            {/* Empty overall state */}
                             {activeTasks.length === 0 && (
                                 <tr>
                                     <td colSpan={cols.length} className="py-16 text-center">
@@ -712,7 +860,24 @@ export default function MyTasks() {
                                 </tr>
                             )}
 
-                            {doneTasks.length > 0 && renderSectionRows('done', 'Completed', doneTasks)}
+                            {/* Completed section */}
+                            {doneTasks.length > 0 && <>
+                                <tr className="border-t border-zinc-100 dark:border-white/[0.05]">
+                                    <td colSpan={cols.length} className="px-4 py-1.5">
+                                        <button onClick={() => setDoneOpen((v) => !v)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                                            {doneOpen ? <ChevronDown size={13} className="text-zinc-400" /> : <ChevronRight size={13} className="text-zinc-400" />}
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Completed</span>
+                                            <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{doneTasks.length}</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {doneOpen && doneTasks.map((t) => (
+                                    <TaskRow key={t.id} task={t} {...rowProps}
+                                        onDragStart={onTaskDragStart} onDragEnd={onTaskDragEnd}
+                                        isDragging={draggingTaskId.current === t.id}
+                                    />
+                                ))}
+                            </>}
                         </tbody>
                     </table>
                 </div>
