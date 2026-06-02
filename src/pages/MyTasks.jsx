@@ -444,7 +444,7 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
             draggable
             onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart(task.id) }}
             onDragEnd={onDragEnd}
-            className={`group border-t border-zinc-100 dark:border-white/[0.06] hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''} ${isDragging ? 'opacity-30' : ''}`}
+            className={`group border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors cursor-grab active:cursor-grabbing first:border-t-0 ${isDone ? 'opacity-50' : ''} ${isDragging ? 'opacity-30' : ''}`}
         >
             {/* Drag handle cell (first col) */}
             {cols.map((col, i) => (
@@ -502,9 +502,9 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
 // ── section header row ────────────────────────────────────────────────────────
 
 function SectionHeaderRow({
-    section, count, colCount, open, onToggle,
+    section, count, open, onToggle,
     onRename, onDelete, onDragStart, onDragEnd,
-    isDragOver, isBeingDragged,
+    isBeingDragged,
 }) {
     const [editing, setEditing] = useState(false)
     const [draft, setDraft] = useState(section.label)
@@ -517,59 +517,52 @@ function SectionHeaderRow({
 
     useEffect(() => { if (editing && inputRef.current) inputRef.current.focus() }, [editing])
 
+    // Renders as a plain div row (called inside a section header bar div, not inside a <table>)
     return (
-        <tr
-            className={`border-t border-zinc-100 dark:border-white/[0.05] transition-colors ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isBeingDragged ? 'opacity-30' : ''}`}
+        <div
+            className={`flex items-center gap-1.5 group/header w-full ${isBeingDragged ? 'opacity-30' : ''}`}
             draggable
             onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart() }}
             onDragEnd={onDragEnd}
         >
-            <td colSpan={colCount} className="px-4 py-1.5">
-                <div className="flex items-center gap-1.5 group/header">
-                    {/* Section drag grip */}
-                    <GripVertical size={13} className="text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing opacity-0 group-hover/header:opacity-100 transition-opacity flex-shrink-0" />
+            <GripVertical size={13} className="text-zinc-400 dark:text-zinc-600 cursor-grab active:cursor-grabbing opacity-0 group-hover/header:opacity-100 transition-opacity flex-shrink-0" />
 
-                    {/* Expand/collapse */}
-                    <button onClick={onToggle} className="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
-                        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                    </button>
+            <button onClick={onToggle} className="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            </button>
 
-                    {/* Label / edit */}
-                    {editing ? (
-                        <div className="flex items-center gap-1.5">
-                            <input
-                                ref={inputRef}
-                                value={draft}
-                                onChange={(e) => setDraft(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setEditing(false); setDraft(section.label) } }}
-                                className="text-[11px] font-bold uppercase tracking-widest bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded px-2 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 w-40"
-                            />
-                            <button onClick={commitRename} className="text-emerald-500 hover:text-emerald-600"><Check size={13} /></button>
-                            <button onClick={() => { setEditing(false); setDraft(section.label) }} className="text-zinc-400 hover:text-zinc-600"><X size={13} /></button>
-                        </div>
-                    ) : (
-                        <button onDoubleClick={() => setEditing(true)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{section.label}</span>
-                            <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{count}</span>
-                        </button>
-                    )}
-
-                    {/* Actions (hover) */}
-                    {!editing && (
-                        <div className="flex items-center gap-1 ml-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
-                            <button onClick={() => setEditing(true)} title="Rename section"
-                                className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors">
-                                <Pencil size={11} />
-                            </button>
-                            <button onClick={onDelete} title="Delete section"
-                                className="p-0.5 text-zinc-400 hover:text-red-500 rounded transition-colors">
-                                <Trash2 size={11} />
-                            </button>
-                        </div>
-                    )}
+            {editing ? (
+                <div className="flex items-center gap-1.5">
+                    <input
+                        ref={inputRef}
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setEditing(false); setDraft(section.label) } }}
+                        className="text-[11px] font-bold uppercase tracking-widest bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded px-2 py-0.5 outline-none focus:ring-1 focus:ring-blue-400 w-40"
+                    />
+                    <button onClick={commitRename} className="text-emerald-500 hover:text-emerald-600"><Check size={13} /></button>
+                    <button onClick={() => { setEditing(false); setDraft(section.label) }} className="text-zinc-400 hover:text-zinc-600"><X size={13} /></button>
                 </div>
-            </td>
-        </tr>
+            ) : (
+                <button onDoubleClick={() => setEditing(true)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <span className="text-[12px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">{section.label}</span>
+                    <span className="text-[11px] text-zinc-400 dark:text-zinc-500 tabular-nums font-medium">{count}</span>
+                </button>
+            )}
+
+            {!editing && (
+                <div className="flex items-center gap-1 ml-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                    <button onClick={() => setEditing(true)} title="Rename"
+                        className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors">
+                        <Pencil size={11} />
+                    </button>
+                    <button onClick={onDelete} title="Delete section"
+                        className="p-0.5 text-zinc-400 hover:text-red-500 rounded transition-colors">
+                        <Trash2 size={11} />
+                    </button>
+                </div>
+            )}
+        </div>
     )
 }
 
@@ -778,117 +771,129 @@ export default function MyTasks() {
                     )}
                 </div>
             ) : (
-                <div className="glass-panel rounded-xl overflow-x-auto">
-                    <table className="border-collapse text-sm" style={{ width: 'max-content', minWidth: '100%' }}>
-                        <thead>
-                            <tr className="border-b border-zinc-200 dark:border-white/[0.08] bg-zinc-50/80 dark:bg-white/[0.02]">
-                                {cols.map((col) => (
-                                    <ResizableTh key={col.key} width={colWidths[col.key]} onResize={(w) => setColWidth(col.key, w)}>
-                                        {col.label}
-                                    </ResizableTh>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sections.map((sec, idx) => {
-                                const tasks = tasksBySection[sec.id] || []
-                                const open = sectionOpen[sec.id] !== false
-                                return (
-                                    <React.Fragment key={sec.id}>
-                                        {/* Spacer between sections (not before the first) */}
-                                        {idx > 0 && (
-                                            <tr aria-hidden="true">
-                                                <td colSpan={cols.length} className="py-2 bg-zinc-50/60 dark:bg-white/[0.01]">
-                                                    <div className="h-px bg-zinc-100 dark:bg-white/[0.06] mx-4" />
-                                                </td>
-                                            </tr>
-                                        )}
-
-                                        {/* Section header — droppable for task drop AND draggable for reorder */}
-                                        <tr
-                                            className={`transition-colors ${dragOverSection === sec.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${dragOverSectionIdx === idx ? 'outline outline-2 outline-blue-400' : ''}`}
-                                            onDragOver={(e) => { onSectionDragOver(e, sec.id); onSectionHeaderDragOver(e, idx) }}
-                                            onDrop={(e) => { onSectionDrop(e, sec.id); onSectionHeaderDrop(e, idx) }}
-                                            onDragLeave={() => { setDragOverSection(null); setDragOverSectionIdx(null) }}
-                                        >
-                                            <td colSpan={cols.length} className="px-4 pt-3 pb-1.5">
-                                                <SectionHeaderRow
-                                                    section={sec}
-                                                    count={tasks.length}
-                                                    colCount={cols.length}
-                                                    open={open}
-                                                    onToggle={() => setSectionOpen((p) => ({ ...p, [sec.id]: !p[sec.id] }))}
-                                                    onRename={(label) => renameSection(sec.id, label)}
-                                                    onDelete={() => deleteSection(sec.id)}
-                                                    onDragStart={() => onSectionDragStart(idx)}
-                                                    onDragEnd={onSectionDragEnd}
-                                                    isDragOver={dragOverSection === sec.id}
-                                                    isBeingDragged={draggingSectionId.current === idx}
-                                                />
-                                            </td>
-                                        </tr>
-
-                                        {/* Drop indicator */}
-                                        {dragOverSection === sec.id && open && (
-                                            <tr><td colSpan={cols.length}><div className="h-0.5 mx-4 bg-blue-400 rounded-full" /></td></tr>
-                                        )}
-
-                                        {/* Task rows */}
-                                        {open && tasks.map((t) => (
-                                            <TaskRow key={t.id} task={t} {...rowProps}
-                                                onDragStart={onTaskDragStart}
-                                                onDragEnd={onTaskDragEnd}
-                                                isDragging={draggingTaskId.current === t.id}
-                                            />
-                                        ))}
-
-                                        {/* Empty drop zone */}
-                                        {open && tasks.length === 0 && (
-                                            <tr
-                                                onDragOver={(e) => { e.preventDefault(); setDragOverSection(sec.id) }}
-                                                onDrop={(e) => onSectionDrop(e, sec.id)}
-                                            >
-                                                <td colSpan={cols.length} className="px-8 py-2">
-                                                    <span className="text-xs text-zinc-300 dark:text-zinc-700 italic">No tasks — drag one here</span>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                )
-                            })}
-
-                            {/* Empty overall state */}
-                            {activeTasks.length === 0 && (
+                <div className="space-y-3">
+                    {/* Sticky column header — sits above all section panels */}
+                    <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900 shadow-sm">
+                        <table className="border-collapse text-sm" style={{ width: 'max-content', minWidth: '100%' }}>
+                            <thead>
                                 <tr>
-                                    <td colSpan={cols.length} className="py-16 text-center">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <CheckCircle2 className="size-9 text-zinc-200 dark:text-zinc-700" />
-                                            <span className="text-sm text-zinc-400">You're all caught up</span>
-                                        </div>
-                                    </td>
+                                    {cols.map((col) => (
+                                        <ResizableTh key={col.key} width={colWidths[col.key]} onResize={(w) => setColWidth(col.key, w)}>
+                                            {col.label}
+                                        </ResizableTh>
+                                    ))}
                                 </tr>
-                            )}
+                            </thead>
+                        </table>
+                    </div>
 
-                            {/* Completed section */}
-                            {doneTasks.length > 0 && <>
-                                <tr className="border-t border-zinc-100 dark:border-white/[0.05]">
-                                    <td colSpan={cols.length} className="px-4 py-1.5">
-                                        <button onClick={() => setDoneOpen((v) => !v)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-                                            {doneOpen ? <ChevronDown size={13} className="text-zinc-400" /> : <ChevronRight size={13} className="text-zinc-400" />}
-                                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Completed</span>
-                                            <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{doneTasks.length}</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {doneOpen && doneTasks.map((t) => (
-                                    <TaskRow key={t.id} task={t} {...rowProps}
-                                        onDragStart={onTaskDragStart} onDragEnd={onTaskDragEnd}
-                                        isDragging={draggingTaskId.current === t.id}
+                    {/* One card per section */}
+                    {sections.map((sec, idx) => {
+                        const tasks = tasksBySection[sec.id] || []
+                        const open = sectionOpen[sec.id] !== false
+                        const isOver = dragOverSection === sec.id
+                        const isReorderTarget = dragOverSectionIdx === idx
+
+                        return (
+                            <div
+                                key={sec.id}
+                                className={`rounded-xl border overflow-hidden transition-all
+                                    ${isOver
+                                        ? 'border-blue-400 shadow-[0_0_0_2px_rgba(96,165,250,0.3)]'
+                                        : isReorderTarget
+                                        ? 'border-blue-300 dark:border-blue-600'
+                                        : 'border-zinc-200 dark:border-zinc-700/60'
+                                    }
+                                    bg-white dark:bg-zinc-900 shadow-sm`}
+                                onDragOver={(e) => { onSectionDragOver(e, sec.id); onSectionHeaderDragOver(e, idx) }}
+                                onDrop={(e) => { onSectionDrop(e, sec.id); onSectionHeaderDrop(e, idx) }}
+                                onDragLeave={() => { setDragOverSection(null); setDragOverSectionIdx(null) }}
+                            >
+                                {/* Section header bar */}
+                                <div className={`px-4 py-2.5 border-b flex items-center gap-2
+                                    ${isOver
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                                        : 'bg-zinc-50 dark:bg-zinc-800/60 border-zinc-100 dark:border-zinc-700/60'
+                                    }`}>
+                                    <SectionHeaderRow
+                                        section={sec}
+                                        count={tasks.length}
+                                        open={open}
+                                        onToggle={() => setSectionOpen((p) => ({ ...p, [sec.id]: !p[sec.id] }))}
+                                        onRename={(label) => renameSection(sec.id, label)}
+                                        onDelete={() => deleteSection(sec.id)}
+                                        onDragStart={() => onSectionDragStart(idx)}
+                                        onDragEnd={onSectionDragEnd}
+                                        isBeingDragged={draggingSectionId.current === idx}
                                     />
-                                ))}
-                            </>}
-                        </tbody>
-                    </table>
+                                </div>
+
+                                {/* Drop indicator */}
+                                {isOver && open && <div className="h-0.5 bg-blue-400" />}
+
+                                {/* Task rows — same widths as header table */}
+                                {open && (
+                                    <div className="overflow-x-auto">
+                                        <table className="border-collapse text-sm" style={{ width: 'max-content', minWidth: '100%' }}>
+                                            <tbody>
+                                                {tasks.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={cols.length}
+                                                            className="px-8 py-4 text-xs text-zinc-300 dark:text-zinc-600 italic"
+                                                            onDragOver={(e) => { e.preventDefault(); setDragOverSection(sec.id) }}
+                                                            onDrop={(e) => onSectionDrop(e, sec.id)}>
+                                                            No tasks — drag one here
+                                                        </td>
+                                                    </tr>
+                                                ) : tasks.map((t) => (
+                                                    <TaskRow key={t.id} task={t} {...rowProps}
+                                                        onDragStart={onTaskDragStart}
+                                                        onDragEnd={onTaskDragEnd}
+                                                        isDragging={draggingTaskId.current === t.id}
+                                                    />
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+
+                    {/* Empty overall state */}
+                    {activeTasks.length === 0 && (
+                        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900 py-16 text-center">
+                            <CheckCircle2 className="size-9 text-zinc-200 dark:text-zinc-700 mx-auto mb-2" />
+                            <span className="text-sm text-zinc-400">You're all caught up</span>
+                        </div>
+                    )}
+
+                    {/* Completed section */}
+                    {doneTasks.length > 0 && (
+                        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+                            <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/60">
+                                <button onClick={() => setDoneOpen((v) => !v)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                                    {doneOpen ? <ChevronDown size={13} className="text-zinc-400" /> : <ChevronRight size={13} className="text-zinc-400" />}
+                                    <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Completed</span>
+                                    <span className="text-[11px] text-zinc-400 dark:text-zinc-600 tabular-nums">{doneTasks.length}</span>
+                                </button>
+                            </div>
+                            {doneOpen && (
+                                <div className="overflow-x-auto">
+                                    <table className="border-collapse text-sm" style={{ width: 'max-content', minWidth: '100%' }}>
+                                        <tbody>
+                                            {doneTasks.map((t) => (
+                                                <TaskRow key={t.id} task={t} {...rowProps}
+                                                    onDragStart={onTaskDragStart} onDragEnd={onTaskDragEnd}
+                                                    isDragging={draggingTaskId.current === t.id}
+                                                />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
