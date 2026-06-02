@@ -410,21 +410,83 @@ function TaskRow({ task, cols, members, projects, onRowClick, onSave, userId }) 
     )
 }
 
+// ── mobile task card ──────────────────────────────────────────────────────────
+
+function MobileTaskCard({ task, onRowClick, onSave }) {
+    const isDone = task.status === 'DONE'
+    const isOverdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))
+    const priorityCfg = PRIORITY_CFG[task.priority]
+
+    const PRIORITY_DOT = {
+        LOW:    'bg-zinc-400',
+        MEDIUM: 'bg-amber-400',
+        HIGH:   'bg-emerald-500',
+        URGENT: 'bg-red-500',
+    }
+
+    return (
+        <div
+            onClick={() => onRowClick(task)}
+            className={`flex items-start gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-white/[0.06] active:bg-zinc-50 dark:active:bg-white/[0.03] transition-colors ${isDone ? 'opacity-50' : ''}`}
+        >
+            {/* Checkbox */}
+            <button
+                onClick={(e) => { e.stopPropagation(); onSave(task, { status: isDone ? 'TODO' : 'DONE' }) }}
+                className={`flex-shrink-0 mt-0.5 transition-colors ${isDone ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}`}
+            >
+                {isDone ? <CheckCircle2 size={20} strokeWidth={1.75} /> : <Circle size={20} strokeWidth={1.75} />}
+            </button>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+                <p className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
+                    {task.title}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[12px] text-zinc-400 dark:text-zinc-500 truncate">{task.projectName}</span>
+                    {task.priority && (
+                        <>
+                            <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                            <span className="flex items-center gap-1 text-[12px] text-zinc-400 dark:text-zinc-500">
+                                <span className={`size-2 rounded-full ${PRIORITY_DOT[task.priority] || 'bg-zinc-400'}`} />
+                                {priorityCfg?.label}
+                            </span>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Due date badge */}
+            {task.due_date && (
+                <span className={`flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg ${
+                    isOverdue
+                        ? 'bg-red-900/60 text-red-300'
+                        : 'bg-zinc-800 text-zinc-300 dark:bg-zinc-700 dark:text-zinc-200'
+                }`}>
+                    {format(new Date(task.due_date), 'MMM d')}
+                </span>
+            )}
+        </div>
+    )
+}
+
 // ── section ───────────────────────────────────────────────────────────────────
 
-function Section({ title, tasks, cols, members, projects, defaultOpen = true, accent, onRowClick, onSave, userId }) {
+function Section({ title, tasks, cols, members, projects, defaultOpen = true, accent, onRowClick, onSave, userId, mobile }) {
     const [open, setOpen] = useState(defaultOpen)
     return (
         <div className="border-t border-zinc-100 dark:border-white/[0.05] first:border-t-0">
             <button onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 w-full text-left px-6 py-4 hover:bg-zinc-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                className="flex items-center gap-2 w-full text-left px-4 sm:px-6 py-4 hover:bg-zinc-50/60 dark:hover:bg-white/[0.02] transition-colors">
                 {open ? <ChevronDown size={14} className="text-zinc-400" /> : <ChevronRight size={14} className="text-zinc-400" />}
                 <span className={`text-xs font-bold uppercase tracking-widest ${accent || 'text-zinc-500 dark:text-zinc-400'}`}>{title}</span>
                 <span className="text-xs text-zinc-400 dark:text-zinc-600 ml-1 tabular-nums">{tasks.length}</span>
             </button>
             {open && tasks.map((t) => (
-                <TaskRow key={t.id} task={t} cols={cols} members={members} projects={projects}
-                    onRowClick={onRowClick} onSave={onSave} userId={userId} />
+                mobile
+                    ? <MobileTaskCard key={t.id} task={t} onRowClick={onRowClick} onSave={onSave} />
+                    : <TaskRow key={t.id} task={t} cols={cols} members={members} projects={projects}
+                        onRowClick={onRowClick} onSave={onSave} userId={userId} />
             ))}
         </div>
     )
@@ -495,38 +557,53 @@ export default function MyTasks() {
     const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'M'
     const span = totalSpan(cols)
 
+    // Detect mobile viewport
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640)
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth < 640)
+        window.addEventListener('resize', handler)
+        return () => window.removeEventListener('resize', handler)
+    }, [])
+
+    const sectionProps = { members, projects, defaultOpen: true, onRowClick: openPanel, onSave: handleSave, userId: user?.id, mobile: isMobile }
+
     return (
         <div className="max-w-full">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-lg font-bold text-zinc-600 dark:text-zinc-300">
+            <div className="flex items-center justify-between mb-5 sm:mb-8">
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-base sm:text-lg font-bold text-zinc-600 dark:text-zinc-300">
                         {displayName[0].toUpperCase()}
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">My Tasks</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">My Tasks</h1>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{activeTasks.length} open · {doneTasks.length} completed</p>
                     </div>
                 </div>
-                <FieldPicker colVis={colVis} onChange={handleColVis} />
+                {/* Fields picker only shown on desktop */}
+                <div className="hidden sm:block">
+                    <FieldPicker colVis={colVis} onChange={handleColVis} />
+                </div>
             </div>
 
-            {/* Table */}
+            {/* Table / List */}
             <div className="glass-panel rounded-xl overflow-hidden">
-                {/* Column headers */}
-                <div className="grid border-b border-zinc-200 dark:border-white/[0.07] bg-zinc-50/80 dark:bg-white/[0.02]"
-                    style={{ gridTemplateColumns: cols.map((c) => `${(c.span / span) * 100}%`).join(' ') }}>
-                    {cols.map((col) => (
-                        <div key={col.key} className="px-6 py-3">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">{col.label}</span>
-                        </div>
-                    ))}
-                </div>
+                {/* Desktop: column headers */}
+                {!isMobile && (
+                    <div className="grid border-b border-zinc-200 dark:border-white/[0.07] bg-zinc-50/80 dark:bg-white/[0.02]"
+                        style={{ gridTemplateColumns: cols.map((c) => `${(c.span / span) * 100}%`).join(' ') }}>
+                        {cols.map((col) => (
+                            <div key={col.key} className="px-6 py-3">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">{col.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Sections */}
-                <Section title="Do Today"    tasks={grouped.today}    cols={cols} members={members} projects={projects} defaultOpen onRowClick={openPanel} onSave={handleSave} userId={user?.id} />
-                <Section title="Do Tomorrow" tasks={grouped.tomorrow} cols={cols} members={members} projects={projects} defaultOpen onRowClick={openPanel} onSave={handleSave} userId={user?.id} />
-                <Section title="Later"       tasks={grouped.later}    cols={cols} members={members} projects={projects} defaultOpen onRowClick={openPanel} onSave={handleSave} userId={user?.id} />
+                <Section title="Do Today"    tasks={grouped.today}    cols={cols} {...sectionProps} />
+                <Section title="Do Tomorrow" tasks={grouped.tomorrow} cols={cols} {...sectionProps} />
+                <Section title="Later"       tasks={grouped.later}    cols={cols} {...sectionProps} />
 
                 {/* Empty state */}
                 {activeTasks.length === 0 && (
@@ -538,8 +615,7 @@ export default function MyTasks() {
 
                 {/* Completed */}
                 {doneTasks.length > 0 && (
-                    <Section title="Completed" tasks={doneTasks} cols={cols} members={members} projects={projects}
-                        defaultOpen={showDone} onRowClick={openPanel} onSave={handleSave} userId={user?.id} />
+                    <Section title="Completed" tasks={doneTasks} cols={cols} {...sectionProps} defaultOpen={showDone} />
                 )}
             </div>
 
