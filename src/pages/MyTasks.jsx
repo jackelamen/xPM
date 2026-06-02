@@ -40,7 +40,7 @@ const TYPE_CFG = Object.fromEntries(
 
 // columns
 const ALL_COLS = [
-    { key: 'status',        label: 'Status',     defaultW: 110, defaultOn: true },
+    { key: 'status',        label: 'Status',     defaultW: 110, defaultOn: false },
     { key: 'title',         label: 'Title',      defaultW: 260, defaultOn: true, fixed: true },
     { key: 'priority',      label: 'Priority',   defaultW: 96,  defaultOn: true },
     { key: 'type',          label: 'Type',       defaultW: 96,  defaultOn: true },
@@ -591,7 +591,8 @@ export default function MyTasks() {
         try {
             const saved = JSON.parse(localStorage.getItem(VIS_KEY)) || {}
             const defaults = Object.fromEntries(ALL_COLS.filter((c) => !c.fixed).map((c) => [c.key, c.defaultOn]))
-            return { ...defaults, ...saved }
+            // Always respect the current defaultOn for status (force it off now that sections provide context)
+            return { ...defaults, ...saved, status: false }
         } catch { return {} }
     })
     const handleColVis = (key, val) => {
