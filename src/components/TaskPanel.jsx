@@ -329,6 +329,75 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         return "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
     }
 
+    // Draft state for the Save button fields
+    const [draft, setDraft] = useState(null)
+    const [saving, setSaving] = useState(false)
+
+    // Sync draft when task changes (new panel open)
+    useEffect(() => {
+        if (task) {
+            setDraft({
+                title: task.title || "",
+                description: task.description || "",
+                priority: task.priority || "MEDIUM",
+                type: task.type || "OTHER",
+                assignee_id: task.assignee_id || "",
+                due_date: task.due_date || "",
+                milestone: task.milestone || false,
+            })
+        }
+    }, [taskId])
+
+    const isDirty = draft && task && (
+        draft.title !== (task.title || "") ||
+        draft.description !== (task.description || "") ||
+        draft.priority !== (task.priority || "MEDIUM") ||
+        draft.type !== (task.type || "OTHER") ||
+        draft.assignee_id !== (task.assignee_id || "") ||
+        draft.due_date !== (task.due_date || "") ||
+        draft.milestone !== (task.milestone || false)
+    )
+
+    const handleSave = async () => {
+        if (!draft || saving) return
+        setSaving(true)
+        try {
+            const updates = {
+                title: draft.title,
+                description: draft.description || null,
+                priority: draft.priority,
+                type: draft.type,
+                assignee_id: draft.assignee_id || null,
+                due_date: draft.due_date || null,
+                milestone: draft.milestone,
+                updated_at: new Date().toISOString(),
+            }
+            const { error } = await supabase
+                .from("xpm_tasks")
+                .update(updates)
+                .eq("id", taskId)
+
+            if (error) throw error
+
+            // Patch Redux immediately from draft so project view updates
+            dispatch(patchTask({
+                projectId,
+                task: {
+                    ...task,
+                    ...updates,
+                    assignee: draft.assignee_id
+                        ? members.find((m) => m.user_id === draft.assignee_id)?.user || task.assignee
+                        : null,
+                }
+            }))
+            toast.success("Saved")
+        } catch {
+            toast.error("Failed to save")
+        } finally {
+            setSaving(false)
+        }
+    }
+
     const handleStatusChange = async (newStatus) => {
         if (!task || updatingStatus) return
         setUpdatingStatus(true)
@@ -341,28 +410,6 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         }
     }
 
-    const handleFieldUpdate = async (field, value) => {
-        const { error } = await supabase
-            .from("xpm_tasks")
-            .update({ [field]: value, updated_at: new Date().toISOString() })
-            .eq("id", taskId)
-
-        if (error) {
-            toast.error("Failed to save")
-            return
-        }
-
-        // Fetch updated task and patch Redux state
-        const { data } = await supabase
-            .from("xpm_tasks")
-            .select("id, project_id, title, description, status, type, priority, assignee_id, due_date, created_at, updated_at, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!tasks_assignee_id_fkey(id, name, email, avatar_url)")
-            .eq("id", taskId)
-            .single()
-
-        if (data) {
-            dispatch(patchTask({ projectId, task: data }))
-        }
-    }
 
     const handleDelete = async () => {
         if (!window.confirm("Delete this task?")) return
@@ -407,14 +454,24 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 {/* Header */}
                 <div className="flex items-start justify-between p-5 border-b border-zinc-200 dark:border-zinc-800">
                     <div className="flex-1 min-w-0 pr-4">
-                        <EditableText
-                            value={task.title}
-                            onSave={(val) => handleFieldUpdate("title", val)}
-                            placeholder="Task title"
+                        <input
+                            value={draft?.title ?? task.title}
+                            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                            className="w-full text-sm font-medium bg-transparent border-0 border-b border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 focus:border-blue-400 focus:outline-none text-zinc-900 dark:text-zinc-100 py-0.5 transition"
                         />
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{project?.name}</p>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {isDirty && (
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition disabled:opacity-60"
+                            >
+                                {saving ? <Loader2Icon className="size-3.5 animate-spin" /> : <CheckIcon className="size-3.5" />}
+                                Save
+                            </button>
+                        )}
                         <button
                             onClick={handleDelete}
                             disabled={deleting}
@@ -466,9 +523,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 <FlagIcon className="size-3" /> Priority
                             </p>
                             <select
-                                value={task.priority || "MEDIUM"}
-                                onChange={(e) => handleFieldUpdate("priority", e.target.value)}
-                                className={`text-xs px-2 py-1 rounded font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${priorityColors[task.priority] || priorityColors.MEDIUM}`}
+                                value={draft?.priority ?? task.priority ?? "MEDIUM"}
+                                onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))}
+                                className={`text-xs px-2 py-1 rounded font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${priorityColors[draft?.priority || task.priority] || priorityColors.MEDIUM}`}
                             >
                                 {priorityOptions.map((p) => (
                                     <option key={p} value={p}>{p}</option>
@@ -480,9 +537,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Type</p>
                             <select
-                                value={task.type || "MEETING"}
-                                onChange={(e) => handleFieldUpdate("type", e.target.value)}
-                                className={`text-xs px-2 py-1 rounded font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${typeColors[task.type] || typeColors.MEETING}`}
+                                value={draft?.type ?? task.type ?? "OTHER"}
+                                onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}
+                                className={`text-xs px-2 py-1 rounded font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${typeColors[draft?.type || task.type] || typeColors.OTHER}`}
                             >
                                 {["MEETING","WRITING","STRATEGY","DESIGN","ADMIN","OTHER"].map((t) => (
                                     <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>
@@ -496,8 +553,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 <UserIcon className="size-3" /> Assignee
                             </p>
                             <select
-                                value={task.assignee_id || ""}
-                                onChange={(e) => handleFieldUpdate("assignee_id", e.target.value || null)}
+                                value={draft?.assignee_id ?? task.assignee_id ?? ""}
+                                onChange={(e) => setDraft((d) => ({ ...d, assignee_id: e.target.value }))}
                                 className="text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0"
                             >
                                 <option value="">Unassigned</option>
@@ -516,8 +573,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             </p>
                             <input
                                 type="date"
-                                value={task.due_date || ""}
-                                onChange={(e) => handleFieldUpdate("due_date", e.target.value || null)}
+                                value={draft?.due_date ?? task.due_date ?? ""}
+                                onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))}
                                 className="text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0"
                             />
                         </div>
@@ -538,10 +595,10 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 <MilestoneIcon className="size-3" /> Milestone
                             </p>
                             <button
-                                onClick={() => handleFieldUpdate("milestone", !task.milestone)}
-                                className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded border transition ${task.milestone ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"}`}
+                                onClick={() => setDraft((d) => ({ ...d, milestone: !(d?.milestone ?? task.milestone) }))}
+                                className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded border transition ${(draft?.milestone ?? task.milestone) ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"}`}
                             >
-                                {task.milestone ? "★ Milestone" : "☆ Mark as milestone"}
+                                {(draft?.milestone ?? task.milestone) ? "★ Milestone" : "☆ Mark as milestone"}
                             </button>
                         </div>
                     </div>
@@ -586,11 +643,12 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                     {/* Description */}
                     <div>
                         <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Description</p>
-                        <EditableText
-                            value={task.description}
-                            onSave={(val) => handleFieldUpdate("description", val)}
-                            multiline
+                        <textarea
+                            value={draft?.description ?? task.description ?? ""}
+                            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
                             placeholder="Add a description..."
+                            rows={3}
+                            className="w-full text-sm px-2 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
                         />
                     </div>
 

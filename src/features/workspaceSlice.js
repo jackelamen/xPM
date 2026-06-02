@@ -68,7 +68,7 @@ export const fetchWorkspaceDetail = createAsyncThunk(
             if (projectIds.length) {
                 const { data: taskData, error: taskError } = await supabase
                     .from("xpm_tasks")
-                    .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, created_at, updated_at, custom_fields, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
+                    .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, archived_at, created_at, updated_at, custom_fields, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
                     .in("project_id", projectIds)
                     .is("archived_at", null)
                     .order("position", { ascending: true })
@@ -173,7 +173,7 @@ export const createWorkspace = createAsyncThunk(
 
 export const createProject = createAsyncThunk(
     "workspace/createProject",
-    async ({ workspaceId, name, description, status, spaceId }, { rejectWithValue }) => {
+    async ({ workspaceId, name, description, status, priority, startDate, endDate, spaceId }, { rejectWithValue }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser()
 
@@ -184,6 +184,9 @@ export const createProject = createAsyncThunk(
                     name,
                     description,
                     status: status || "ACTIVE",
+                    priority: priority || "MEDIUM",
+                    start_date: startDate || null,
+                    end_date: endDate || null,
                     space_id: spaceId || null,
                     created_by: user.id,
                 })
@@ -220,7 +223,7 @@ export const createTask = createAsyncThunk(
                     custom_fields: customFields || {},
                     created_by: user.id,
                 })
-                .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, created_at, updated_at, custom_fields, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
+                .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, archived_at, created_at, updated_at, custom_fields, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
                 .single()
 
             if (error) throw error
