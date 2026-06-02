@@ -261,16 +261,23 @@ function TextCell({ value, onSave, placeholder = '—' }) {
 
 // ── send to pulse ─────────────────────────────────────────────────────────────
 
+// Pulse priority: 0=none, 1=low, 2=medium, 3=high
+function xpmPriorityToPulse(p) {
+    if (p === 'HIGH' || p === 'URGENT') return 3
+    if (p === 'MEDIUM') return 2
+    if (p === 'LOW') return 1
+    return 0
+}
+
 async function sendTaskToPulse(task, userId) {
     try {
-        const { error } = await supabase.from('xpm_tasks').insert({
+        const { error } = await supabase.from('tasks').insert({
+            user_id: userId,
             title: task.title,
             notes: task.description || null,
             due_at: task.due_date ? new Date(task.due_date).toISOString() : null,
-            status: 'open',
-            priority: task.priority === 'HIGH' || task.priority === 'URGENT' ? 'high'
-                : task.priority === 'LOW' ? 'low' : 'medium',
-            user_id: userId,
+            status: 'todo',
+            priority: xpmPriorityToPulse(task.priority),
         })
         if (error) throw error
         return true
