@@ -39,6 +39,7 @@ const typeColors = {
     STRATEGY: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
     DESIGN: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400",
     ADMIN: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    OUTREACH: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400",
     OTHER: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
 }
 

@@ -8,6 +8,7 @@ const typeColors = {
     STRATEGY: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
     DESIGN: "bg-purple-200 text-purple-800 dark:bg-purple-500 dark:text-purple-900",
     ADMIN: "bg-zinc-200 text-zinc-800 dark:bg-zinc-500 dark:text-zinc-900",
+    OUTREACH: "bg-teal-200 text-teal-800 dark:bg-teal-500 dark:text-teal-900",
     OTHER: "bg-rose-200 text-rose-800 dark:bg-rose-500 dark:text-rose-900",
 };
 

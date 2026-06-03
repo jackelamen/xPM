@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteTasks, updateTaskStatus, archiveTasks } from "../features/workspaceSlice";
-import { CalendarIcon, MessageSquare, CheckCircle2, Circle, Trash, XIcon, DownloadIcon, Users, PenLine, Lightbulb, Palette, ClipboardList, ArchiveIcon } from "lucide-react";
+import { CalendarIcon, MessageSquare, CheckCircle2, Circle, Trash, XIcon, DownloadIcon, Users, PenLine, Lightbulb, Palette, ClipboardList, ArchiveIcon, Mail } from "lucide-react";
 import SavedViews from "./SavedViews";
 import UserAvatar from "./UserAvatar";
 
@@ -16,6 +16,7 @@ const typeIcons = {
     STRATEGY: { icon: Lightbulb, color: "text-amber-600 dark:text-amber-400" },
     DESIGN: { icon: Palette, color: "text-purple-600 dark:text-purple-400" },
     ADMIN: { icon: ClipboardList, color: "text-zinc-600 dark:text-zinc-400" },
+    OUTREACH: { icon: Mail, color: "text-teal-600 dark:text-teal-400" },
     OTHER: { icon: MessageSquare, color: "text-rose-600 dark:text-rose-400" },
 };
 

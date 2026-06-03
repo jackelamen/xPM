@@ -35,6 +35,7 @@ const typeColors = {
     STRATEGY: "text-purple-600 bg-purple-100 dark:bg-purple-900/40",
     DESIGN: "text-pink-600 bg-pink-100 dark:bg-pink-900/40",
     ADMIN: "text-zinc-600 bg-zinc-100 dark:bg-zinc-800",
+    OUTREACH: "text-teal-600 bg-teal-100 dark:bg-teal-900/40",
     OTHER: "text-green-600 bg-green-100 dark:bg-green-900/40",
 }
 
@@ -542,7 +543,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}
                                 className={`text-xs px-2 py-1 rounded font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${typeColors[draft?.type || task.type] || typeColors.OTHER}`}
                             >
-                                {["MEETING","WRITING","STRATEGY","DESIGN","ADMIN","OTHER"].map((t) => (
+                                {["MEETING","WRITING","STRATEGY","DESIGN","ADMIN","OUTREACH","OTHER"].map((t) => (
                                     <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>
                                 ))}
                             </select>

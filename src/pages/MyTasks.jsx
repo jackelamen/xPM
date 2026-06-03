@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabase'
 
 const STATUS_OPTIONS   = ['TODO', 'IN_PROGRESS', 'DONE']
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
-const TYPE_OPTIONS     = ['MEETING', 'WRITING', 'STRATEGY', 'DESIGN', 'ADMIN', 'OTHER']
+const TYPE_OPTIONS     = ['MEETING', 'WRITING', 'STRATEGY', 'DESIGN', 'ADMIN', 'OUTREACH', 'OTHER']
 
 const STATUS_CFG = {
     TODO:        { label: 'To Do',       Icon: Circle,       cls: 'text-zinc-400 dark:text-zinc-500' },
