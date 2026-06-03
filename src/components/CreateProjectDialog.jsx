@@ -35,6 +35,9 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen, defaultSpaceId = "
                 name: formData.name,
                 description: formData.description,
                 status: formData.status,
+                priority: formData.priority,
+                startDate: formData.start_date,
+                endDate: formData.end_date,
                 spaceId: formData.space_id || null,
             })).unwrap();
             toast.success("Project created!");
@@ -157,9 +160,9 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen, defaultSpaceId = "
                         >
                             <option value="">Add team members</option>
                             {currentWorkspace?.members
-                                ?.filter((email) => !formData.team_members.includes(email))
+                                ?.filter((member) => !formData.team_members.includes(member.user?.email))
                                 .map((member) => (
-                                    <option key={member.user.email} value={member.email}>
+                                    <option key={member.user.email} value={member.user.email}>
                                         {member.user.email}
                                     </option>
                                 ))}
