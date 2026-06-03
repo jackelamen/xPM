@@ -118,7 +118,7 @@ function Contacts({ workspaceId }) {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
-    const [form, setForm] = useState({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", notes: "" });
+    const [form, setForm] = useState({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", source: "", notes: "" });
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState("");
     const [filterCompany, setFilterCompany] = useState("");
@@ -151,11 +151,12 @@ function Contacts({ workspaceId }) {
                 company_id: form.company_id || null,
                 linkedin_url: form.linkedin_url || null,
                 last_contacted_at: form.last_contacted_at || null,
+                source: form.source || null,
                 notes: form.notes || null,
             });
             if (error) throw error;
             toast.success("Contact created");
-            setForm({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", notes: "" });
+            setForm({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", source: "", notes: "" });
             setShowForm(false);
             fetchAll();
         } catch (err) {
@@ -208,6 +209,7 @@ function Contacts({ workspaceId }) {
                             <div><label className={labelCls}>LinkedIn URL</label><input value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} className={inputCls} placeholder="https://linkedin.com/in/..." /></div>
                             <div><label className={labelCls}>Last Contacted</label><input type="date" value={form.last_contacted_at} onChange={(e) => setForm({ ...form, last_contacted_at: e.target.value })} className={inputCls} /></div>
                         </div>
+                        <div><label className={labelCls}>Source of Contact</label><input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} className={inputCls} placeholder="e.g. Referral, LinkedIn, Conference" /></div>
                         <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
                         <div className="flex justify-end gap-2 pt-2">
                             <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition">Cancel</button>

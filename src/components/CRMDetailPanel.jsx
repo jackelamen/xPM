@@ -495,11 +495,13 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
                             </div>
                         </div>
 
-                        {/* Online */}
+                        {/* Online + dates */}
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="LinkedIn URL" value={contact.linkedin_url} onChange={(v) => setContact({ ...contact, linkedin_url: v })} placeholder="https://linkedin.com/in/..." />
                             <Field label="Last Contacted" value={contact.last_contacted_at} onChange={(v) => setContact({ ...contact, last_contacted_at: v })} type="date" />
                         </div>
+
+                        <Field label="Source of Contact" value={contact.source} onChange={(v) => setContact({ ...contact, source: v })} placeholder="e.g. Referral, LinkedIn, Conference, Cold outreach" />
 
                         <Field label="Notes" value={contact.notes} onChange={(v) => setContact({ ...contact, notes: v })} multiline placeholder="Any notes about this contact..." />
 
