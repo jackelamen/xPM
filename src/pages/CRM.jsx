@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import { ContactDetail, CompanyDetail, DealDetail } from "../components/CRMDetailPanel";
 import { format, isPast, isWithinInterval, addDays } from "date-fns";
 
-const TABS = ["Contacts", "Companies", "Deals", "Dashboard"];
+const TABS = ["Dashboard", "Contacts", "Companies", "Deals"];
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-zinc-500 mt-1";
 const labelCls = "text-xs font-medium text-gray-500 dark:text-zinc-400";
@@ -118,7 +118,7 @@ function Contacts({ workspaceId }) {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
-    const [form, setForm] = useState({ name: "", email: "", phone: "", title: "", company_id: "", notes: "" });
+    const [form, setForm] = useState({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", notes: "" });
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState("");
     const [filterCompany, setFilterCompany] = useState("");
@@ -144,15 +144,18 @@ function Contacts({ workspaceId }) {
                 workspace_id: workspaceId,
                 owner_id: user.id,
                 name: form.name,
+                name_other: form.name_other || null,
                 email: form.email || null,
                 phone: form.phone || null,
                 title: form.title || null,
                 company_id: form.company_id || null,
+                linkedin_url: form.linkedin_url || null,
+                last_contacted_at: form.last_contacted_at || null,
                 notes: form.notes || null,
             });
             if (error) throw error;
             toast.success("Contact created");
-            setForm({ name: "", email: "", phone: "", title: "", company_id: "", notes: "" });
+            setForm({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", notes: "" });
             setShowForm(false);
             fetchAll();
         } catch (err) {
@@ -183,7 +186,10 @@ function Contacts({ workspaceId }) {
             {showForm && (
                 <Modal title="New Contact" onClose={() => setShowForm(false)}>
                     <form onSubmit={handleSave} className="space-y-3">
-                        <div><label className={labelCls}>Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div><label className={labelCls}>Name (English) *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                            <div><label className={labelCls}>Name (Other)</label><input value={form.name_other} onChange={(e) => setForm({ ...form, name_other: e.target.value })} className={inputCls} placeholder="e.g. 한국어 이름" /></div>
+                        </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div><label className={labelCls}>Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></div>
                             <div><label className={labelCls}>Phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></div>
@@ -197,6 +203,10 @@ function Contacts({ workspaceId }) {
                                     {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div><label className={labelCls}>LinkedIn URL</label><input value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} className={inputCls} placeholder="https://linkedin.com/in/..." /></div>
+                            <div><label className={labelCls}>Last Contacted</label><input type="date" value={form.last_contacted_at} onChange={(e) => setForm({ ...form, last_contacted_at: e.target.value })} className={inputCls} /></div>
                         </div>
                         <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
                         <div className="flex justify-end gap-2 pt-2">
@@ -315,7 +325,7 @@ function Companies({ workspaceId }) {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
-    const [form, setForm] = useState({ name: "", website: "", industry: "", notes: "" });
+    const [form, setForm] = useState({ name: "", industry: "", brand_names: "", website: "", linkedin_url: "", phone: "", address: "", city: "", province: "", country: "", notes: "" });
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState("");
     const [filterIndustry, setFilterIndustry] = useState("");
@@ -357,13 +367,20 @@ function Companies({ workspaceId }) {
                 workspace_id: workspaceId,
                 owner_id: user.id,
                 name: form.name,
-                website: form.website || null,
                 industry: form.industry || null,
+                brand_names: form.brand_names || null,
+                website: form.website || null,
+                linkedin_url: form.linkedin_url || null,
+                phone: form.phone || null,
+                address: form.address || null,
+                city: form.city || null,
+                province: form.province || null,
+                country: form.country || null,
                 notes: form.notes || null,
             });
             if (error) throw error;
             toast.success("Company created");
-            setForm({ name: "", website: "", industry: "", notes: "" });
+            setForm({ name: "", industry: "", brand_names: "", website: "", linkedin_url: "", phone: "", address: "", city: "", province: "", country: "", notes: "" });
             setShowForm(false);
             fetchCompanies();
         } catch (err) {
@@ -395,10 +412,21 @@ function Companies({ workspaceId }) {
             {showForm && (
                 <Modal title="New Company" onClose={() => setShowForm(false)}>
                     <form onSubmit={handleSave} className="space-y-3">
-                        <div><label className={labelCls}>Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div><label className={labelCls}>Company Name *</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required autoFocus /></div>
+                            <div><label className={labelCls}>Category / Industry</label><input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputCls} /></div>
+                        </div>
+                        <div><label className={labelCls}>Brand Name(s)</label><input value={form.brand_names} onChange={(e) => setForm({ ...form, brand_names: e.target.value })} className={inputCls} placeholder="e.g. Nike, Jordan" /></div>
                         <div className="grid grid-cols-2 gap-3">
                             <div><label className={labelCls}>Website</label><input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className={inputCls} placeholder="https://" /></div>
-                            <div><label className={labelCls}>Industry</label><input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>LinkedIn URL</label><input value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} className={inputCls} placeholder="https://linkedin.com/company/..." /></div>
+                        </div>
+                        <div><label className={labelCls}>Phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></div>
+                        <div><label className={labelCls}>Address</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} /></div>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div><label className={labelCls}>City</label><input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Province</label><input value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Country</label><input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={inputCls} /></div>
                         </div>
                         <div><label className={labelCls}>Notes</label><textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputCls + " h-16 resize-none"} /></div>
                         <div className="flex justify-end gap-2 pt-2">
@@ -1132,7 +1160,7 @@ function CRMDashboard({ workspaceId }) {
 
 // ─── Main CRM Page ────────────────────────────────────────────────────────────
 export default function CRM() {
-    const [activeTab, setActiveTab] = useState("Contacts");
+    const [activeTab, setActiveTab] = useState("Dashboard");
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace);
 
     if (!currentWorkspace) return null;

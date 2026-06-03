@@ -383,6 +383,7 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
     const [companies, setCompanies] = useState([])
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [uploadingPhoto, setUploadingPhoto] = useState(false)
     const [activeTab, setActiveTab] = useState("details")
 
     useEffect(() => { fetchAll() }, [id])
@@ -403,13 +404,15 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
         try {
             const { error } = await supabase.from("contacts").update({
                 name: contact.name,
-                email: contact.email,
-                phone: contact.phone,
-                title: contact.title,
+                name_other: contact.name_other || null,
+                email: contact.email || null,
+                phone: contact.phone || null,
+                title: contact.title || null,
                 company_id: contact.company_id || null,
-                notes: contact.notes,
-                linkedin_url: contact.linkedin_url,
-                source: contact.source,
+                linkedin_url: contact.linkedin_url || null,
+                last_contacted_at: contact.last_contacted_at || null,
+                notes: contact.notes || null,
+                source: contact.source || null,
                 updated_at: new Date().toISOString(),
             }).eq("id", id)
             if (error) throw error
@@ -418,6 +421,28 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
             toast.error(err.message || "Failed to save")
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setUploadingPhoto(true)
+        try {
+            const ext = file.name.split('.').pop()
+            const path = `contacts/${id}/photo.${ext}`
+            const { error: upErr } = await supabase.storage.from('workspace-assets').upload(path, file, { upsert: true })
+            if (upErr) throw upErr
+            const { data } = supabase.storage.from('workspace-assets').getPublicUrl(path)
+            const url = data.publicUrl + '?t=' + Date.now()
+            await supabase.from('contacts').update({ photo_url: url }).eq('id', id)
+            setContact(c => ({ ...c, photo_url: url }))
+            toast.success('Photo attached')
+        } catch (err) {
+            toast.error(err.message || 'Upload failed')
+        } finally {
+            setUploadingPhoto(false)
+            e.target.value = ''
         }
     }
 
@@ -446,11 +471,19 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
             <div className="p-5 space-y-4">
                 {activeTab === "details" && (
                     <>
-                        <Field label="Name" value={contact.name} onChange={(v) => setContact({ ...contact, name: v })} />
+                        {/* Name fields */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Name (English)" value={contact.name} onChange={(v) => setContact({ ...contact, name: v })} />
+                            <Field label="Name (Other)" value={contact.name_other} onChange={(v) => setContact({ ...contact, name_other: v })} placeholder="e.g. 한국어 이름" />
+                        </div>
+
+                        {/* Contact info */}
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="Email" value={contact.email} onChange={(v) => setContact({ ...contact, email: v })} type="email" />
                             <Field label="Phone" value={contact.phone} onChange={(v) => setContact({ ...contact, phone: v })} />
                         </div>
+
+                        {/* Role */}
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="Title" value={contact.title} onChange={(v) => setContact({ ...contact, title: v })} />
                             <div>
@@ -461,16 +494,39 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
                                 </select>
                             </div>
                         </div>
+
+                        {/* Online */}
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="LinkedIn URL" value={contact.linkedin_url} onChange={(v) => setContact({ ...contact, linkedin_url: v })} placeholder="https://linkedin.com/in/..." />
-                            <Field label="Source" value={contact.source} onChange={(v) => setContact({ ...contact, source: v })} placeholder="e.g. Referral, LinkedIn" />
+                            <Field label="Last Contacted" value={contact.last_contacted_at} onChange={(v) => setContact({ ...contact, last_contacted_at: v })} type="date" />
                         </div>
-                        <Field label="Notes" value={contact.notes} onChange={(v) => setContact({ ...contact, notes: v })} multiline />
+
+                        <Field label="Notes" value={contact.notes} onChange={(v) => setContact({ ...contact, notes: v })} multiline placeholder="Any notes about this contact..." />
+
+                        {/* Photo / attachment */}
+                        <div>
+                            <p className={labelCls + " mb-1.5"}>Photo / Attachment</p>
+                            {contact.photo_url && (
+                                <a href={contact.photo_url} target="_blank" rel="noopener noreferrer"
+                                    className="block mb-2 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-h-48 w-full object-cover">
+                                    <img src={contact.photo_url} alt="attachment" className="w-full max-h-48 object-contain bg-zinc-50 dark:bg-zinc-900" />
+                                </a>
+                            )}
+                            <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-blue-500 transition text-sm text-zinc-500 dark:text-zinc-400">
+                                {uploadingPhoto ? <Loader2Icon className="size-4 animate-spin" /> : <LinkIcon className="size-4" />}
+                                {uploadingPhoto ? "Uploading..." : contact.photo_url ? "Replace photo" : "Attach business card or photo"}
+                                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                            </label>
+                        </div>
+
                         {contact.linkedin_url && (
-                            <a href={contact.linkedin_url.startsWith("http") ? contact.linkedin_url : `https://${contact.linkedin_url}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-blue-500 hover:underline">
+                            <a href={contact.linkedin_url.startsWith("http") ? contact.linkedin_url : `https://${contact.linkedin_url}`}
+                                target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-sm text-blue-500 hover:underline">
                                 <ExternalLinkIcon className="size-3.5" /> View LinkedIn
                             </a>
                         )}
+
                         <div className="flex justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800">
                             <button onClick={handleDelete} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition">
                                 <TrashIcon className="size-4" /> Delete
@@ -495,7 +551,9 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
     const [contacts, setContacts] = useState([])
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [uploadingPhoto, setUploadingPhoto] = useState(false)
     const [activeTab, setActiveTab] = useState("details")
+    const [tagInput, setTagInput] = useState("")
 
     useEffect(() => { fetchAll() }, [id])
 
@@ -515,13 +573,19 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
         try {
             const { error } = await supabase.from("companies").update({
                 name: company.name,
-                website: company.website,
-                industry: company.industry,
-                notes: company.notes,
-                size: company.size,
-                employee_count: company.employee_count ? parseInt(company.employee_count) : null,
-                linkedin_url: company.linkedin_url,
-                founded_year: company.founded_year ? parseInt(company.founded_year) : null,
+                industry: company.industry || null,
+                brand_names: company.brand_names || null,
+                website: company.website || null,
+                linkedin_url: company.linkedin_url || null,
+                phone: company.phone || null,
+                address: company.address || null,
+                city: company.city || null,
+                province: company.province || null,
+                country: company.country || null,
+                tags: company.tags || [],
+                connection_strength: company.connection_strength != null ? parseInt(company.connection_strength) : 0,
+                notes: company.notes || null,
+                size: company.size || null,
                 updated_at: new Date().toISOString(),
             }).eq("id", id)
             if (error) throw error
@@ -532,6 +596,38 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
             setSaving(false)
         }
     }
+
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setUploadingPhoto(true)
+        try {
+            const ext = file.name.split('.').pop()
+            const path = `companies/${id}/photo.${ext}`
+            const { error: upErr } = await supabase.storage.from('workspace-assets').upload(path, file, { upsert: true })
+            if (upErr) throw upErr
+            const { data } = supabase.storage.from('workspace-assets').getPublicUrl(path)
+            const url = data.publicUrl + '?t=' + Date.now()
+            await supabase.from('companies').update({ photo_url: url }).eq('id', id)
+            setCompany(c => ({ ...c, photo_url: url }))
+            toast.success('Photo attached')
+        } catch (err) {
+            toast.error(err.message || 'Upload failed')
+        } finally {
+            setUploadingPhoto(false)
+            e.target.value = ''
+        }
+    }
+
+    const addTag = () => {
+        const t = tagInput.trim()
+        if (!t) return
+        const tags = company.tags || []
+        if (!tags.includes(t)) setCompany({ ...company, tags: [...tags, t] })
+        setTagInput("")
+    }
+
+    const removeTag = (tag) => setCompany({ ...company, tags: (company.tags || []).filter(t => t !== tag) })
 
     const handleDelete = async () => {
         if (!window.confirm("Delete this company?")) return
@@ -544,15 +640,15 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
     if (loading) return <PanelShell onClose={onClose} badge="Company"><div className="flex justify-center py-12"><Loader2Icon className="size-6 animate-spin text-zinc-400" /></div></PanelShell>
     if (!company) return null
 
-    const sizeOptions = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
+    const cs = company.connection_strength ?? 0
 
     return (
-        <PanelShell onClose={onClose} badge="Company" title={company.name} subtitle={[company.industry, company.size && `${company.size} employees`].filter(Boolean).join(" · ")}>
+        <PanelShell onClose={onClose} badge="Company" title={company.name} subtitle={[company.industry, company.city, company.country].filter(Boolean).join(" · ")}>
             <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800 px-5">
                 {["details", "contacts", "tasks"].map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`py-2.5 px-1 text-xs font-medium border-b-2 transition capitalize -mb-px ${activeTab === tab ? "border-blue-500 text-blue-600 dark:text-blue-400" : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"}`}>
-                        {tab} {tab === "contacts" && contacts.length > 0 ? `(${contacts.length})` : ""}
+                        {tab}{tab === "contacts" && contacts.length > 0 ? ` (${contacts.length})` : ""}
                     </button>
                 ))}
             </div>
@@ -560,28 +656,89 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
             <div className="p-5 space-y-4">
                 {activeTab === "details" && (
                     <>
-                        <Field label="Name" value={company.name} onChange={(v) => setCompany({ ...company, name: v })} />
+                        {/* Identity */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Company Name" value={company.name} onChange={(v) => setCompany({ ...company, name: v })} />
+                            <Field label="Category / Industry" value={company.industry} onChange={(v) => setCompany({ ...company, industry: v })} />
+                        </div>
+                        <Field label="Brand Name(s)" value={company.brand_names} onChange={(v) => setCompany({ ...company, brand_names: v })} placeholder="e.g. Nike, Jordan" />
+
+                        {/* Online */}
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="Website" value={company.website} onChange={(v) => setCompany({ ...company, website: v })} placeholder="https://" />
-                            <Field label="Industry" value={company.industry} onChange={(v) => setCompany({ ...company, industry: v })} />
+                            <Field label="LinkedIn URL" value={company.linkedin_url} onChange={(v) => setCompany({ ...company, linkedin_url: v })} placeholder="https://linkedin.com/company/..." />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <p className={labelCls}>Company Size</p>
-                                <select value={company.size || ""} onChange={(e) => setCompany({ ...company, size: e.target.value || null })} className={inputCls}>
-                                    <option value="">Unknown</option>
-                                    {sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
+
+                        {/* Contact */}
+                        <Field label="Phone Number" value={company.phone} onChange={(v) => setCompany({ ...company, phone: v })} />
+
+                        {/* Address */}
+                        <Field label="Address" value={company.address} onChange={(v) => setCompany({ ...company, address: v })} />
+                        <div className="grid grid-cols-3 gap-3">
+                            <Field label="City" value={company.city} onChange={(v) => setCompany({ ...company, city: v })} />
+                            <Field label="Province / State" value={company.province} onChange={(v) => setCompany({ ...company, province: v })} />
+                            <Field label="Country" value={company.country} onChange={(v) => setCompany({ ...company, country: v })} />
+                        </div>
+
+                        {/* Tags */}
+                        <div>
+                            <p className={labelCls + " mb-1.5"}>Tags</p>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                                {(company.tags || []).map(tag => (
+                                    <span key={tag} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                        {tag}
+                                        <button onClick={() => removeTag(tag)} className="hover:text-red-500 transition leading-none">×</button>
+                                    </span>
+                                ))}
                             </div>
-                            <Field label="Founded Year" value={company.founded_year} onChange={(v) => setCompany({ ...company, founded_year: v })} type="number" placeholder="e.g. 2018" />
+                            <div className="flex gap-2">
+                                <input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                                    placeholder="Add tag, press Enter"
+                                    className={inputCls + " flex-1"} />
+                                <button onClick={addTag} className="px-3 py-1.5 text-sm rounded border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Add</button>
+                            </div>
                         </div>
-                        <Field label="LinkedIn URL" value={company.linkedin_url} onChange={(v) => setCompany({ ...company, linkedin_url: v })} placeholder="https://linkedin.com/company/..." />
-                        <Field label="Notes" value={company.notes} onChange={(v) => setCompany({ ...company, notes: v })} multiline />
+
+                        {/* Connection Strength */}
+                        <div>
+                            <p className={labelCls + " mb-1.5"}>Connection Strength — {cs}/10</p>
+                            <div className="flex items-center gap-3">
+                                <input type="range" min={0} max={10} value={cs}
+                                    onChange={(e) => setCompany({ ...company, connection_strength: parseInt(e.target.value) })}
+                                    className="flex-1 accent-blue-500" />
+                                <span className={`text-sm font-bold w-6 text-center ${cs >= 7 ? 'text-emerald-600 dark:text-emerald-400' : cs >= 4 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400'}`}>{cs}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
+                                <span>No connection</span><span>Strong connection</span>
+                            </div>
+                        </div>
+
+                        <Field label="Notes" value={company.notes} onChange={(v) => setCompany({ ...company, notes: v })} multiline placeholder="Any notes about this company..." />
+
+                        {/* Photo / attachment */}
+                        <div>
+                            <p className={labelCls + " mb-1.5"}>Photo / Attachment</p>
+                            {company.photo_url && (
+                                <a href={company.photo_url} target="_blank" rel="noopener noreferrer" className="block mb-2 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                                    <img src={company.photo_url} alt="attachment" className="w-full max-h-48 object-contain bg-zinc-50 dark:bg-zinc-900" />
+                                </a>
+                            )}
+                            <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-blue-500 transition text-sm text-zinc-500 dark:text-zinc-400">
+                                {uploadingPhoto ? <Loader2Icon className="size-4 animate-spin" /> : <LinkIcon className="size-4" />}
+                                {uploadingPhoto ? "Uploading..." : company.photo_url ? "Replace photo" : "Attach business card or photo"}
+                                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                            </label>
+                        </div>
+
                         {company.website && (
-                            <a href={company.website.startsWith("http") ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-blue-500 hover:underline">
+                            <a href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
+                                target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-sm text-blue-500 hover:underline">
                                 <ExternalLinkIcon className="size-3.5" /> Visit website
                             </a>
                         )}
+
                         <div className="flex justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800">
                             <button onClick={handleDelete} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition">
                                 <TrashIcon className="size-4" /> Delete
