@@ -548,7 +548,7 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
 }
 
 // ─── Company Detail ───────────────────────────────────────────────────────────
-export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
+export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenContact }) {
     const [company, setCompany] = useState(null)
     const [contacts, setContacts] = useState([])
     const [saving, setSaving] = useState(false)
@@ -758,16 +758,21 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted }) {
                         ) : (
                             <div className="space-y-2">
                                 {contacts.map((c) => (
-                                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                                    <button
+                                        key={c.id}
+                                        onClick={() => onOpenContact?.(c.id)}
+                                        className="w-full flex items-center gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors text-left group"
+                                    >
                                         <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                                             {c.name[0].toUpperCase()}
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{c.name}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{c.name}</p>
                                             {c.title && <p className="text-xs text-zinc-400 dark:text-zinc-500">{c.title}</p>}
                                             {c.email && <p className="text-xs text-zinc-400 dark:text-zinc-500">{c.email}</p>}
                                         </div>
-                                    </div>
+                                        <ExternalLinkIcon className="size-3.5 text-zinc-300 dark:text-zinc-600 group-hover:text-blue-400 transition-colors flex-shrink-0" />
+                                    </button>
                                 ))}
                             </div>
                         )}

@@ -327,6 +327,7 @@ function Companies({ workspaceId }) {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
+    const [openContactId, setOpenContactId] = useState(null);
     const [form, setForm] = useState({ name: "", industry: "", brand_names: "", website: "", linkedin_url: "", phone: "", address: "", city: "", province: "", country: "", notes: "" });
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState("");
@@ -555,6 +556,15 @@ function Companies({ workspaceId }) {
                     workspaceId={workspaceId}
                     onClose={() => setSelectedId(null)}
                     onDeleted={() => { setCompanies((prev) => prev.filter((c) => c.id !== selectedId)); setSelectedId(null); }}
+                    onOpenContact={(contactId) => { setSelectedId(null); setOpenContactId(contactId); }}
+                />
+            )}
+            {openContactId && (
+                <ContactDetail
+                    id={openContactId}
+                    workspaceId={workspaceId}
+                    onClose={() => setOpenContactId(null)}
+                    onDeleted={() => setOpenContactId(null)}
                 />
             )}
         </div>
