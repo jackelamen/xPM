@@ -20,6 +20,7 @@ const typeLabels = {
     STRATEGY: 'Strategy',
     DESIGN: 'Design',
     ADMIN: 'Admin',
+    OUTREACH: 'Outreach',
     OTHER: 'Other',
 }
 

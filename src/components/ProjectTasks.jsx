@@ -196,6 +196,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                             { label: "Strategy", value: "STRATEGY" },
                             { label: "Design", value: "DESIGN" },
                             { label: "Admin", value: "ADMIN" },
+                            { label: "Outreach", value: "OUTREACH" },
                             { label: "Other", value: "OTHER" },
                         ],
                         priority: [

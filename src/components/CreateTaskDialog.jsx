@@ -75,6 +75,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                                 <option value="STRATEGY">Strategy</option>
                                 <option value="DESIGN">Design</option>
                                 <option value="ADMIN">Admin</option>
+                                <option value="OUTREACH">Outreach</option>
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>
