@@ -305,11 +305,14 @@ async function sendTaskToPulse(task, userId) {
                 if (created) listId = created.id
             }
         }
+        const dueAt = task.due_date
+            ? new Date(`${task.due_date}T${task.due_time || '00:00:00'}`).toISOString()
+            : null
         const { error } = await supabase.from('tasks').insert({
             user_id: userId,
             title: task.title,
             notes: task.description || null,
-            due_at: task.due_date ? new Date(task.due_date + 'T00:00:00').toISOString() : null,
+            due_at: dueAt,
             status: 'todo',
             priority: xpmPriorityToPulse(task.priority),
             duration_minutes: 30,

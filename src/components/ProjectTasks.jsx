@@ -386,9 +386,12 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                 {builtinVisible.due_date !== false && (
                                                     <td className="px-4 py-2">
                                                         {task.due_date ? (
-                                                            <div className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400">
-                                                                <CalendarIcon className="size-4" />
+                                                            <div className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                                                                <CalendarIcon className="size-4 shrink-0" />
                                                                 {format(new Date(task.due_date), "dd MMMM")}
+                                                                {task.due_time && (
+                                                                    <span className="text-zinc-400 dark:text-zinc-500 text-xs">· {task.due_time.slice(0, 5)}</span>
+                                                                )}
                                                             </div>
                                                         ) : <span className="text-zinc-400">—</span>}
                                                     </td>
@@ -478,8 +481,11 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                         </div>
 
                                         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                            <CalendarIcon className="size-4" />
+                                            <CalendarIcon className="size-4 shrink-0" />
                                             {format(new Date(task.due_date), "dd MMMM")}
+                                            {task.due_time && (
+                                                <span className="text-zinc-400 dark:text-zinc-500 text-xs">· {task.due_time.slice(0, 5)}</span>
+                                            )}
                                         </div>
                                     </div>
                                 );

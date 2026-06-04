@@ -21,6 +21,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         leadId: "",
         assigneeIds: [],
         due_date: "",
+        due_time: "",
     });
 
     const toggleAssignee = (userId) => {
@@ -58,10 +59,11 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                 leadId: formData.leadId || null,
                 assigneeIds: formData.assigneeIds,
                 dueDate: formData.due_date || null,
+                dueTime: formData.due_time || null,
             })).unwrap();
             toast.success("Task created!");
             setShowCreateTask(false);
-            setFormData({ title: "", description: "", type: "MEETING", status: "TODO", priority: "MEDIUM", leadId: "", assigneeIds: [], due_date: "" });
+            setFormData({ title: "", description: "", type: "MEETING", status: "TODO", priority: "MEDIUM", leadId: "", assigneeIds: [], due_date: "", due_time: "" });
         } catch (err) {
             toast.error(err || "Failed to create task");
         } finally {
@@ -166,16 +168,17 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         </div>
                     </div>
 
-                    {/* Due Date */}
+                    {/* Due Date + Time */}
                     <div className="space-y-1">
                         <label className="text-sm font-medium">Due Date</label>
                         <div className="flex items-center gap-2">
-                            <CalendarIcon className="size-5 text-zinc-500 dark:text-zinc-400" />
-                            <input type="date" value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} min={new Date().toISOString().split('T')[0]} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" />
+                            <CalendarIcon className="size-5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                            <input type="date" value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} min={new Date().toISOString().split('T')[0]} className="flex-1 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm" />
+                            <input type="time" value={formData.due_time} onChange={(e) => setFormData({ ...formData, due_time: e.target.value })} className="w-32 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm" placeholder="Time" />
                         </div>
                         {formData.due_date && (
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                {format(new Date(formData.due_date), "PPP")}
+                                {format(new Date(formData.due_date), "PPP")}{formData.due_time ? ` · ${formData.due_time}` : ""}
                             </p>
                         )}
                     </div>

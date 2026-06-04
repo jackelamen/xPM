@@ -347,6 +347,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 lead_id: task.assignee_id || "",
                 assignee_ids: (task.assignees || []).map((a) => a.id),
                 due_date: task.due_date || "",
+                due_time: task.due_time || "",
                 milestone: task.milestone || false,
             })
         }
@@ -360,6 +361,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         draft.lead_id !== (task.assignee_id || "") ||
         JSON.stringify([...(draft.assignee_ids || [])].sort()) !== JSON.stringify([...(task.assignees || []).map((a) => a.id)].sort()) ||
         draft.due_date !== (task.due_date || "") ||
+        draft.due_time !== (task.due_time || "") ||
         draft.milestone !== (task.milestone || false)
     )
 
@@ -382,6 +384,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 priority: draft.priority,
                 type: draft.type,
                 due_date: draft.due_date || null,
+                due_time: draft.due_time || null,
                 milestone: draft.milestone,
                 updated_at: new Date().toISOString(),
             }
@@ -619,7 +622,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             )}
                         </div>
 
-                        {/* Due Date */}
+                        {/* Due Date + Time */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                 <CalendarIcon className="size-3" /> Due Date
@@ -629,6 +632,13 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 value={draft?.due_date ?? task.due_date ?? ""}
                                 onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))}
                                 className="text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0"
+                            />
+                            <input
+                                type="time"
+                                value={draft?.due_time ?? task.due_time ?? ""}
+                                onChange={(e) => setDraft((d) => ({ ...d, due_time: e.target.value }))}
+                                className="mt-1 text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0 block"
+                                placeholder="Add time"
                             />
                         </div>
 
