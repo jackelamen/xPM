@@ -20,9 +20,21 @@ const typeIcons = {
     OTHER: { icon: MessageSquare, color: "text-rose-600 dark:text-rose-400" },
 };
 
-const AssigneeAvatar = ({ assignee }) => {
-    if (!assignee) return null;
-    return <UserAvatar user={assignee} size={20} />;
+const StackedAvatars = ({ assignees, size = 20 }) => {
+    if (!assignees?.length) return <span className="text-zinc-400 text-xs">—</span>;
+    const visible = assignees.slice(0, 3);
+    const overflow = assignees.length - visible.length;
+    return (
+        <div className="flex items-center -space-x-1.5">
+            {visible.map((a) => <UserAvatar key={a.id} user={a} size={size} />)}
+            {overflow > 0 && (
+                <span className="flex items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 text-[10px] font-medium border-2 border-white dark:border-zinc-900"
+                    style={{ width: size, height: size }}>
+                    +{overflow}
+                </span>
+            )}
+        </div>
+    );
 };
 
 const priorityTexts = {
@@ -87,7 +99,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
             t.status || "",
             t.type || "",
             t.priority || "",
-            t.assignee?.name || t.assignee?.email || "",
+            (t.assignees?.length ? t.assignees.map((a) => a.name || a.email).join("; ") : t.assignee?.name || t.assignee?.email || ""),
             t.due_date ? format(new Date(t.due_date), "yyyy-MM-dd") : "",
             t.created_at ? format(new Date(t.created_at), "yyyy-MM-dd") : "",
         ])
@@ -110,7 +122,11 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
     });
 
     const assigneeList = useMemo(
-        () => Array.from(new Set(tasks.map((t) => t.assignee?.name).filter(Boolean))),
+        () => Array.from(new Set(
+            tasks.flatMap((t) =>
+                t.assignees?.length ? t.assignees.map((a) => a.name) : (t.assignee?.name ? [t.assignee.name] : [])
+            ).filter(Boolean)
+        )),
         [tasks]
     );
 
@@ -121,7 +137,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                 (!status || task.status === status) &&
                 (!type || task.type === type) &&
                 (!priority || task.priority === priority) &&
-                (!assignee || task.assignee?.name === assignee)
+                (!assignee || (task.assignees?.length ? task.assignees.some((a) => a.name === assignee) : task.assignee?.name === assignee))
             );
         });
     }, [filters, tasks]);
@@ -354,10 +370,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                 )}
                                                 {builtinVisible.assignee !== false && (
                                                     <td className="px-4 py-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <AssigneeAvatar assignee={task.assignee} />
-                                                            {task.assignee?.name || "-"}
-                                                        </div>
+                                                        <StackedAvatars assignees={task.assignees?.length ? task.assignees : (task.assignee ? [task.assignee] : [])} />
                                                     </td>
                                                 )}
                                                 {builtinVisible.start_date === true && (
@@ -460,9 +473,8 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                             </select>
                                         </div>
 
-                                        <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                                            <AssigneeAvatar assignee={task.assignee} />
-                                            {task.assignee?.name || "-"}
+                                        <div className="flex items-center gap-1">
+                                            <StackedAvatars assignees={task.assignees?.length ? task.assignees : (task.assignee ? [task.assignee] : [])} size={18} />
                                         </div>
 
                                         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">

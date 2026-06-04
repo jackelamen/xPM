@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon, Loader2Icon } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2Icon, ChevronDownIcon } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { format } from "date-fns";
 import { createTask } from "../features/workspaceSlice";
@@ -11,15 +11,36 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
     const teamMembers = currentWorkspace?.members || [];
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
         description: "",
         type: "MEETING",
         status: "TODO",
         priority: "MEDIUM",
-        assigneeId: "",
+        leadId: "",
+        assigneeIds: [],
         due_date: "",
     });
+
+    const toggleAssignee = (userId) => {
+        setFormData((prev) => ({
+            ...prev,
+            assigneeIds: prev.assigneeIds.includes(userId)
+                ? prev.assigneeIds.filter((id) => id !== userId)
+                : [...prev.assigneeIds, userId],
+        }));
+    };
+
+    const assigneeLabel = () => {
+        const count = formData.assigneeIds.length;
+        if (count === 0) return "None";
+        if (count === 1) {
+            const m = teamMembers.find((m) => m.user_id === formData.assigneeIds[0]);
+            return m?.user?.name || m?.user?.email || "1 member";
+        }
+        return `${count} members`;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,12 +55,13 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                 type: formData.type,
                 status: formData.status,
                 priority: formData.priority,
-                assigneeId: formData.assigneeId || null,
+                leadId: formData.leadId || null,
+                assigneeIds: formData.assigneeIds,
                 dueDate: formData.due_date || null,
             })).unwrap();
             toast.success("Task created!");
             setShowCreateTask(false);
-            setFormData({ title: "", description: "", type: "MEETING", status: "TODO", priority: "MEDIUM", assigneeId: "", due_date: "" });
+            setFormData({ title: "", description: "", type: "MEETING", status: "TODO", priority: "MEDIUM", leadId: "", assigneeIds: [], due_date: "" });
         } catch (err) {
             toast.error(err || "Failed to create task");
         } finally {
@@ -90,11 +112,11 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         </div>
                     </div>
 
-                    {/* Assignee and Status */}
+                    {/* Lead and Status */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-sm font-medium">Assignee</label>
-                            <select value={formData.assigneeId} onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
+                            <label className="text-sm font-medium">Project Lead</label>
+                            <select value={formData.leadId} onChange={(e) => setFormData({ ...formData, leadId: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1">
                                 <option value="">Unassigned</option>
                                 {teamMembers.map((member) => (
                                     <option key={member.user_id} value={member.user_id}>
@@ -106,11 +128,41 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
 
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Status</label>
-                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
+                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1">
                                 <option value="TODO">To Do</option>
                                 <option value="IN_PROGRESS">In Progress</option>
                                 <option value="DONE">Done</option>
                             </select>
+                        </div>
+                    </div>
+
+                    {/* Assignees multi-select */}
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium">Assignees</label>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setShowAssigneeDropdown((v) => !v)}
+                                className="w-full flex items-center justify-between rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
+                            >
+                                <span>{assigneeLabel()}</span>
+                                <ChevronDownIcon className="size-4 text-zinc-400" />
+                            </button>
+                            {showAssigneeDropdown && (
+                                <div className="absolute z-10 mt-1 w-full rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg max-h-48 overflow-y-auto">
+                                    {teamMembers.map((member) => (
+                                        <label key={member.user_id} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer text-sm text-zinc-800 dark:text-zinc-200">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.assigneeIds.includes(member.user_id)}
+                                                onChange={() => toggleAssignee(member.user_id)}
+                                                className="rounded"
+                                            />
+                                            {member.user?.name || member.user?.email}
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 

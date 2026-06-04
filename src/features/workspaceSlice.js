@@ -75,6 +75,23 @@ export const fetchWorkspaceDetail = createAsyncThunk(
 
                 if (taskError) throw taskError
                 tasks = taskData
+
+                // Fetch multi-assignees for all tasks
+                const taskIds = tasks.map((t) => t.id)
+                if (taskIds.length) {
+                    const { data: assigneeRows } = await supabase
+                        .from("xpm_task_assignees")
+                        .select("task_id, user:profiles(id, name, email, avatar_url)")
+                        .in("task_id", taskIds)
+                    if (assigneeRows) {
+                        const assigneeMap = {}
+                        assigneeRows.forEach(({ task_id, user }) => {
+                            if (!assigneeMap[task_id]) assigneeMap[task_id] = []
+                            assigneeMap[task_id].push(user)
+                        })
+                        tasks = tasks.map((t) => ({ ...t, assignees: assigneeMap[t.id] || [] }))
+                    }
+                }
             }
 
             // Fetch custom field definitions for all projects
@@ -203,7 +220,7 @@ export const createProject = createAsyncThunk(
 
 export const createTask = createAsyncThunk(
     "workspace/createTask",
-    async ({ workspaceId, projectId, title, description, status, priority, type, assigneeId, startDate, dueDate, customFields }, { rejectWithValue }) => {
+    async ({ workspaceId, projectId, title, description, status, priority, type, leadId, assigneeIds, startDate, dueDate, customFields }, { rejectWithValue }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser()
 
@@ -217,7 +234,7 @@ export const createTask = createAsyncThunk(
                     status: status || "TODO",
                     priority: priority || "MEDIUM",
                     type: type || "OTHER",
-                    assignee_id: assigneeId || null,
+                    assignee_id: leadId || null,
                     start_date: startDate || null,
                     due_date: dueDate || null,
                     custom_fields: customFields || {},
@@ -227,7 +244,22 @@ export const createTask = createAsyncThunk(
                 .single()
 
             if (error) throw error
-            return data
+
+            // Insert multi-assignees
+            const ids = assigneeIds?.length ? assigneeIds : (leadId ? [leadId] : [])
+            if (ids.length) {
+                await supabase.from("xpm_task_assignees").insert(
+                    ids.map((uid) => ({ task_id: data.id, user_id: uid }))
+                )
+            }
+
+            // Fetch assignee profiles to attach
+            const { data: assigneeRows } = await supabase
+                .from("xpm_task_assignees")
+                .select("user:profiles(id, name, email, avatar_url)")
+                .eq("task_id", data.id)
+
+            return { ...data, assignees: (assigneeRows || []).map((r) => r.user) }
         } catch (err) {
             return rejectWithValue(err.message)
         }
@@ -266,6 +298,42 @@ export const updateTask = createAsyncThunk(
             if (error) throw error
             dispatch(patchTask({ projectId, task: data }))
             return data
+        } catch (err) {
+            return rejectWithValue(err.message)
+        }
+    }
+)
+
+// Replace all assignees for a task (pass empty array to clear)
+export const setTaskAssignees = createAsyncThunk(
+    "workspace/setTaskAssignees",
+    async ({ taskId, projectId, leadId, assigneeIds }, { dispatch, rejectWithValue }) => {
+        try {
+            // Update lead on the task row
+            const { error: taskError } = await supabase
+                .from("xpm_tasks")
+                .update({ assignee_id: leadId || null, updated_at: new Date().toISOString() })
+                .eq("id", taskId)
+            if (taskError) throw taskError
+
+            // Replace join table rows
+            await supabase.from("xpm_task_assignees").delete().eq("task_id", taskId)
+            const ids = assigneeIds?.length ? assigneeIds : (leadId ? [leadId] : [])
+            if (ids.length) {
+                await supabase.from("xpm_task_assignees").insert(
+                    ids.map((uid) => ({ task_id: taskId, user_id: uid }))
+                )
+            }
+
+            // Fetch updated assignee profiles
+            const { data: assigneeRows } = await supabase
+                .from("xpm_task_assignees")
+                .select("user:profiles(id, name, email, avatar_url)")
+                .eq("task_id", taskId)
+
+            const assignees = (assigneeRows || []).map((r) => r.user)
+            dispatch(patchTask({ projectId, task: { id: taskId, assignee_id: leadId || null, assignees } }))
+            return { taskId, assignees }
         } catch (err) {
             return rejectWithValue(err.message)
         }

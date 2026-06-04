@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { updateTaskStatus, deleteTasks, patchTask } from "../features/workspaceSlice"
+import { updateTaskStatus, deleteTasks, patchTask, setTaskAssignees } from "../features/workspaceSlice"
 import { supabase } from "../lib/supabase"
 import { useAuth } from "../context/AuthContext"
 import UserAvatar from "./UserAvatar"
@@ -334,6 +334,7 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     // Draft state for the Save button fields
     const [draft, setDraft] = useState(null)
     const [saving, setSaving] = useState(false)
+    const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
 
     // Sync draft when task changes (new panel open)
     useEffect(() => {
@@ -343,7 +344,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 description: task.description || "",
                 priority: task.priority || "MEDIUM",
                 type: task.type || "OTHER",
-                assignee_id: task.assignee_id || "",
+                lead_id: task.assignee_id || "",
+                assignee_ids: (task.assignees || []).map((a) => a.id),
                 due_date: task.due_date || "",
                 milestone: task.milestone || false,
             })
@@ -355,10 +357,20 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         draft.description !== (task.description || "") ||
         draft.priority !== (task.priority || "MEDIUM") ||
         draft.type !== (task.type || "OTHER") ||
-        draft.assignee_id !== (task.assignee_id || "") ||
+        draft.lead_id !== (task.assignee_id || "") ||
+        JSON.stringify([...(draft.assignee_ids || [])].sort()) !== JSON.stringify([...(task.assignees || []).map((a) => a.id)].sort()) ||
         draft.due_date !== (task.due_date || "") ||
         draft.milestone !== (task.milestone || false)
     )
+
+    const toggleDraftAssignee = (userId) => {
+        setDraft((d) => ({
+            ...d,
+            assignee_ids: d.assignee_ids.includes(userId)
+                ? d.assignee_ids.filter((id) => id !== userId)
+                : [...d.assignee_ids, userId],
+        }))
+    }
 
     const handleSave = async () => {
         if (!draft || saving) return
@@ -369,7 +381,6 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 description: draft.description || null,
                 priority: draft.priority,
                 type: draft.type,
-                assignee_id: draft.assignee_id || null,
                 due_date: draft.due_date || null,
                 milestone: draft.milestone,
                 updated_at: new Date().toISOString(),
@@ -381,17 +392,15 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
             if (error) throw error
 
-            // Patch Redux immediately from draft so project view updates
-            dispatch(patchTask({
+            // Save assignees via thunk
+            await dispatch(setTaskAssignees({
+                taskId,
                 projectId,
-                task: {
-                    ...task,
-                    ...updates,
-                    assignee: draft.assignee_id
-                        ? members.find((m) => m.user_id === draft.assignee_id)?.user || task.assignee
-                        : null,
-                }
-            }))
+                leadId: draft.lead_id || null,
+                assigneeIds: draft.assignee_ids,
+            })).unwrap()
+
+            dispatch(patchTask({ projectId, task: { ...task, ...updates } }))
             toast.success("Saved")
         } catch {
             toast.error("Failed to save")
@@ -549,14 +558,14 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             </select>
                         </div>
 
-                        {/* Assignee */}
+                        {/* Project Lead */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-                                <UserIcon className="size-3" /> Assignee
+                                <UserIcon className="size-3" /> Project Lead
                             </p>
                             <select
-                                value={draft?.assignee_id ?? task.assignee_id ?? ""}
-                                onChange={(e) => setDraft((d) => ({ ...d, assignee_id: e.target.value }))}
+                                value={draft?.lead_id ?? task.assignee_id ?? ""}
+                                onChange={(e) => setDraft((d) => ({ ...d, lead_id: e.target.value }))}
                                 className="text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0"
                             >
                                 <option value="">Unassigned</option>
@@ -566,6 +575,48 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Assignees */}
+                        <div>
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                                <UserIcon className="size-3" /> Assignees
+                            </p>
+                            {/* Stacked avatars display */}
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <div className="flex -space-x-2">
+                                    {(draft?.assignee_ids || []).slice(0, 4).map((uid) => {
+                                        const m = members.find((m) => m.user_id === uid)
+                                        return m ? <UserAvatar key={uid} user={m.user} size={22} /> : null
+                                    })}
+                                </div>
+                                {(draft?.assignee_ids || []).length > 4 && (
+                                    <span className="text-xs text-zinc-500">+{(draft?.assignee_ids || []).length - 4}</span>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAssigneeDropdown((v) => !v)}
+                                    className="text-xs text-blue-500 hover:underline ml-1"
+                                >
+                                    {showAssigneeDropdown ? "Done" : "Edit"}
+                                </button>
+                            </div>
+                            {showAssigneeDropdown && (
+                                <div className="rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow max-h-40 overflow-y-auto">
+                                    {members.map((m) => (
+                                        <label key={m.user_id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer text-sm text-zinc-800 dark:text-zinc-200">
+                                            <input
+                                                type="checkbox"
+                                                checked={(draft?.assignee_ids || []).includes(m.user_id)}
+                                                onChange={() => toggleDraftAssignee(m.user_id)}
+                                                className="rounded"
+                                            />
+                                            <UserAvatar user={m.user} size={18} />
+                                            {m.user?.name || m.user?.email}
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Due Date */}
