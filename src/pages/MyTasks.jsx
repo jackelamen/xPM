@@ -320,6 +320,13 @@ async function sendTaskToPulse(task, userId) {
             tags: task.projectName ? [task.projectName] : [],
         })
         if (error) throw error
+
+        // Persist flag so the bolt stays purple after reload
+        await supabase
+            .from('xpm_tasks')
+            .update({ custom_fields: { ...(task.custom_fields || {}), sent_to_pulse: true } })
+            .eq('id', task.id)
+
         return true
     } catch (err) {
         toast.error(err.message || 'Failed to send to Pulse')
