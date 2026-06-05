@@ -6,7 +6,7 @@ import { format, isToday, isTomorrow, isPast, startOfDay } from 'date-fns'
 import {
     CheckCircle2, Circle, CircleDot, ChevronDown, ChevronRight,
     Settings2, Eye, EyeOff, ZapIcon, Plus, GripVertical,
-    Pencil, Trash2, Check, X,
+    Pencil, Trash2, Check, X, CornerDownRight,
 } from 'lucide-react'
 import { updateTask } from '../features/workspaceSlice'
 import TaskPanel from '../components/TaskPanel'
@@ -427,6 +427,9 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
             case 'title':
                 return (
                     <div className="flex items-center gap-2.5 min-w-0">
+                        {task.parent_task_id && (
+                            <CornerDownRight size={13} className="flex-shrink-0 text-zinc-300 dark:text-zinc-600 ml-3" />
+                        )}
                         <button onClick={(e) => { e.stopPropagation(); save({ status: isDone ? 'TODO' : 'DONE' }) }}
                             className={`flex-shrink-0 transition-colors ${isDone ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600 hover:text-emerald-400'}`}>
                             {isDone ? <CheckCircle2 size={15} strokeWidth={1.75} /> : <Circle size={15} strokeWidth={1.75} />}
@@ -482,7 +485,10 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
     const PRIORITY_DOT = { LOW: 'bg-zinc-400', MEDIUM: 'bg-amber-400', HIGH: 'bg-emerald-500', URGENT: 'bg-red-500' }
     return (
         <div onClick={() => onRowClick(task)}
-            className={`flex items-start gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-white/[0.06] active:bg-zinc-50 dark:active:bg-white/[0.03] transition-colors ${isDone ? 'opacity-50' : ''}`}>
+            className={`flex items-start gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-white/[0.06] active:bg-zinc-50 dark:active:bg-white/[0.03] transition-colors ${isDone ? 'opacity-50' : ''} ${task.parent_task_id ? 'pl-8' : ''}`}>
+            {task.parent_task_id && (
+                <CornerDownRight size={15} className="flex-shrink-0 mt-0.5 text-zinc-300 dark:text-zinc-600" />
+            )}
             <button onClick={(e) => { e.stopPropagation(); onSave(task, { status: isDone ? 'TODO' : 'DONE' }) }}
                 className={`flex-shrink-0 mt-0.5 transition-colors ${isDone ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600'}`}>
                 {isDone ? <CheckCircle2 size={20} strokeWidth={1.75} /> : <Circle size={20} strokeWidth={1.75} />}

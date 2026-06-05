@@ -68,7 +68,7 @@ export const fetchWorkspaceDetail = createAsyncThunk(
             if (projectIds.length) {
                 const { data: taskData, error: taskError } = await supabase
                     .from("xpm_tasks")
-                    .select("id, project_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, due_time, archived_at, created_at, updated_at, custom_fields, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
+                    .select("id, project_id, parent_task_id, title, description, status, type, priority, assignee_id, created_by, start_date, due_date, due_time, archived_at, created_at, updated_at, custom_fields, milestone, recurrence_rule, recurrence_anchor_date, assignee:profiles!xpm_tasks_assignee_id_fkey(id, name, email, avatar_url)")
                     .in("project_id", projectIds)
                     .is("archived_at", null)
                     .order("position", { ascending: true })

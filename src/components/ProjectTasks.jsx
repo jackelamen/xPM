@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteTasks, updateTaskStatus, archiveTasks } from "../features/workspaceSlice";
-import { CalendarIcon, MessageSquare, CheckCircle2, Circle, Trash, XIcon, DownloadIcon, Users, PenLine, Lightbulb, Palette, ClipboardList, ArchiveIcon, Mail } from "lucide-react";
+import { CalendarIcon, MessageSquare, CheckCircle2, Circle, Trash, XIcon, DownloadIcon, Users, PenLine, Lightbulb, Palette, ClipboardList, ArchiveIcon, Mail, CornerDownRight } from "lucide-react";
 import SavedViews from "./SavedViews";
 import UserAvatar from "./UserAvatar";
 
@@ -141,6 +141,30 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
             );
         });
     }, [filters, tasks]);
+
+    // Order rows so each subtask sits directly under its parent, and flag depth
+    // for indentation. Subtasks whose parent isn't in the filtered set are kept
+    // in place but still marked as subtasks so they read correctly.
+    const orderedTasks = useMemo(() => {
+        const byId = new Map(filteredTasks.map((t) => [t.id, t]));
+        const childrenOf = new Map();
+        for (const t of filteredTasks) {
+            if (t.parent_task_id && byId.has(t.parent_task_id)) {
+                if (!childrenOf.has(t.parent_task_id)) childrenOf.set(t.parent_task_id, []);
+                childrenOf.get(t.parent_task_id).push(t);
+            }
+        }
+        const ordered = [];
+        for (const t of filteredTasks) {
+            // Skip children here; they're emitted right after their parent.
+            if (t.parent_task_id && byId.has(t.parent_task_id)) continue;
+            ordered.push({ ...t, _isSub: false });
+            for (const child of childrenOf.get(t.id) || []) {
+                ordered.push({ ...child, _isSub: true });
+            }
+        }
+        return ordered;
+    }, [filteredTasks]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -303,8 +327,8 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredTasks.length > 0 ? (
-                                    filteredTasks.map((task) => {
+                                {orderedTasks.length > 0 ? (
+                                    orderedTasks.map((task) => {
                                         const { icon: Icon, color } = typeIcons[task.type] || {};
                                         const { background, prioritycolor } = priorityTexts[task.priority] || {};
 
@@ -343,7 +367,14 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                         </button>
                                                     </div>
                                                 </td>
-                                                <td className={`px-4 pl-0 py-2 ${isDone ? "line-through text-zinc-400 dark:text-zinc-500" : ""}`}>{task.title}</td>
+                                                <td className={`px-4 pl-0 py-2 ${isDone ? "line-through text-zinc-400 dark:text-zinc-500" : ""}`}>
+                                                    {task._isSub ? (
+                                                        <span className="flex items-center gap-1.5 pl-6">
+                                                            <CornerDownRight className="size-3.5 text-zinc-300 dark:text-zinc-600 shrink-0" />
+                                                            <span>{task.title}</span>
+                                                        </span>
+                                                    ) : task.title}
+                                                </td>
                                                 {builtinVisible.type !== false && (
                                                     <td className="px-4 py-2">
                                                         <div className="flex items-center gap-2">
@@ -433,14 +464,15 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
 
                     {/* Mobile/Card View */}
                     <div className="lg:hidden flex flex-col gap-4">
-                        {filteredTasks.length > 0 ? (
-                            filteredTasks.map((task) => {
+                        {orderedTasks.length > 0 ? (
+                            orderedTasks.map((task) => {
                                 const { icon: Icon, color } = typeIcons[task.type] || {};
                                 const { background, prioritycolor } = priorityTexts[task.priority] || {};
 
                                 return (
-                                    <div key={task.id} className={`dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2 ${task.status === "DONE" ? "opacity-50" : ""}`}>
+                                    <div key={task.id} className={`dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2 ${task.status === "DONE" ? "opacity-50" : ""} ${task._isSub ? "ml-5" : ""}`}>
                                         <div className="flex items-center justify-between gap-2">
+                                            {task._isSub && <CornerDownRight className="size-4 text-zinc-300 dark:text-zinc-600 shrink-0" />}
                                             <button
                                                 type="button"
                                                 onClick={(e) => handleToggleComplete(e, task)}
