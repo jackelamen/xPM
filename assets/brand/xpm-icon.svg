@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="xPM icon">
+  <rect width="512" height="512" rx="116" fill="#E6F1FB"/>
+  <g stroke-linecap="round" fill="none">
+    <path d="M120 128 L384 392" stroke="#85B7EB" stroke-width="60"/>
+    <path d="M171 111 L392 332" stroke="#378ADD" stroke-width="60"/>
+    <path d="M392 120 L128 384" stroke="#0C447C" stroke-width="60"/>
+  </g>
+</svg>

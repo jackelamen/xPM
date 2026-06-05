@@ -1,0 +1,12 @@
+<svg width="760" height="260" viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="xPM logo">
+  <g transform="translate(40,70)">
+    <rect width="120" height="120" rx="28" fill="#E6F1FB"/>
+    <g stroke-linecap="round" fill="none">
+      <path d="M28 30 L90 92" stroke="#85B7EB" stroke-width="14"/>
+      <path d="M40 26 L92 78" stroke="#378ADD" stroke-width="14"/>
+      <path d="M92 28 L30 90" stroke="#0C447C" stroke-width="14"/>
+    </g>
+  </g>
+  <text x="195" y="158" font-family="'Helvetica Neue',Arial,sans-serif" font-size="92" font-weight="600" fill="#0C447C">x<tspan font-weight="400" fill="#185FA5">PM</tspan></text>
+  <text x="198" y="195" font-family="'Helvetica Neue',Arial,sans-serif" font-size="19" letter-spacing="6" fill="#185FA5">PROJECT MANAGEMENT</text>
+</svg>
