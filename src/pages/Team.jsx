@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Search, UserPlus, Folder, CheckSquare, Users, Trash2, Edit2 } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
 import UserAvatar from "../components/UserAvatar";
@@ -19,19 +19,36 @@ const Team = () => {
     const dispatch = useDispatch();
     const { user: currentUser } = useAuth();
 
+    // Is the current user an admin of this workspace? Drives both UI gating and
+    // a fast client-side guard (the real enforcement is RLS in the database).
+    const isAdmin = useMemo(() => {
+        const me = (currentWorkspace?.members || []).find((m) => m.user_id === currentUser?.id);
+        return (me?.role || "").toLowerCase() === "admin";
+    }, [currentWorkspace, currentUser]);
+
     const handleRemove = async (member) => {
         if (member.user_id === currentUser?.id) {
             toast.error("You can't remove yourself.");
             return;
         }
+        if (!isAdmin) {
+            toast.error("Only workspace admins can remove members.");
+            return;
+        }
         if (!window.confirm(`Remove ${member.user?.name || member.user?.email} from this workspace?`)) return;
         setRemovingId(member.id);
-        const { error } = await supabase
+        // .select() returns the rows actually deleted. RLS may allow the call but
+        // match zero rows, which is NOT an error — so a null error with no rows
+        // means the action was blocked, not that it succeeded.
+        const { data, error } = await supabase
             .from("workspace_members")
             .delete()
-            .eq("id", member.id);
+            .eq("id", member.id)
+            .select();
         if (error) {
             toast.error("Failed to remove member.");
+        } else if (!data || data.length === 0) {
+            toast.error("You don't have permission to remove this member.");
         } else {
             toast.success("Member removed.");
             dispatch(fetchWorkspaceDetail(currentWorkspace.id));
@@ -88,13 +105,15 @@ const Team = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsDialogOpen(true)}
-                        className="flex items-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow-sm"
-                    >
-                        <UserPlus className="size-4" />
-                        Invite Member
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setIsDialogOpen(true)}
+                            className="flex items-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow-sm"
+                        >
+                            <UserPlus className="size-4" />
+                            Invite Member
+                        </button>
+                    )}
                 </div>
                 <InviteMemberDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
@@ -185,7 +204,7 @@ const Team = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-3.5 text-right">
-                                            {user.user_id !== currentUser?.id && (
+                                            {isAdmin && user.user_id !== currentUser?.id && (
                                                 <button
                                                     onClick={() => handleRemove(user)}
                                                     disabled={removingId === user.id}

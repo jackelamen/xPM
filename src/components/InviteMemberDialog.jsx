@@ -34,10 +34,16 @@ const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                     toast.error("This person is already a member.")
                     return
                 }
-                const { error } = await supabase
+                const { data: inserted, error } = await supabase
                     .from("workspace_members")
                     .insert({ workspace_id: currentWorkspace.id, user_id: profile.id, role: formData.role })
+                    .select()
                 if (error) throw error
+                // RLS may allow the call but block the row — no error, no row back.
+                if (!inserted || inserted.length === 0) {
+                    toast.error("Only workspace admins can add members.")
+                    return
+                }
                 toast.success(`${profile.name || formData.email} added to ${currentWorkspace.name}`)
                 dispatch(fetchWorkspaceDetail(currentWorkspace.id))
                 setFormData({ email: "", role: "member" })
