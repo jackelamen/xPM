@@ -160,8 +160,11 @@ export const deleteSpace = createAsyncThunk(
     "workspace/deleteSpace",
     async ({ spaceId }, { rejectWithValue }) => {
         try {
-            const { error } = await supabase.from("spaces").delete().eq("id", spaceId)
+            const { data, error } = await supabase.from("spaces").delete().eq("id", spaceId).select()
             if (error) throw error
+            // No error but zero rows means RLS blocked it — surface as a failure
+            // so the UI doesn't optimistically drop the space.
+            if (!data || data.length === 0) throw new Error("You don't have permission to delete this space.")
             return spaceId
         } catch (err) {
             return rejectWithValue(err.message)
@@ -420,13 +423,16 @@ export const deleteTasks = createAsyncThunk(
     "workspace/deleteTasks",
     async ({ taskIds, projectId }, { rejectWithValue }) => {
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from("xpm_tasks")
                 .delete()
                 .in("id", taskIds)
+                .select("id")
 
             if (error) throw error
-            return { taskIds, projectId }
+            if (!data || data.length === 0) throw new Error("You don't have permission to delete these tasks.")
+            // Only remove what was actually deleted (RLS may delete a subset).
+            return { taskIds: data.map((t) => t.id), projectId }
         } catch (err) {
             return rejectWithValue(err.message)
         }
@@ -437,13 +443,15 @@ export const archiveTasks = createAsyncThunk(
     "workspace/archiveTasks",
     async ({ taskIds, projectId }, { rejectWithValue }) => {
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from("xpm_tasks")
                 .update({ archived_at: new Date().toISOString() })
                 .in("id", taskIds)
+                .select("id")
 
             if (error) throw error
-            return { taskIds, projectId }
+            if (!data || data.length === 0) throw new Error("You don't have permission to archive these tasks.")
+            return { taskIds: data.map((t) => t.id), projectId }
         } catch (err) {
             return rejectWithValue(err.message)
         }
@@ -454,13 +462,15 @@ export const archiveProjects = createAsyncThunk(
     "workspace/archiveProjects",
     async ({ projectIds }, { rejectWithValue }) => {
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from("projects")
                 .update({ archived_at: new Date().toISOString() })
                 .in("id", projectIds)
+                .select("id")
 
             if (error) throw error
-            return { projectIds }
+            if (!data || data.length === 0) throw new Error("You don't have permission to archive these projects.")
+            return { projectIds: data.map((p) => p.id) }
         } catch (err) {
             return rejectWithValue(err.message)
         }

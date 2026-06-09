@@ -40,7 +40,7 @@ export default function ProjectSettings({ project }) {
         if (!project) return;
         setIsSubmitting(true);
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from("projects")
                 .update({
                     name: formData.name,
@@ -49,9 +49,11 @@ export default function ProjectSettings({ project }) {
                     space_id: formData.space_id || null,
                     updated_at: new Date().toISOString(),
                 })
-                .eq("id", project.id);
+                .eq("id", project.id)
+                .select();
 
             if (error) throw error;
+            if (!data || data.length === 0) { toast.error("You don't have permission to edit this project."); return; }
             toast.success("Project updated");
             dispatch(fetchWorkspaceDetail(project.workspace_id));
         } catch (err) {
@@ -65,12 +67,14 @@ export default function ProjectSettings({ project }) {
         if (!window.confirm("Archive this project? It will be hidden but not deleted.")) return;
         setIsArchiving(true);
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from("projects")
                 .update({ archived_at: new Date().toISOString() })
-                .eq("id", project.id);
+                .eq("id", project.id)
+                .select();
 
             if (error) throw error;
+            if (!data || data.length === 0) { toast.error("You don't have permission to archive this project."); setIsArchiving(false); return; }
             toast.success("Project archived");
             dispatch(fetchWorkspaceDetail(project.workspace_id));
             navigate("/projects");
