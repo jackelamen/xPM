@@ -436,6 +436,9 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
                         </button>
                         <button onClick={() => onRowClick(task)}
                             className={`text-sm truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${isDone ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                            {task._parentTitle && (
+                                <span className="text-zinc-400 dark:text-zinc-500 font-normal">{task._parentTitle} <span className="text-zinc-300 dark:text-zinc-600">›</span> </span>
+                            )}
                             {task.title}
                         </button>
                     </div>
@@ -494,7 +497,12 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
                 {isDone ? <CheckCircle2 size={20} strokeWidth={1.75} /> : <Circle size={20} strokeWidth={1.75} />}
             </button>
             <div className="flex-1 min-w-0">
-                <p className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>{task.title}</p>
+                <p className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
+                    {task._parentTitle && (
+                        <span className="text-zinc-400 dark:text-zinc-500 font-normal">{task._parentTitle} › </span>
+                    )}
+                    {task.title}
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-[12px] text-zinc-400 dark:text-zinc-500 truncate">{task.projectName}</span>
                     {task.priority && <>
@@ -636,23 +644,49 @@ export default function MyTasks() {
         )
     }, [currentWorkspace, user, projects])
 
-    const activeTasks = useMemo(() => allMyTasks.filter((t) => t.status !== 'DONE'), [allMyTasks])
-    const doneTasks   = useMemo(() => allMyTasks.filter((t) => t.status === 'DONE'), [allMyTasks])
+    // Identify masters (tasks that have at least one subtask among my tasks) and
+    // a lookup of task title by id, so subtasks can show a parent breadcrumb.
+    const { parentIds, titleById } = useMemo(() => {
+        const pIds = new Set()
+        const titles = new Map()
+        for (const t of allMyTasks) {
+            titles.set(t.id, t.title)
+            if (t.parent_task_id) pIds.add(t.parent_task_id)
+        }
+        return { parentIds: pIds, titleById: titles }
+    }, [allMyTasks])
 
-    // Assign each task to a section: use stored assignment, fall back to due-date heuristic
+    // Leaf tasks only — umbrella masters (with children) are excluded from the
+    // bucketed lists and counts; their subtasks represent the work.
+    const leafTasks   = useMemo(() => allMyTasks.filter((t) => !parentIds.has(t.id)), [allMyTasks, parentIds])
+    const activeTasks = useMemo(() => leafTasks.filter((t) => t.status !== 'DONE'), [leafTasks])
+    const doneTasks   = useMemo(() => leafTasks
+        .filter((t) => t.status === 'DONE')
+        .map((t) => t.parent_task_id ? { ...t, _parentTitle: titleById.get(t.parent_task_id) || null } : t),
+    [leafTasks, titleById])
+
+    // Assign each task to a section: use stored assignment, fall back to due-date heuristic.
+    // Masters that have children are NOT bucketed as their own row — the subtasks are
+    // the actionable units and carry a breadcrumb back to the master instead.
     const tasksBySection = useMemo(() => {
         const map = Object.fromEntries(sections.map((s) => [s.id, []]))
         map['__done__'] = []
         for (const t of allMyTasks) {
-            if (t.status === 'DONE') { map['__done__'].push(t); continue }
+            // Skip umbrella masters in the bucketed view.
+            if (parentIds.has(t.id)) continue
+            // Decorate subtasks with their parent's title for the breadcrumb.
+            const decorated = t.parent_task_id
+                ? { ...t, _parentTitle: titleById.get(t.parent_task_id) || null }
+                : t
+            if (t.status === 'DONE') { map['__done__'].push(decorated); continue }
             const secId = taskSections[t.id] || getDefaultSection(t)
             // If stored section no longer exists, fall back
             const target = sections.find((s) => s.id === secId) ? secId : sections[0]?.id || 'later'
             if (!map[target]) map[target] = []
-            map[target].push(t)
+            map[target].push(decorated)
         }
         return map
-    }, [allMyTasks, sections, taskSections])
+    }, [allMyTasks, sections, taskSections, parentIds, titleById])
 
     const handleSave = useCallback(async (task, fields) => {
         try { await dispatch(updateTask({ taskId: task.id, projectId: task.projectId, fields })).unwrap() }

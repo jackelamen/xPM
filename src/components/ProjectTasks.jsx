@@ -154,12 +154,26 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                 childrenOf.get(t.parent_task_id).push(t);
             }
         }
+        // Master due date is derived as MAX(child due dates). A master row shows
+        // this rolled-up date rather than its own stored due_date.
+        const rolledUpDue = (parentId) => {
+            const kids = childrenOf.get(parentId) || [];
+            const dates = kids.map((k) => k.due_date).filter(Boolean).sort();
+            return dates.length ? dates[dates.length - 1] : null;
+        };
+
         const ordered = [];
         for (const t of filteredTasks) {
             // Skip children here; they're emitted right after their parent.
             if (t.parent_task_id && byId.has(t.parent_task_id)) continue;
-            ordered.push({ ...t, _isSub: false });
-            for (const child of childrenOf.get(t.id) || []) {
+            const kids = childrenOf.get(t.id);
+            if (kids && kids.length) {
+                const derived = rolledUpDue(t.id);
+                ordered.push({ ...t, _isSub: false, _isMaster: true, due_date: derived ?? t.due_date, _derivedDue: derived != null });
+            } else {
+                ordered.push({ ...t, _isSub: false });
+            }
+            for (const child of kids || []) {
                 ordered.push({ ...child, _isSub: true });
             }
         }
@@ -422,6 +436,9 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                                 {format(new Date(task.due_date), "dd MMMM")}
                                                                 {task.due_time && (
                                                                     <span className="text-zinc-400 dark:text-zinc-500 text-xs">· {task.due_time.slice(0, 5)}</span>
+                                                                )}
+                                                                {task._derivedDue && (
+                                                                    <span title="Rolled up from subtasks" className="text-zinc-300 dark:text-zinc-600 text-[10px] uppercase tracking-wide ml-0.5">auto</span>
                                                                 )}
                                                             </div>
                                                         ) : <span className="text-zinc-400">—</span>}

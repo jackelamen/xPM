@@ -267,19 +267,78 @@ export const createTask = createAsyncThunk(
     }
 )
 
+// Cascade a status change between a master task and its subtasks.
+// `changedTask` is the full row that was just updated. Dispatches patchTask
+// for every related row it touches. Pure DB + store sync, no return value.
+async function syncTaskCompletion(changedTask, allTasks, dispatch) {
+    const nowISO = new Date().toISOString()
+    const taskId = changedTask.id
+
+    // 1. Cascade DOWN: master set DONE → mark all open children DONE.
+    if (changedTask.status === "DONE") {
+        const children = allTasks.filter(
+            (t) => t.parent_task_id === taskId && t.status !== "DONE"
+        )
+        if (children.length) {
+            const { data: updatedChildren } = await supabase
+                .from("xpm_tasks")
+                .update({ status: "DONE", completed_at: nowISO, updated_at: nowISO })
+                .in("id", children.map((c) => c.id))
+                .select("*")
+            for (const child of updatedChildren || []) {
+                dispatch(patchTask({ projectId: child.project_id, task: child }))
+            }
+        }
+    }
+
+    // 2. Roll UP: a child changed → auto-complete or reopen its master.
+    if (changedTask.parent_task_id) {
+        const siblings = allTasks.filter((t) => t.parent_task_id === changedTask.parent_task_id)
+        const statuses = siblings.map((s) => (s.id === taskId ? changedTask.status : s.status))
+        const master = allTasks.find((t) => t.id === changedTask.parent_task_id)
+        if (master && statuses.length) {
+            const allDone = statuses.every((st) => st === "DONE")
+            if (allDone && master.status !== "DONE") {
+                const { data: m } = await supabase
+                    .from("xpm_tasks")
+                    .update({ status: "DONE", completed_at: nowISO, updated_at: nowISO })
+                    .eq("id", master.id).select("*").single()
+                if (m) dispatch(patchTask({ projectId: m.project_id, task: m }))
+            } else if (!allDone && master.status === "DONE") {
+                const { data: m } = await supabase
+                    .from("xpm_tasks")
+                    .update({ status: "TODO", completed_at: null, updated_at: nowISO })
+                    .eq("id", master.id).select("*").single()
+                if (m) dispatch(patchTask({ projectId: m.project_id, task: m }))
+            }
+        }
+    }
+}
+
 export const updateTaskStatus = createAsyncThunk(
     "workspace/updateTaskStatus",
-    async ({ taskId, projectId, status }, { rejectWithValue }) => {
+    async ({ taskId, projectId, status }, { dispatch, getState, rejectWithValue }) => {
         try {
+            const nowISO = new Date().toISOString()
             const { data, error } = await supabase
                 .from("xpm_tasks")
-                .update({ status, updated_at: new Date().toISOString() })
+                .update({
+                    status,
+                    completed_at: status === "DONE" ? nowISO : null,
+                    updated_at: nowISO,
+                })
                 .eq("id", taskId)
-                .select("id, project_id, status")
+                .select("*")
                 .single()
 
             if (error) throw error
-            return data
+            dispatch(patchTask({ projectId, task: data }))
+
+            const allTasks = (getState().workspace.currentWorkspace?.projects || [])
+                .flatMap((p) => p.tasks || [])
+            await syncTaskCompletion(data, allTasks, dispatch)
+
+            return { id: data.id, project_id: data.project_id, status: data.status }
         } catch (err) {
             return rejectWithValue(err.message)
         }
@@ -288,16 +347,32 @@ export const updateTaskStatus = createAsyncThunk(
 
 export const updateTask = createAsyncThunk(
     "workspace/updateTask",
-    async ({ taskId, projectId, fields }, { dispatch, rejectWithValue }) => {
+    async ({ taskId, projectId, fields }, { dispatch, getState, rejectWithValue }) => {
         try {
+            const nowISO = new Date().toISOString()
+
+            // If status is changing, keep completed_at in sync.
+            const patch = { ...fields, updated_at: nowISO }
+            if (Object.prototype.hasOwnProperty.call(fields, "status")) {
+                patch.completed_at = fields.status === "DONE" ? nowISO : null
+            }
+
             const { data, error } = await supabase
                 .from("xpm_tasks")
-                .update({ ...fields, updated_at: new Date().toISOString() })
+                .update(patch)
                 .eq("id", taskId)
                 .select("*")
                 .single()
             if (error) throw error
             dispatch(patchTask({ projectId, task: data }))
+
+            // Parent/child completion sync — only when a status change occurred.
+            if (Object.prototype.hasOwnProperty.call(fields, "status")) {
+                const allTasks = (getState().workspace.currentWorkspace?.projects || [])
+                    .flatMap((p) => p.tasks || [])
+                await syncTaskCompletion(data, allTasks, dispatch)
+            }
+
             return data
         } catch (err) {
             return rejectWithValue(err.message)
