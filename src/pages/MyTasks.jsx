@@ -435,10 +435,8 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
                             {isDone ? <CheckCircle2 size={15} strokeWidth={1.75} /> : <Circle size={15} strokeWidth={1.75} />}
                         </button>
                         <button onClick={() => onRowClick(task)}
+                            title={task._parentTitle ? `Subtask of: ${task._parentTitle}` : undefined}
                             className={`text-sm truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${isDone ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
-                            {task._parentTitle && (
-                                <span className="text-zinc-400 dark:text-zinc-500 font-normal">{task._parentTitle} <span className="text-zinc-300 dark:text-zinc-600">›</span> </span>
-                            )}
                             {task.title}
                         </button>
                     </div>
@@ -497,10 +495,8 @@ function MobileTaskCard({ task, onRowClick, onSave }) {
                 {isDone ? <CheckCircle2 size={20} strokeWidth={1.75} /> : <Circle size={20} strokeWidth={1.75} />}
             </button>
             <div className="flex-1 min-w-0">
-                <p className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
-                    {task._parentTitle && (
-                        <span className="text-zinc-400 dark:text-zinc-500 font-normal">{task._parentTitle} › </span>
-                    )}
+                <p title={task._parentTitle ? `Subtask of: ${task._parentTitle}` : undefined}
+                    className={`text-[15px] font-medium leading-snug ${isDone ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-white'}`}>
                     {task.title}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
