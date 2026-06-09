@@ -154,12 +154,14 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
     const toggleSubtaskStatus = async (subtask) => {
         const newStatus = subtask.status === "DONE" ? "TODO" : "DONE"
-        const { error } = await supabase
-            .from("xpm_tasks")
-            .update({ status: newStatus })
-            .eq("id", subtask.id)
-        if (!error) {
+        try {
+            // Route through the thunk so the store is patched and the
+            // parent/child completion cascade + rollup run — and so the change
+            // shows in every view without a reload.
+            await dispatch(updateTaskStatus({ taskId: subtask.id, projectId, status: newStatus })).unwrap()
             setSubtasks((prev) => prev.map((s) => s.id === subtask.id ? { ...s, status: newStatus } : s))
+        } catch (err) {
+            toast.error(err || "Failed to update subtask")
         }
     }
 
@@ -316,6 +318,12 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
             updated_at: new Date().toISOString(),
         }).eq("id", taskId)
         if (error) { toast.error("Failed to save recurrence"); return }
+        // Keep the store in sync so the change shows everywhere without a reload.
+        dispatch(patchTask({ projectId, task: {
+            id: taskId,
+            recurrence_rule: recurrenceRule || null,
+            recurrence_anchor_date: recurrenceRule && recurrenceAnchor ? recurrenceAnchor : null,
+        } }))
         toast.success(recurrenceRule ? "Recurrence set" : "Recurrence removed")
     }
 

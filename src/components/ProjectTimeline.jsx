@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
+import { useDispatch } from "react-redux"
 import { supabase } from "../lib/supabase"
+import { patchTask } from "../features/workspaceSlice"
 import {
     format, addDays, differenceInDays, startOfDay, isToday,
     isWeekend, subDays, parseISO
@@ -36,6 +38,7 @@ const DAY_WIDTH_OPTIONS = [
 ]
 
 export default function ProjectTimeline({ tasks }) {
+    const dispatch = useDispatch()
     const today = startOfDay(new Date())
     const [viewStart, setViewStart] = useState(subDays(today, 7))
     const [dayWidth, setDayWidth] = useState(16)
@@ -167,17 +170,21 @@ export default function ProjectTimeline({ tasks }) {
                 const updates = {}
                 if (override.start_date !== undefined) updates.start_date = override.start_date
                 if (override.due_date !== undefined) updates.due_date = override.due_date
+                const projectId = tasks.find((t) => t.id === drag.taskId)?.project_id
                 supabase.from("xpm_tasks")
                     .update({ ...updates, updated_at: new Date().toISOString() })
                     .eq("id", drag.taskId)
-                    .then(({ error }) => {
-                        if (error) toast.error("Failed to save dates")
-                        else toast.success("Dates updated")
+                    .select()
+                    .then(({ data, error }) => {
+                        if (error || !data || data.length === 0) { toast.error("Failed to save dates"); return }
+                        // Sync the store so the new dates show in every view live.
+                        if (projectId) dispatch(patchTask({ projectId, task: { id: drag.taskId, ...updates } }))
+                        toast.success("Dates updated")
                     })
             }
             return prev
         })
-    }, [])
+    }, [tasks, dispatch])
 
     useEffect(() => {
         if (!dragging) return

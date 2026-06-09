@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
+import { useDispatch } from "react-redux"
 import { supabase } from "../lib/supabase"
+import { patchTask } from "../features/workspaceSlice"
 import { useAuth } from "../context/AuthContext"
 import {
     format, addDays, differenceInDays, startOfDay, isToday,
@@ -65,6 +67,7 @@ function DepLine({ x1, y1, x2, y2, selected }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ProjectGantt({ tasks, projectId }) {
     const { user } = useAuth()
+    const dispatch = useDispatch()
     const today = startOfDay(new Date())
     const [viewStart, setViewStart] = useState(subDays(today, 5))
     const [deps, setDeps] = useState([])
@@ -208,14 +211,17 @@ export default function ProjectGantt({ tasks, projectId }) {
                 supabase.from("xpm_tasks")
                     .update({ ...updates, updated_at: new Date().toISOString() })
                     .eq("id", drag.taskId)
-                    .then(({ error }) => {
-                        if (error) toast.error("Failed to save dates")
-                        else toast.success("Dates updated")
+                    .select()
+                    .then(({ data, error }) => {
+                        if (error || !data || data.length === 0) { toast.error("Failed to save dates"); return }
+                        // Sync the store so the new dates show in every view live.
+                        dispatch(patchTask({ projectId, task: { id: drag.taskId, ...updates } }))
+                        toast.success("Dates updated")
                     })
             }
             return prev
         })
-    }, [])
+    }, [dispatch, projectId])
 
     useEffect(() => {
         if (!dragging) return
