@@ -288,7 +288,7 @@ function xpmPriorityToPulse(p) {
     return 0
 }
 
-async function sendTaskToPulse(task, userId) {
+async function sendTaskToPulse(task, userId, workspaceId) {
     try {
         let listId = null
         if (task.projectName) {
@@ -308,7 +308,7 @@ async function sendTaskToPulse(task, userId) {
         const dueAt = task.due_date
             ? new Date(`${task.due_date}T${task.due_time || '00:00:00'}`).toISOString()
             : null
-        const { error } = await supabase.from('tasks').insert({
+        const { data: pulseTask, error } = await supabase.from('tasks').insert({
             user_id: userId,
             title: task.title,
             notes: task.description || null,
@@ -318,8 +318,22 @@ async function sendTaskToPulse(task, userId) {
             duration_minutes: 30,
             list_id: listId,
             tags: task.projectName ? [task.projectName] : [],
-        })
+        }).select('id').single()
         if (error) throw error
+
+        // Record the bridge link so completion can sync both ways (Pulse <-> xPM).
+        if (pulseTask?.id) {
+            await supabase.from('pulse_xpm_task_links').insert({
+                user_id: userId,
+                xpm_workspace_id: workspaceId || null,
+                xpm_project_id: task.projectId || null,
+                xpm_task_id: task.id,
+                pulse_task_id: String(pulseTask.id),
+                pulse_task_title: task.title,
+                pulse_project_tag: task.projectName || null,
+                sync_status: 'linked',
+            })
+        }
 
         // Persist flag so the bolt stays purple after reload
         await supabase
@@ -334,14 +348,14 @@ async function sendTaskToPulse(task, userId) {
     }
 }
 
-function SendToPulseCell({ task, userId }) {
+function SendToPulseCell({ task, userId, workspaceId }) {
     const [sent, setSent] = useState(!!task.custom_fields?.sent_to_pulse)
     const [loading, setLoading] = useState(false)
     const handle = async (e) => {
         e.stopPropagation()
         if (sent || loading) return
         setLoading(true)
-        const ok = await sendTaskToPulse(task, userId)
+        const ok = await sendTaskToPulse(task, userId, workspaceId)
         if (ok) { setSent(true); toast.success('Task sent to Pulse') }
         setLoading(false)
     }
@@ -417,7 +431,7 @@ function ResizableTh({ width, onResize, children }) {
 
 // ── task row ──────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId, onDragStart, onDragEnd, isDragging }) {
+function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId, workspaceId, onDragStart, onDragEnd, isDragging }) {
     const isDone = task.status === 'DONE'
     const save = useCallback((fields) => onSave(task, fields), [task, onSave])
 
@@ -448,7 +462,7 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
             case 'project':  return <ProjectCell task={task} projects={projects} onSave={save} />
             case 'assignee': return <AssigneeCell task={task} members={members} onSave={save} />
             case 'tags':     return <TextCell value={task.custom_fields?.tags} onSave={(v) => save({ custom_fields: { ...task.custom_fields, tags: v } })} />
-            case 'send_to_pulse': return <SendToPulseCell task={task} userId={userId} />
+            case 'send_to_pulse': return <SendToPulseCell task={task} userId={userId} workspaceId={workspaceId} />
             default: return null
         }
     }
@@ -773,7 +787,7 @@ export default function MyTasks() {
         persistSections(sections.filter((s) => s.id !== id))
     }
 
-    const rowProps = { cols, colWidths, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id }
+    const rowProps = { cols, colWidths, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id, workspaceId: currentWorkspace?.id }
 
     const [doneOpen, setDoneOpen] = useState(true)
 
