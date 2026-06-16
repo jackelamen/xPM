@@ -22,6 +22,7 @@ export default function ProjectDetail() {
     const [searchParams, setSearchParams] = useSearchParams();
     const tab = searchParams.get('tab');
     const id = searchParams.get('id');
+    const taskParam = searchParams.get('task');
 
     const navigate = useNavigate();
     const projects = useSelector((state) => state?.workspace?.currentWorkspace?.projects || []);
@@ -35,6 +36,11 @@ export default function ProjectDetail() {
     useEffect(() => {
         if (tab) setActiveTab(tab);
     }, [tab]);
+
+    // Deep link from notifications: ?task=<id> opens that task's panel.
+    useEffect(() => {
+        if (taskParam) setSelectedTaskId(taskParam);
+    }, [taskParam]);
 
     const [fieldDefinitions, setFieldDefinitions] = useState([]);
 

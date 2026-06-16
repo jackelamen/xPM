@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { clearWorkspaces, fetchWorkspaces } from '../features/workspaceSlice'
 import { toggleTheme } from '../features/themeSlice'
+import NotificationSettings from '../components/NotificationSettings'
 
 export const AUTO_ARCHIVE_KEY = 'xpm_auto_archive'
 export const PULSE_KEY = 'xpm_pulse_enabled'
@@ -426,6 +427,9 @@ export default function ProfileSettings() {
                     />
                 </Section>
             )}
+
+            {/* Notifications */}
+            <NotificationSettings />
 
             {/* Appearance */}
             <Section title="Appearance" description="Choose how xPM looks for you.">

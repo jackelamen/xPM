@@ -30,6 +30,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        // Custom push/notificationclick handlers, merged into the generated SW.
+        importScripts: ['push-sw.js'],
       },
     }),
   ],
