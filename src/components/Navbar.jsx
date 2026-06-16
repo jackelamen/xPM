@@ -1,9 +1,9 @@
 import { PanelLeft } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
 import UserAvatar from './UserAvatar'
+import NotificationBell from './NotificationBell'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
@@ -34,6 +34,9 @@ const Navbar = ({ setIsSidebarOpen }) => {
                 <div className="flex-1 min-w-0">
                     <GlobalSearch />
                 </div>
+
+                {/* Notifications */}
+                <NotificationBell />
 
                 {/* Avatar — links to settings */}
                 <button onClick={() => navigate('/settings')} title="Settings"

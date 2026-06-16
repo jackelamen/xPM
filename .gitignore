@@ -27,3 +27,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# xPortal is its own repo (github.com/jackelamen/xportal)
+xportal/
