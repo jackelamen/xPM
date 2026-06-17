@@ -9,7 +9,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // injectManifest bundles our own src/sw.js with Vite/esbuild instead of
+      // running workbox-build's @babel/preset-env pipeline (which fails on Vercel).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+      },
       includeAssets: ['favicon.svg', 'favicon.ico', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'EDGEx PM',
@@ -25,13 +33,6 @@ export default defineConfig({
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
-      },
-      workbox: {
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
-        // Custom push/notificationclick handlers, merged into the generated SW.
-        importScripts: ['push-sw.js'],
       },
     }),
   ],

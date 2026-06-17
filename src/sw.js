@@ -1,5 +1,16 @@
-/* push-sw.js — imported into the generated service worker (vite-plugin-pwa).
- * Handles incoming Web Push messages and notification clicks. */
+/* Custom service worker (vite-plugin-pwa injectManifest strategy).
+ * Bundled by Vite/esbuild — no workbox-build/@babel pipeline.
+ * Handles precaching plus Web Push (push + notificationclick). */
+
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
+import { clientsClaim } from 'workbox-core'
+
+self.skipWaiting()
+clientsClaim()
+cleanupOutdatedCaches()
+
+// __WB_MANIFEST is injected at build time with the precache file list.
+precacheAndRoute(self.__WB_MANIFEST)
 
 self.addEventListener('push', (event) => {
     let data = {}
@@ -27,7 +38,6 @@ self.addEventListener('notificationclick', (event) => {
 
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-            // Focus an existing tab if one is open, otherwise open a new one.
             for (const client of clients) {
                 if ('focus' in client) {
                     client.navigate(url)
