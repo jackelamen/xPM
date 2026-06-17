@@ -7,7 +7,7 @@ import { setCurrentWorkspace, fetchWorkspaceDetail } from '../features/workspace
 import { isPast, isToday, startOfDay } from 'date-fns'
 import {
     CheckCircle2, Circle, CircleDot, ChevronDown, ChevronRight, Globe2, Loader2,
-    SquareArrowOutUpRight,
+    SquareArrowOutUpRight, FolderIcon,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -201,8 +201,13 @@ export default function AllTasks() {
                                         <tbody>
                                             {ws.projects.map((p) => (
                                                 <React.Fragment key={p.id}>
-                                                    <tr className="bg-zinc-50/50 dark:bg-white/[0.015]">
-                                                        <td colSpan={5} className="px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400">{p.name}</td>
+                                                    <tr className="bg-zinc-100/80 dark:bg-white/[0.04] border-t border-zinc-200 dark:border-white/[0.06]">
+                                                        <td colSpan={5} className="px-4 py-2">
+                                                            <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-zinc-700 dark:text-zinc-200">
+                                                                <FolderIcon size={13} className="text-indigo-500 shrink-0" />
+                                                                {p.name}
+                                                            </span>
+                                                        </td>
                                                     </tr>
                                                     {p.tasks.map((t) => (
                                                         <tr key={t.id} className="group border-t border-zinc-100 dark:border-white/[0.04] hover:bg-zinc-50 dark:hover:bg-white/[0.02]">
