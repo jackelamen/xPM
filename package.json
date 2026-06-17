@@ -7,7 +7,7 @@
     "node": "20.x"
   },
   "overrides": {
-    "@babel/traverse": "7.29.7"
+    "@babel/traverse": "7.27.4"
   },
   "scripts": {
     "dev": "vite",
