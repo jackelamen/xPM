@@ -9,12 +9,14 @@ const DEFAULT_PREFS = {
     task_assigned_email: true, task_assigned_push: true,
     task_completed_email: true, task_completed_push: true,
     task_due_email: true, task_due_push: true,
+    comment_mention_email: true, comment_mention_push: true,
 }
 
 const ROWS = [
     { key: 'task_assigned',  label: 'Task assigned to me',  desc: 'When someone assigns you a task.' },
     { key: 'task_completed', label: 'Task completed',        desc: 'When a task you created or own is marked done.' },
     { key: 'task_due',       label: 'Task due or overdue',   desc: 'A daily reminder for tasks due today or overdue.' },
+    { key: 'comment_mention', label: 'Mentioned in a comment', desc: 'When someone @mentions you in a task comment.' },
 ]
 
 function MiniToggle({ checked, onChange }) {

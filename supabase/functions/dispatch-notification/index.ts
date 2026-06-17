@@ -20,6 +20,7 @@ const PREF_COLUMNS: Record<string, { email: string; push: string }> = {
     TASK_ASSIGNED:  { email: "task_assigned_email",  push: "task_assigned_push" },
     TASK_COMPLETED: { email: "task_completed_email", push: "task_completed_push" },
     TASK_DUE:       { email: "task_due_email",       push: "task_due_push" },
+    COMMENT_MENTION:{ email: "comment_mention_email", push: "comment_mention_push" },
 }
 
 const corsHeaders = {

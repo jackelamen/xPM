@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BellIcon, CheckCheckIcon, UserPlusIcon, CheckCircle2Icon, ClockIcon, Loader2Icon } from 'lucide-react'
+import { BellIcon, CheckCheckIcon, UserPlusIcon, CheckCircle2Icon, ClockIcon, AtSignIcon, Loader2Icon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +9,7 @@ const TYPE_META = {
     TASK_ASSIGNED:  { Icon: UserPlusIcon,     color: 'text-indigo-500' },
     TASK_COMPLETED: { Icon: CheckCircle2Icon, color: 'text-emerald-500' },
     TASK_DUE:       { Icon: ClockIcon,        color: 'text-amber-500' },
+    COMMENT_MENTION:{ Icon: AtSignIcon,       color: 'text-sky-500' },
 }
 
 export default function NotificationBell() {

@@ -4,6 +4,7 @@ import { updateTaskStatus, deleteTasks, patchTask, setTaskAssignees } from "../f
 import { supabase } from "../lib/supabase"
 import { useAuth } from "../context/AuthContext"
 import UserAvatar from "./UserAvatar"
+import CommentComposer, { MentionText } from "./CommentComposer"
 import { format } from "date-fns"
 import {
     XIcon, CalendarIcon, UserIcon, FlagIcon,
@@ -88,7 +89,6 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const members = currentWorkspace?.members || []
 
     const [comments, setComments] = useState([])
-    const [newComment, setNewComment] = useState("")
     const [loadingComments, setLoadingComments] = useState(false)
     const [submittingComment, setSubmittingComment] = useState(false)
     const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -446,18 +446,25 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         }
     }
 
-    const handleAddComment = async () => {
-        if (!newComment.trim()) return
+    const handleAddComment = async (body, mentionedUserIds = []) => {
+        if (!body?.trim()) return
         setSubmittingComment(true)
         try {
             const { data, error } = await supabase
                 .from("xpm_task_comments")
-                .insert({ task_id: taskId, author_id: user.id, body: newComment.trim() })
+                .insert({ task_id: taskId, author_id: user.id, body: body.trim() })
                 .select("*, author:profiles(id, name, email)")
                 .single()
             if (error) throw error
             setComments((prev) => [...prev, data])
-            setNewComment("")
+
+            // Persist mentions — a DB trigger fans these out to notifications
+            // (suppressed for anyone who can't see the task).
+            if (mentionedUserIds.length) {
+                const rows = mentionedUserIds.map((uid) => ({ comment_id: data.id, mentioned_user_id: uid }))
+                const { error: mErr } = await supabase.from("xpm_comment_mentions").insert(rows)
+                if (mErr) console.error("Failed to save mentions:", mErr)
+            }
         } catch {
             toast.error("Failed to add comment")
         } finally {
@@ -884,8 +891,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                                     {format(new Date(comment.created_at), "MMM d, h:mm a")}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                                                {comment.body}
+                                            <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                                <MentionText body={comment.body} members={members} />
                                             </p>
                                         </div>
                                     </div>
@@ -897,28 +904,13 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
 
                 {/* Comment Input */}
                 <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <div className="flex gap-2">
-                        <textarea
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddComment()
-                            }}
-                            placeholder="Add a comment... (⌘+Enter to submit)"
-                            rows={2}
-                            className="flex-1 text-sm px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                        />
-                        <button
-                            onClick={handleAddComment}
-                            disabled={submittingComment || !newComment.trim()}
-                            className="flex items-center justify-center px-3 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 transition"
-                        >
-                            {submittingComment
-                                ? <Loader2Icon className="size-4 animate-spin" />
-                                : <span className="text-sm">Post</span>
-                            }
-                        </button>
-                    </div>
+                    <CommentComposer
+                        members={members}
+                        task={task}
+                        project={project}
+                        submitting={submittingComment}
+                        onSubmit={handleAddComment}
+                    />
                 </div>
             </div>
         </>
