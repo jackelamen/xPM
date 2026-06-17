@@ -4,9 +4,10 @@ import UserAvatar from './UserAvatar'
 
 /** Can a workspace member see this task? Mirrors tasks_select + projects_select RLS. */
 function canMemberSeeTask(userId, task, project) {
-    if (!task || !project) return false
-    const taskOk = task.visibility === 'project' || task.private_owner_id === userId
-    const projOk = project.visibility === 'workspace' || project.private_owner_id === userId
+    if (!task || !project) return true // unknown context — don't show a false warning
+    // Only an explicitly private task/project (owned by someone else) hides it.
+    const taskOk = task.visibility !== 'private' || task.private_owner_id === userId
+    const projOk = project.visibility !== 'private' || project.private_owner_id === userId
     return taskOk && projOk
 }
 
