@@ -7,8 +7,9 @@ import {
     LayoutDashboardIcon, SettingsIcon, UsersIcon, ContactIcon,
     UsersRoundIcon, CheckSquareIcon, ArchiveIcon, Layers,
     FolderOpenIcon, ChevronRightIcon, PanelLeftCloseIcon, PanelLeftOpenIcon,
-    BuildingIcon,
+    BuildingIcon, Globe2Icon,
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const COLLAPSED_KEY = 'xpm_sidebar_collapsed'
 
@@ -32,6 +33,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const spaces   = useSelector((s) => s.workspace.spaces || [])
     const projects = useSelector((s) => s.workspace.currentWorkspace?.projects || [])
     const currentWorkspace = useSelector((s) => s.workspace.currentWorkspace)
+    const { isSuperadmin } = useAuth()
 
     const [spacesExpanded,   setSpacesExpanded]   = useState(false)
     const [projectsExpanded, setProjectsExpanded] = useState(false)
@@ -56,6 +58,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const simpleItems = [
         { name: 'Dashboard', href: '/',         icon: LayoutDashboardIcon },
         { name: 'My Tasks',  href: '/my-tasks', icon: CheckSquareIcon },
+        ...(isSuperadmin ? [{ name: 'All Workspaces', href: '/all-tasks', icon: Globe2Icon }] : []),
     ]
     const bottomItems = [
         { name: 'Workload', href: '/workload', icon: UsersRoundIcon },

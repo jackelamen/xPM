@@ -3,6 +3,7 @@ import Layout from "./pages/Layout";
 import { Toaster } from "react-hot-toast";
 import Dashboard from "./pages/Dashboard";
 import MyTasks from "./pages/MyTasks";
+import AllTasks from "./pages/AllTasks";
 import Projects from "./pages/Projects";
 import Team from "./pages/Team";
 import ProjectDetails from "./pages/ProjectDetails";
@@ -45,6 +46,7 @@ const App = () => {
                 }>
                     <Route index element={<Dashboard />} />
                     <Route path="my-tasks" element={<MyTasks />} />
+                    <Route path="all-tasks" element={<AllTasks />} />
                     <Route path="team" element={<Team />} />
                     <Route path="spaces" element={<Spaces />} />
                     <Route path="spaces/:spaceId" element={<SpaceDashboard />} />
