@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { setCurrentWorkspace, fetchWorkspaceDetail } from '../features/workspaceSlice'
 import { isPast, isToday, startOfDay } from 'date-fns'
 import {
     CheckCircle2, Circle, CircleDot, ChevronDown, ChevronRight, Globe2, Loader2,
+    SquareArrowOutUpRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -35,9 +38,9 @@ function StatusToggle({ status, onChange }) {
     const Icon = cfg.Icon
     return (
         <button onClick={next} title={`${cfg.label} — click to cycle`}
-            className="flex items-center gap-1.5 text-left">
-            <Icon size={16} className={cfg.cls} />
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">{cfg.label}</span>
+            className="flex items-center gap-1.5 text-left whitespace-nowrap">
+            <Icon size={16} className={`shrink-0 ${cfg.cls}`} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{cfg.label}</span>
         </button>
     )
 }
@@ -89,6 +92,8 @@ function TitleCell({ value, onSave }) {
 // ── page ────────────────────────────────────────────────────────────────────────
 export default function AllTasks() {
     const { isSuperadmin, loading: authLoading } = useAuth()
+    const dispatch = useDispatch()
+    const navigate = useNavigate()
     const [tasks, setTasks] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -119,6 +124,14 @@ export default function AllTasks() {
             .eq('id', taskId)
         if (error) { setTasks(prev); toast.error(error.message || 'Failed to save') }
     }, [tasks])
+
+    // Open a task in its own workspace: switch workspace context, then deep-link
+    // to the project detail with ?task=<id>, which opens the full TaskPanel editor.
+    const openInWorkspace = useCallback((t) => {
+        dispatch(setCurrentWorkspace(t.workspace_id))
+        dispatch(fetchWorkspaceDetail(t.workspace_id))
+        navigate(`/projectsDetail?id=${t.project_id}&task=${t.id}`)
+    }, [dispatch, navigate])
 
     // Group: workspace -> project -> tasks
     const groups = useMemo(() => {
@@ -189,14 +202,20 @@ export default function AllTasks() {
                                             {ws.projects.map((p) => (
                                                 <React.Fragment key={p.id}>
                                                     <tr className="bg-zinc-50/50 dark:bg-white/[0.015]">
-                                                        <td colSpan={4} className="px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400">{p.name}</td>
+                                                        <td colSpan={5} className="px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400">{p.name}</td>
                                                     </tr>
                                                     {p.tasks.map((t) => (
-                                                        <tr key={t.id} className="border-t border-zinc-100 dark:border-white/[0.04] hover:bg-zinc-50 dark:hover:bg-white/[0.02]">
-                                                            <td className="px-4 py-2 w-[36px]"><StatusToggle status={t.status} onChange={(s) => handleSave(t.id, { status: s })} /></td>
-                                                            <td className="px-2 py-2"><TitleCell value={t.title} onSave={(v) => handleSave(t.id, { title: v })} /></td>
-                                                            <td className="px-2 py-2 w-[110px]"><PrioritySelect priority={t.priority} onChange={(v) => handleSave(t.id, { priority: v })} /></td>
-                                                            <td className="px-2 py-2 w-[130px]"><DueDateCell value={t.due_date} onChange={(v) => handleSave(t.id, { due_date: v })} /></td>
+                                                        <tr key={t.id} className="group border-t border-zinc-100 dark:border-white/[0.04] hover:bg-zinc-50 dark:hover:bg-white/[0.02]">
+                                                            <td className="px-4 py-2 w-[120px] align-middle"><StatusToggle status={t.status} onChange={(s) => handleSave(t.id, { status: s })} /></td>
+                                                            <td className="px-2 py-2 align-middle"><TitleCell value={t.title} onSave={(v) => handleSave(t.id, { title: v })} /></td>
+                                                            <td className="px-2 py-2 w-[110px] align-middle"><PrioritySelect priority={t.priority} onChange={(v) => handleSave(t.id, { priority: v })} /></td>
+                                                            <td className="px-2 py-2 w-[130px] align-middle"><DueDateCell value={t.due_date} onChange={(v) => handleSave(t.id, { due_date: v })} /></td>
+                                                            <td className="px-3 py-2 w-[44px] align-middle text-right">
+                                                                <button onClick={() => openInWorkspace(t)} title="Open in workspace"
+                                                                    className="p-1 rounded text-zinc-400 hover:text-indigo-500 hover:bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <SquareArrowOutUpRight size={15} />
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     ))}
                                                 </React.Fragment>
