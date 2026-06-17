@@ -15,3 +15,12 @@ createRoot(document.getElementById('root')).render(
         </Provider>
     </BrowserRouter>,
 )
+
+// Register the service worker for installability + Web Push.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.error('Service worker registration failed:', err)
+        })
+    })
+}

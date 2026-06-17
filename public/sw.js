@@ -1,16 +1,13 @@
-/* Custom service worker (vite-plugin-pwa injectManifest strategy).
- * Bundled by Vite/esbuild — no workbox-build/@babel pipeline.
- * Handles precaching plus Web Push (push + notificationclick). */
+/* Plain service worker (no workbox/Babel build pipeline).
+ * Provides installability + Web Push (push + notificationclick). */
 
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
-import { clientsClaim } from 'workbox-core'
+self.addEventListener('install', () => {
+    self.skipWaiting()
+})
 
-self.skipWaiting()
-clientsClaim()
-cleanupOutdatedCaches()
-
-// __WB_MANIFEST is injected at build time with the precache file list.
-precacheAndRoute(self.__WB_MANIFEST)
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim())
+})
 
 self.addEventListener('push', (event) => {
     let data = {}
