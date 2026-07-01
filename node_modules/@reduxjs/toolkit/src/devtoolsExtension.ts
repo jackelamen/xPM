@@ -1,5 +1,5 @@
 import type { Action, ActionCreator, StoreEnhancer } from 'redux'
-import { compose } from 'redux'
+import { compose } from './reduxImports'
 
 /**
  * @public
@@ -173,7 +173,7 @@ export interface DevToolsEnhancerOptions {
      */
     import?: boolean | 'custom'
     /**
-     * jump back and forth (time travelling)
+     * jump back and forth (time traveling)
      */
     jump?: boolean
     /**

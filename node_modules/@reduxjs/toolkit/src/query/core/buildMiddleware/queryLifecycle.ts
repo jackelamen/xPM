@@ -1,9 +1,10 @@
+import { getEndpointDefinition } from '@internal/query/apiTypes'
 import type {
   BaseQueryError,
   BaseQueryFn,
   BaseQueryMeta,
 } from '../../baseQueryTypes'
-import { DefinitionType, isAnyQueryDefinition } from '../../endpointDefinitions'
+import { isAnyQueryDefinition } from '../../endpointDefinitions'
 import type { Recipe } from '../buildThunks'
 import { isFulfilled, isPending, isRejected } from '../rtkImports'
 import type {
@@ -79,11 +80,12 @@ export type QueryLifecycleQueryExtraOptions<
    *
    * @example
    * ```ts
-   * import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query'
-   * import { messageCreated } from './notificationsSlice
+   * import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query';
+   * import { messageCreated } from './notificationsSlice';
+   *
    * export interface Post {
-   *   id: number
-   *   name: string
+   *   id: number;
+   *   name: string;
    * }
    *
    * const api = createApi({
@@ -95,19 +97,19 @@ export type QueryLifecycleQueryExtraOptions<
    *       query: (id) => `post/${id}`,
    *       async onQueryStarted(id, { dispatch, queryFulfilled }) {
    *         // `onStart` side-effect
-   *         dispatch(messageCreated('Fetching posts...'))
+   *         dispatch(messageCreated('Fetching posts...'));
    *         try {
-   *           const { data } = await queryFulfilled
+   *           const { data } = await queryFulfilled;
    *           // `onSuccess` side-effect
-   *           dispatch(messageCreated('Posts received!'))
+   *           dispatch(messageCreated('Posts received!'));
    *         } catch (err) {
    *           // `onError` side-effect
-   *           dispatch(messageCreated('Error fetching posts!'))
+   *           dispatch(messageCreated('Error fetching posts!'));
    *         }
-   *       }
+   *       },
    *     }),
    *   }),
-   * })
+   * });
    * ```
    */
   onQueryStarted?(
@@ -203,7 +205,9 @@ export interface QueryLifecycleApi<
   BaseQuery extends BaseQueryFn,
   ResultType,
   ReducerPath extends string = string,
-> extends QueryBaseLifecycleApi<QueryArg, BaseQuery, ResultType, ReducerPath>,
+>
+  extends
+    QueryBaseLifecycleApi<QueryArg, BaseQuery, ResultType, ReducerPath>,
     QueryLifecyclePromises<ResultType, BaseQuery> {}
 
 export type MutationLifecycleApi<
@@ -428,7 +432,7 @@ export const buildQueryLifecycleHandler: InternalHandlerBuilder = ({
 }) => {
   const isPendingThunk = isPending(queryThunk, mutationThunk)
   const isRejectedThunk = isRejected(queryThunk, mutationThunk)
-  const isFullfilledThunk = isFulfilled(queryThunk, mutationThunk)
+  const isFulfilledThunk = isFulfilled(queryThunk, mutationThunk)
 
   type CacheLifecycle = {
     resolve(value: { data: unknown; meta: unknown }): unknown
@@ -442,7 +446,7 @@ export const buildQueryLifecycleHandler: InternalHandlerBuilder = ({
         requestId,
         arg: { endpointName, originalArgs },
       } = action.meta
-      const endpointDefinition = context.endpointDefinitions[endpointName]
+      const endpointDefinition = getEndpointDefinition(context, endpointName)
       const onQueryStarted = endpointDefinition?.onQueryStarted
       if (onQueryStarted) {
         const lifecycle = {} as CacheLifecycle
@@ -482,7 +486,7 @@ export const buildQueryLifecycleHandler: InternalHandlerBuilder = ({
         }
         onQueryStarted(originalArgs, lifecycleApi as any)
       }
-    } else if (isFullfilledThunk(action)) {
+    } else if (isFulfilledThunk(action)) {
       const { requestId, baseQueryMeta } = action.meta
       lifecycleMap[requestId]?.resolve({
         data: action.payload,
