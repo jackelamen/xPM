@@ -60,6 +60,14 @@ Deno.serve(async (req) => {
             return json({ error: "Link the initiative to a Space first — xPortal needs a client to attach the plan to." }, 400)
         }
 
+        // Defensive: the drawer strips a pasted admin URL down to just the id
+        // on change, but rows saved before that existed (or edited some other
+        // way) may still hold the full URL — accept either form here too.
+        if (initiative.xportal_client_id) {
+            const match = initiative.xportal_client_id.match(/\/admin\/clients\/([^/?#]+)/)
+            if (match) initiative.xportal_client_id = match[1]
+        }
+
         const [{ data: phases }, { data: milestones }, { data: kpis }] = await Promise.all([
             userClient.from("xplan_phases").select("*").eq("initiative_id", initiative_id).order("sort_order"),
             userClient.from("xplan_milestones").select("*").eq("initiative_id", initiative_id).order("sort_order"),
