@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import {
     XIcon, PlusIcon, TrashIcon, Loader2Icon, HandshakeIcon,
-    LayersIcon, TargetIcon, FlagIcon, Rows3Icon, UploadCloudIcon,
+    LayersIcon, TargetIcon, FlagIcon, Rows3Icon, UploadCloudIcon, UsersIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -182,6 +182,7 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
     const [spaces, setSpaces] = useState([]);
     const [saving, setSaving] = useState(false);
     const [pushing, setPushing] = useState(false);
+    const [creatingProject, setCreatingProject] = useState(false);
     const [lastPushedAt, setLastPushedAt] = useState(initiative.last_pushed_at);
 
     const phases = usePlanList("xplan_phases", initiative.id);
@@ -200,6 +201,9 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
             status: initiative.status,
             deal_id: initiative.deal_id || "",
             space_id: initiative.space_id || "",
+            contact_name: initiative.contact_name || "",
+            contact_email: initiative.contact_email || "",
+            xportal_client_id: initiative.xportal_client_id || "",
         });
     }, [initiative]);
 
@@ -230,11 +234,36 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
             status: form.status,
             deal_id: form.deal_id || null,
             space_id: form.space_id || null,
+            contact_name: form.contact_name.trim() || null,
+            contact_email: form.contact_email.trim() || null,
+            xportal_client_id: form.xportal_client_id.trim() || null,
             updated_at: new Date().toISOString(),
         }).eq("id", initiative.id);
         setSaving(false);
         if (error) return toast.error(error.message);
-        toast.success("Initiative saved");
+        toast.success("Project saved");
+        onChanged?.();
+    };
+
+    // Create a real xPM project in the linked Space so tasks can be tracked
+    // against it — the "do" stage of plan -> do -> report. Manual, one-shot:
+    // once xpm_project_id is set the button disappears (it's just an id link,
+    // not a live sync).
+    const createXpmProject = async () => {
+        if (!form.space_id) return toast.error("Link a Space first.");
+        setCreatingProject(true);
+        const { data, error } = await supabase.from("projects").insert({
+            workspace_id: workspaceId,
+            space_id: form.space_id,
+            name: form.title.trim() || "Untitled project",
+            description: form.description.trim() || null,
+        }).select().single();
+        if (!error) {
+            await supabase.from("roadmap_initiatives").update({ xpm_project_id: data.id }).eq("id", initiative.id);
+        }
+        setCreatingProject(false);
+        if (error) return toast.error(error.message);
+        toast.success("xPM project created");
         onChanged?.();
     };
 
@@ -269,7 +298,7 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex-shrink-0">
                     <div>
-                        <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">Initiative</h2>
+                        <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">Project</h2>
                         {lastPushedAt && (
                             <p className="text-[11px] text-gray-400 dark:text-zinc-500">
                                 Last pushed to xPortal {format(new Date(lastPushedAt), "MMM d, yyyy h:mm a")}
@@ -355,6 +384,42 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                             <option value="">Not linked</option>
                             {spaces.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
+                        {form.space_id && !initiative.xpm_project_id && (
+                            <button onClick={createXpmProject} disabled={creatingProject}
+                                className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition disabled:opacity-50">
+                                {creatingProject ? <Loader2Icon className="size-3.5 animate-spin" /> : <PlusIcon className="size-3.5" />}
+                                Create the xPM project in this Space
+                            </button>
+                        )}
+                        {initiative.xpm_project_id && (
+                            <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1.5">xPM project already created — see it under Projects in this Space.</p>
+                        )}
+                    </Section>
+
+                    <Section icon={UsersIcon} title="xPortal client" hint="who the pushed plan belongs to">
+                        <div className="flex flex-col gap-2.5">
+                            <div>
+                                <label className={labelCls}>Existing xPortal client ID (optional)</label>
+                                <input className={`${inputCls} mt-1`} value={form.xportal_client_id} onChange={set("xportal_client_id")}
+                                    placeholder="Paste from the client's xPortal admin URL — /admin/clients/<id>" />
+                                <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+                                    Set this when the Space serves a client that already exists in xPortal (e.g. a second project for the same client, or one of several clients under one Space). Leave blank to create a new client on first push.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelCls}>Contact name (optional)</label>
+                                    <input className={`${inputCls} mt-1`} value={form.contact_name} onChange={set("contact_name")} placeholder="Jane Doe" />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Contact email (optional)</label>
+                                    <input className={`${inputCls} mt-1`} value={form.contact_email} onChange={set("contact_email")} placeholder="jane@client.com" />
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-gray-400 dark:text-zinc-500">
+                                Only used when creating a brand-new client. If left blank, xPortal gets placeholder contact info you'll need to replace in its admin panel before the client can log in.
+                            </p>
+                        </div>
                     </Section>
 
                     {/* Plan Builder */}

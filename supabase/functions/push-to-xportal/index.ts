@@ -66,15 +66,30 @@ Deno.serve(async (req) => {
             userClient.from("xplan_kpis").select("*").eq("initiative_id", initiative_id).order("sort_order"),
         ])
 
-        // Contacts for client creation: CRM contacts on the space's company.
+        // Contact for a brand-new client: prefer what's on the initiative
+        // itself, else fall back to a CRM contact on the space's company.
+        // If neither is set, fabricate a placeholder so linkSpace can still
+        // create the client — the operator fixes the real contact in
+        // xPortal's admin panel before the client ever logs in. Skipped
+        // entirely when xportal_client_id targets an existing client.
         let contacts: { name: string; email: string }[] = []
-        if (initiative.space.company_id) {
-            const { data } = await userClient
-                .from("contacts")
-                .select("name, email")
-                .eq("company_id", initiative.space.company_id)
-                .not("email", "is", null)
-            contacts = (data || []).filter((c) => c.email)
+        if (!initiative.xportal_client_id) {
+            if (initiative.contact_email) {
+                contacts = [{ name: initiative.contact_name || "Client contact", email: initiative.contact_email }]
+            } else if (initiative.space.company_id) {
+                const { data } = await userClient
+                    .from("contacts")
+                    .select("name, email")
+                    .eq("company_id", initiative.space.company_id)
+                    .not("email", "is", null)
+                contacts = (data || []).filter((c) => c.email)
+            }
+            if (contacts.length === 0) {
+                contacts = [{
+                    name: "New client — update in xPortal admin",
+                    email: `new-client-${initiative.id.slice(0, 8)}@placeholder.xportal.cloud`,
+                }]
+            }
         }
 
         const activePhase = (phases || []).find((p) => p.status === "active")
@@ -83,6 +98,7 @@ Deno.serve(async (req) => {
             action: "space.link",
             xpm_space_id: initiative.space.id,
             space_name: initiative.space.name,
+            xportal_client_id: initiative.xportal_client_id || undefined,
             contacts,
             projects: [{
                 // Stable dedupe key on the portal side: the linked xPM project

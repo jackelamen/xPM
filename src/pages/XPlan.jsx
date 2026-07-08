@@ -23,7 +23,7 @@ import XPlanInitiativeDrawer from "../components/XPlanInitiativeDrawer";
 function InitiativeEditor({ target, workspaceId, lanes, members, onSaved, onClose }) {
     if (target === "new") {
         return (
-            <Modal title="New initiative" onClose={onClose}>
+            <Modal title="New project" onClose={onClose}>
                 <InitiativeForm workspaceId={workspaceId} lanes={lanes} members={members}
                     initial={null} onSaved={onSaved} onClose={onClose} />
             </Modal>
@@ -35,7 +35,7 @@ function InitiativeEditor({ target, workspaceId, lanes, members, onSaved, onClos
     );
 }
 
-const TABS = ["Timeline", "Board", "Initiatives", "Lanes"];
+const TABS = ["Timeline", "Board", "Projects", "Lanes"];
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-zinc-500 mt-1";
 const labelCls = "text-xs font-medium text-gray-500 dark:text-zinc-400";
@@ -135,7 +135,7 @@ function InitiativeForm({ workspaceId, lanes, members, initial, onSaved, onClose
         const { error } = await q;
         setSaving(false);
         if (error) return toast.error(error.message);
-        toast.success(initial ? "Initiative updated" : "Initiative created");
+        toast.success(initial ? "Project updated" : "Project created");
         onSaved();
         onClose();
     };
@@ -188,7 +188,7 @@ function InitiativeForm({ workspaceId, lanes, members, initial, onSaved, onClose
             </div>
             <button disabled={saving} className="mt-2 flex items-center justify-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg py-2.5 hover:opacity-90 transition disabled:opacity-50">
                 {saving && <Loader2Icon className="size-4 animate-spin" />}
-                {initial ? "Save changes" : "Create initiative"}
+                {initial ? "Save changes" : "Create project"}
             </button>
         </form>
     );
@@ -228,7 +228,7 @@ function Timeline({ workspaceId, lanes, members }) {
                     onClick={() => setModal("new")}
                     className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium px-3 py-1.5 rounded-lg hover:opacity-90 transition"
                 >
-                    <PlusIcon className="size-3.5" /> New initiative
+                    <PlusIcon className="size-3.5" /> New project
                 </button>
             </div>
             <XPlanTimeline rows={rows} lanes={lanes} onBarClick={setModal} onDatesSaved={onDatesSaved} />
@@ -387,7 +387,7 @@ function Board({ workspaceId, lanes, members }) {
                     onClick={() => setModal("new")}
                     className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium px-3 py-1.5 rounded-lg hover:opacity-90 transition"
                 >
-                    <PlusIcon className="size-3.5" /> New initiative
+                    <PlusIcon className="size-3.5" /> New project
                 </button>
             </div>
             <DndContext
@@ -420,7 +420,7 @@ function Board({ workspaceId, lanes, members }) {
     );
 }
 
-// ─── Initiatives tab ─────────────────────────────────────────────────────────
+// ─── Projects tab ────────────────────────────────────────────────────────────
 function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
     const [rows, setRows] = useState(null);
     const [modal, setModal] = useState(null); // null | "new" | initiative row
@@ -448,7 +448,7 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
         if (!confirm(`Delete "${row.title}"? Its draft plan (phases, milestones, KPIs) will be deleted too.`)) return;
         const { error } = await supabase.from("roadmap_initiatives").delete().eq("id", row.id);
         if (error) return toast.error(error.message);
-        toast.success("Initiative deleted");
+        toast.success("Project deleted");
         load();
     };
 
@@ -473,7 +473,7 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
                             onClick={() => setModal("new")}
                             className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium px-3 py-1.5 rounded-lg hover:opacity-90 transition"
                         >
-                            <PlusIcon className="size-3.5" /> New initiative
+                            <PlusIcon className="size-3.5" /> New project
                         </button>
                     </>
                 }
@@ -481,13 +481,13 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
                 {visible.length === 0 ? (
                     <div className="py-16 text-center">
                         <MapIcon className="size-8 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">No initiatives yet.</p>
-                        <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Create your first BD initiative — a pursuit, campaign, or market push.</p>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">No projects yet.</p>
+                        <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Create your first BD project — a pursuit, campaign, or market push.</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm">
                         <TableHead cols={[
-                            { label: "Initiative" }, { label: "Lane" }, { label: "Owner" },
+                            { label: "Project" }, { label: "Lane" }, { label: "Owner" },
                             { label: "Timeline" }, { label: "Horizon" }, { label: "Status" }, { label: "", right: true },
                         ]} />
                         <tbody>
@@ -561,7 +561,7 @@ function Lanes({ workspaceId, lanes, refreshLanes }) {
     };
 
     const del = async (lane) => {
-        if (!confirm(`Delete lane "${lane.name}"? Initiatives in it keep existing without a lane.`)) return;
+        if (!confirm(`Delete lane "${lane.name}"? Projects in it keep existing without a lane.`)) return;
         const { error } = await supabase.from("roadmap_lanes").delete().eq("id", lane.id);
         if (error) return toast.error(error.message);
         refreshLanes();
@@ -602,7 +602,7 @@ function Lanes({ workspaceId, lanes, refreshLanes }) {
                 {lanes.length === 0 ? (
                     <div className="py-12 text-center">
                         <Rows3Icon className="size-8 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">No lanes yet. Lanes group initiatives on the roadmap — by motion, vertical, or owner.</p>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">No lanes yet. Lanes group projects on the roadmap — by motion, vertical, or owner.</p>
                     </div>
                 ) : (
                     <ul>
@@ -679,7 +679,7 @@ export default function XPlan() {
             {activeTab === "Board" && (
                 <Board workspaceId={workspaceId} lanes={lanes} members={members} />
             )}
-            {activeTab === "Initiatives" && (
+            {activeTab === "Projects" && (
                 <Initiatives workspaceId={workspaceId} lanes={lanes} members={members} refreshLanes={refreshLanes} />
             )}
             {activeTab === "Lanes" && (
