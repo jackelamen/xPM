@@ -7,7 +7,7 @@ import {
     LayoutDashboardIcon, SettingsIcon, UsersIcon, ContactIcon,
     UsersRoundIcon, CheckSquareIcon, ArchiveIcon, Layers,
     FolderOpenIcon, ChevronRightIcon, PanelLeftCloseIcon, PanelLeftOpenIcon,
-    BuildingIcon, Globe2Icon,
+    BuildingIcon, Globe2Icon, MapIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -63,6 +63,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const bottomItems = [
         { name: 'Workload', href: '/workload', icon: UsersRoundIcon },
         { name: 'CRM',      href: '/crm',      icon: ContactIcon },
+        { name: 'xPlan',    href: '/xplan',    icon: MapIcon },
         { name: 'Team',     href: '/team',      icon: UsersIcon },
         { name: 'Archive',  href: '/archive',   icon: ArchiveIcon },
     ]

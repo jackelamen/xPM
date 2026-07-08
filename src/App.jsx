@@ -9,6 +9,7 @@ import Team from "./pages/Team";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProfileSettings from "./pages/ProfileSettings";
 import CRM from "./pages/CRM";
+import XPlan from "./pages/XPlan";
 import Workload from "./pages/Workload";
 import Spaces from "./pages/Spaces";
 import SpaceDashboard from "./pages/SpaceDashboard";
@@ -55,6 +56,7 @@ const App = () => {
                     <Route path="taskDetails" element={<Navigate to="/projects" replace />} />
                     <Route path="settings" element={<ProfileSettings />} />
                     <Route path="crm" element={<CRM />} />
+                    <Route path="xplan" element={<XPlan />} />
                     <Route path="workload" element={<Workload />} />
                     <Route path="archive" element={<Archive />} />
                 </Route>
