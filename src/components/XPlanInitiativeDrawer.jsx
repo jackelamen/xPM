@@ -305,7 +305,7 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                                 <label className={labelCls}>Owner</label>
                                 <select className={`${inputCls} mt-1`} value={form.owner_id} onChange={set("owner_id")}>
                                     <option value="">Unassigned</option>
-                                    {members.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
+                                    {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
                                 </select>
                             </div>
                             <div>

@@ -162,7 +162,7 @@ function InitiativeForm({ workspaceId, lanes, members, initial, onSaved, onClose
                     <label className={labelCls}>Owner</label>
                     <select className={inputCls} value={form.owner_id} onChange={set("owner_id")}>
                         <option value="">Unassigned</option>
-                        {members.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
+                        {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
                     </select>
                 </div>
                 <div>
@@ -429,7 +429,7 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
     const load = useCallback(async () => {
         const { data, error } = await supabase
             .from("roadmap_initiatives")
-            .select("*, lane:roadmap_lanes(id, name, color), owner:profiles!roadmap_initiatives_owner_id_fkey(id, full_name, email)")
+            .select("*, lane:roadmap_lanes(id, name, color), owner:profiles!roadmap_initiatives_owner_id_fkey(id, name, email)")
             .eq("workspace_id", workspaceId)
             .order("sort_order")
             .order("created_at");
@@ -505,7 +505,7 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
                                             </span>
                                         ) : <span className="text-gray-300 dark:text-zinc-600">—</span>}
                                     </td>
-                                    <td className="px-5 py-3.5 text-gray-600 dark:text-zinc-300">{r.owner?.full_name || r.owner?.email || "—"}</td>
+                                    <td className="px-5 py-3.5 text-gray-600 dark:text-zinc-300">{r.owner?.name || r.owner?.email || "—"}</td>
                                     <td className="px-5 py-3.5 text-gray-500 dark:text-zinc-400 whitespace-nowrap text-[13px]">
                                         {r.start_date || r.end_date ? `${fmtDate(r.start_date)} → ${fmtDate(r.end_date)}` : "—"}
                                     </td>
@@ -646,7 +646,7 @@ export default function XPlan() {
         refreshLanes();
         supabase
             .from("workspace_members")
-            .select("user:profiles(id, full_name, email)")
+            .select("user:profiles(id, name, email)")
             .eq("workspace_id", workspaceId)
             .then(({ data }) => setMembers((data || []).map((m) => m.user).filter(Boolean)));
     }, [workspaceId, refreshLanes]);
