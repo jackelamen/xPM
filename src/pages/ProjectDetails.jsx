@@ -91,18 +91,18 @@ export default function ProjectDetail() {
     return (
         <div className="max-w-6xl mx-auto text-zinc-900 dark:text-white">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+            <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3 min-w-0">
                     <button
-                        className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition"
+                        className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition flex-shrink-0"
                         onClick={() => navigate('/projects')}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
-                    <div>
+                    <div className="min-w-0">
                         <div className="flex items-center gap-2.5">
-                            <h1 className="text-lg font-semibold leading-tight">{project.name}</h1>
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[project.status]}`}>
+                            <h1 className="text-lg font-semibold leading-tight truncate">{project.name}</h1>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${statusColors[project.status]}`}>
                                 {project.status.replace("_", " ")}
                             </span>
                         </div>
@@ -113,7 +113,7 @@ export default function ProjectDetail() {
                 </div>
                 <button
                     onClick={() => setShowCreateTask(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
+                    className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex-shrink-0 whitespace-nowrap"
                 >
                     <PlusIcon className="size-3.5" />
                     New Task
