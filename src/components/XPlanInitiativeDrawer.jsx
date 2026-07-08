@@ -220,6 +220,14 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
 
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+    // xPortal's client page has a "Copy" chip for its own full admin URL
+    // (…/admin/clients/<id>) — accept that pasted whole, and keep only the id.
+    const setXportalClientId = (e) => {
+        const raw = e.target.value;
+        const match = raw.match(/\/admin\/clients\/([^/?#]+)/);
+        setForm((f) => ({ ...f, xportal_client_id: match ? match[1] : raw }));
+    };
+
     const save = async () => {
         if (!form.title.trim()) return toast.error("Title is required");
         setSaving(true);
@@ -399,9 +407,9 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                     <Section icon={UsersIcon} title="xPortal client" hint="who the pushed plan belongs to">
                         <div className="flex flex-col gap-2.5">
                             <div>
-                                <label className={labelCls}>Existing xPortal client ID (optional)</label>
-                                <input className={`${inputCls} mt-1`} value={form.xportal_client_id} onChange={set("xportal_client_id")}
-                                    placeholder="Paste from the client's xPortal admin URL — /admin/clients/<id>" />
+                                <label className={labelCls}>Link to an existing xPortal client (optional)</label>
+                                <input className={`${inputCls} mt-1`} value={form.xportal_client_id} onChange={setXportalClientId}
+                                    placeholder="Paste the client's xPlan link from xPortal's admin → client → Settings" />
                                 <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
                                     Set this when the Space serves a client that already exists in xPortal (e.g. a second project for the same client, or one of several clients under one Space). Leave blank to create a new client on first push.
                                 </p>
