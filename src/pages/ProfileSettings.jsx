@@ -314,6 +314,10 @@ export default function ProfileSettings() {
     const [autoArchive, setAutoArchive] = useState(getAutoArchiveSetting)
     const [pulseEnabled, setPulseEnabled] = useState(getPulseEnabled)
 
+    const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+    const [changingPassword, setChangingPassword] = useState(false)
+
     const saveAutoArchive = (next) => {
         setAutoArchive(next)
         localStorage.setItem(AUTO_ARCHIVE_KEY, JSON.stringify(next))
@@ -357,6 +361,24 @@ export default function ProfileSettings() {
             toast.error(err.message || 'Failed to save')
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault()
+        if (newPassword.length < 6) return toast.error('Password must be at least 6 characters')
+        if (newPassword !== confirmPassword) return toast.error("Passwords don't match")
+        setChangingPassword(true)
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword })
+            if (error) throw error
+            toast.success('Password updated')
+            setNewPassword('')
+            setConfirmPassword('')
+        } catch (err) {
+            toast.error(err.message || 'Failed to update password')
+        } finally {
+            setChangingPassword(false)
         }
     }
 
@@ -503,6 +525,46 @@ export default function ProfileSettings() {
 
             {/* Workspace */}
             <WorkspaceSettings />
+
+            <div className="border-t border-gray-200 dark:border-white/[0.07]" />
+
+            {/* Password */}
+            <Section title="Password" description="Change the password you use to sign in.">
+                <form onSubmit={handleChangePassword} className="space-y-3.5 max-w-xs">
+                    <div>
+                        <label className={labelClasses}>New password</label>
+                        <input
+                            type="password"
+                            required
+                            minLength={6}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className={inputClasses}
+                            placeholder="••••••••"
+                        />
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Confirm new password</label>
+                        <input
+                            type="password"
+                            required
+                            minLength={6}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className={inputClasses}
+                            placeholder="••••••••"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={changingPassword}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                    >
+                        {changingPassword && <Loader2Icon className="size-3.5 animate-spin" />}
+                        Update password
+                    </button>
+                </form>
+            </Section>
 
             <div className="border-t border-gray-200 dark:border-white/[0.07]" />
 
