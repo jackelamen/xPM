@@ -15,6 +15,7 @@ import Spaces from "./pages/Spaces";
 import SpaceDashboard from "./pages/SpaceDashboard";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Archive from "./pages/Archive";
 import { useAuth } from "./context/AuthContext";
 import { Loader2Icon } from "lucide-react";
@@ -40,6 +41,7 @@ const App = () => {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/accept-invite" element={<AcceptInvite />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/" element={
                     <ProtectedRoute>
                         <Layout />

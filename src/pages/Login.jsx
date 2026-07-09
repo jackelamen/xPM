@@ -24,6 +24,13 @@ const Login = () => {
                 const { error } = await signIn(email, password)
                 if (error) throw error
                 navigate('/')
+            } else if (mode === 'forgot') {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                })
+                if (error) throw error
+                toast.success('Check your email for a password reset link.')
+                setMode('login')
             } else {
                 const { error } = await signUp(email, password)
                 if (error) throw error
@@ -77,10 +84,10 @@ const Login = () => {
                     </div>
 
                     <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white mb-1">
-                        {mode === 'login' ? 'Sign in' : 'Create account'}
+                        {mode === 'login' ? 'Sign in' : mode === 'forgot' ? 'Reset your password' : 'Create account'}
                     </h1>
                     <p className="text-[13px] text-gray-500 dark:text-zinc-400 mb-7">
-                        {mode === 'login' ? 'Welcome back to your workspace' : 'Get started with EDGEx PM'}
+                        {mode === 'login' ? 'Welcome back to your workspace' : mode === 'forgot' ? "We'll email you a link to set a new password" : 'Get started with EDGEx PM'}
                     </p>
 
                     <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -113,19 +120,32 @@ const Login = () => {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-[12px] font-medium text-gray-600 dark:text-zinc-400 mb-1.5">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 placeholder:text-gray-400 dark:placeholder:text-zinc-600 transition-shadow"
-                                placeholder="••••••••"
-                            />
-                        </div>
+                        {mode !== 'forgot' && (
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-[12px] font-medium text-gray-600 dark:text-zinc-400">
+                                        Password
+                                    </label>
+                                    {mode === 'login' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setMode('forgot')}
+                                            className="text-[12px] text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 hover:underline"
+                                        >
+                                            Forgot password?
+                                        </button>
+                                    )}
+                                </div>
+                                <input
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 placeholder:text-gray-400 dark:placeholder:text-zinc-600 transition-shadow"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        )}
 
                         <button
                             type="submit"
@@ -133,18 +153,29 @@ const Login = () => {
                             className="w-full flex items-center justify-center gap-2 py-2 px-4 mt-1 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[13px] font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
                         >
                             {loading && <Loader2Icon className="size-3.5 animate-spin" />}
-                            {mode === 'login' ? 'Sign in' : 'Create account'}
+                            {mode === 'login' ? 'Sign in' : mode === 'forgot' ? 'Send reset link' : 'Create account'}
                         </button>
                     </form>
 
                     <p className="text-[12px] text-center text-gray-400 dark:text-zinc-500 mt-5">
-                        {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-                        <button
-                            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setName('') }}
-                            className="text-gray-700 dark:text-zinc-300 font-medium hover:underline"
-                        >
-                            {mode === 'login' ? 'Sign up' : 'Sign in'}
-                        </button>
+                        {mode === 'forgot' ? (
+                            <button
+                                onClick={() => setMode('login')}
+                                className="text-gray-700 dark:text-zinc-300 font-medium hover:underline"
+                            >
+                                Back to sign in
+                            </button>
+                        ) : (
+                            <>
+                                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+                                <button
+                                    onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setName('') }}
+                                    className="text-gray-700 dark:text-zinc-300 font-medium hover:underline"
+                                >
+                                    {mode === 'login' ? 'Sign up' : 'Sign in'}
+                                </button>
+                            </>
+                        )}
                     </p>
                 </div>
             </div>
