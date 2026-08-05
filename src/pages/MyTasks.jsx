@@ -348,9 +348,21 @@ async function sendTaskToPulse(task, userId, workspaceId) {
     }
 }
 
-function SendToPulseCell({ task, userId, workspaceId }) {
-    const [sent, setSent] = useState(!!task.custom_fields?.sent_to_pulse)
+function SendToPulseCell({ task, userId, workspaceId, alreadyLinked }) {
+    // A task can already be "in Pulse" two ways: (1) it was sent FROM xPM
+    // (custom_fields.sent_to_pulse), or (2) it originated IN Pulse and got
+    // promoted/linked here via pulse_xpm_task_links (alreadyLinked, passed
+    // down from MyTasks' bulk fetch). Either way there's nothing to send.
+    const wasSent = !!task.custom_fields?.sent_to_pulse
+    const [sent, setSent] = useState(wasSent || alreadyLinked)
     const [loading, setLoading] = useState(false)
+
+    // Keep in sync if the linked-set arrives after first render (it's fetched
+    // async on mount) or the task's own flag flips.
+    useEffect(() => {
+        if (wasSent || alreadyLinked) setSent(true)
+    }, [wasSent, alreadyLinked])
+
     const handle = async (e) => {
         e.stopPropagation()
         if (sent || loading) return
@@ -361,7 +373,7 @@ function SendToPulseCell({ task, userId, workspaceId }) {
     }
     return (
         <button onClick={handle} disabled={sent || loading}
-            title={sent ? 'Already sent to Pulse' : 'Send this task to Pulse'}
+            title={sent ? (alreadyLinked && !wasSent ? 'Already linked to Pulse' : 'Already sent to Pulse') : 'Send this task to Pulse'}
             className={`transition-colors ${sent ? 'text-violet-500 cursor-default' : 'text-zinc-400 hover:text-violet-500'}`}>
             {loading
                 ? <span className="size-3 border border-violet-400 border-t-transparent rounded-full animate-spin inline-block" />
@@ -431,7 +443,7 @@ function ResizableTh({ width, onResize, children }) {
 
 // ── task row ──────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId, workspaceId, onDragStart, onDragEnd, isDragging }) {
+function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave, userId, workspaceId, linkedTaskIds, onDragStart, onDragEnd, isDragging }) {
     const isDone = task.status === 'DONE'
     const save = useCallback((fields) => onSave(task, fields), [task, onSave])
 
@@ -462,7 +474,7 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
             case 'project':  return <ProjectCell task={task} projects={projects} onSave={save} />
             case 'assignee': return <AssigneeCell task={task} members={members} onSave={save} />
             case 'tags':     return <TextCell value={task.custom_fields?.tags} onSave={(v) => save({ custom_fields: { ...task.custom_fields, tags: v } })} />
-            case 'send_to_pulse': return <SendToPulseCell task={task} userId={userId} workspaceId={workspaceId} />
+            case 'send_to_pulse': return <SendToPulseCell task={task} userId={userId} workspaceId={workspaceId} alreadyLinked={linkedTaskIds?.has(task.id)} />
             default: return null
         }
     }
@@ -615,6 +627,26 @@ export default function MyTasks() {
 
     const [selectedTaskId, setSelectedTaskId] = useState(null)
     const [selectedProjectId, setSelectedProjectId] = useState(null)
+
+    // xPM tasks that already have a pulse_xpm_task_links row pointing at them
+    // (e.g. promoted from a Pulse-native task) — the "send to Pulse" bolt
+    // should read as already-linked for these, not just for tasks xPM itself
+    // sent (custom_fields.sent_to_pulse covers that direction only).
+    const [linkedTaskIds, setLinkedTaskIds] = useState(() => new Set())
+    useEffect(() => {
+        if (!user?.id) return
+        let cancelled = false
+        supabase
+            .from('pulse_xpm_task_links')
+            .select('xpm_task_id')
+            .eq('user_id', user.id)
+            .not('xpm_task_id', 'is', null)
+            .then(({ data }) => {
+                if (cancelled) return
+                setLinkedTaskIds(new Set((data || []).map((r) => r.xpm_task_id)))
+            })
+        return () => { cancelled = true }
+    }, [user?.id])
 
     // Column widths
     const [colWidths, setColWidths] = useState(() => Object.fromEntries(ALL_COLS.map((c) => [c.key, c.defaultW])))
@@ -787,7 +819,7 @@ export default function MyTasks() {
         persistSections(sections.filter((s) => s.id !== id))
     }
 
-    const rowProps = { cols, colWidths, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id, workspaceId: currentWorkspace?.id }
+    const rowProps = { cols, colWidths, members, projects, onRowClick: openPanel, onSave: handleSave, userId: user?.id, workspaceId: currentWorkspace?.id, linkedTaskIds }
 
     const [doneOpen, setDoneOpen] = useState(true)
 
