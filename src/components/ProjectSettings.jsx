@@ -20,6 +20,7 @@ export default function ProjectSettings({ project }) {
         description: "",
         status: "PLANNING",
         space_id: "",
+        pulse_tag: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
@@ -31,6 +32,7 @@ export default function ProjectSettings({ project }) {
                 description: project.description || "",
                 status: project.status || "PLANNING",
                 space_id: project.space_id || "",
+                pulse_tag: project.pulse_tag || "",
             });
         }
     }, [project]);
@@ -40,6 +42,12 @@ export default function ProjectSettings({ project }) {
         if (!project) return;
         setIsSubmitting(true);
         try {
+            // Normalize the same way Pulse normalizes tags client-side (trim,
+            // strip leading '#', lowercase) — the DB trigger on tasks.tags
+            // would lowercase it anyway, so match that up front for a
+            // consistent preview in the field itself.
+            const normalizedPulseTag = formData.pulse_tag.trim().replace(/^#/, "").toLowerCase() || null
+
             const { data, error } = await supabase
                 .from("projects")
                 .update({
@@ -47,6 +55,7 @@ export default function ProjectSettings({ project }) {
                     description: formData.description,
                     status: formData.status,
                     space_id: formData.space_id || null,
+                    pulse_tag: normalizedPulseTag,
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", project.id)
@@ -138,6 +147,19 @@ export default function ProjectSettings({ project }) {
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div>
+                        <label className={labelClasses}>Pulse Tag</label>
+                        <input
+                            value={formData.pulse_tag}
+                            onChange={(e) => setFormData({ ...formData, pulse_tag: e.target.value })}
+                            placeholder={formData.name ? formData.name.toLowerCase() : "e.g. bee-business-development"}
+                            className={inputClasses}
+                        />
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                            Tag applied to tasks sent to Pulse from this project. Leave blank to default to the project name, lowercased.
+                        </p>
                     </div>
 
                     <button

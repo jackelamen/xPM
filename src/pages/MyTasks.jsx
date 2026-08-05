@@ -290,6 +290,13 @@ function xpmPriorityToPulse(p) {
 
 async function sendTaskToPulse(task, userId, workspaceId) {
     try {
+        // The project's custom Pulse tag wins when set (Project Settings ->
+        // Pulse Tag); otherwise fall back to the project name lowercased.
+        // The tasks.tags DB trigger normalizes on write anyway, but we
+        // compute it explicitly here so pulse_project_tag (shown in
+        // PulseBridge) matches exactly what landed in Pulse.
+        const effectiveTag = task.pulseTag || (task.projectName ? task.projectName.toLowerCase() : null)
+
         let listId = null
         if (task.projectName) {
             const { data: existing } = await supabase
@@ -317,7 +324,7 @@ async function sendTaskToPulse(task, userId, workspaceId) {
             priority: xpmPriorityToPulse(task.priority),
             duration_minutes: 30,
             list_id: listId,
-            tags: task.projectName ? [task.projectName] : [],
+            tags: effectiveTag ? [effectiveTag] : [],
         }).select('id').single()
         if (error) throw error
 
@@ -330,7 +337,7 @@ async function sendTaskToPulse(task, userId, workspaceId) {
                 xpm_task_id: task.id,
                 pulse_task_id: String(pulseTask.id),
                 pulse_task_title: task.title,
-                pulse_project_tag: task.projectName || null,
+                pulse_project_tag: effectiveTag,
                 sync_status: 'linked',
             })
         }
@@ -682,7 +689,7 @@ export default function MyTasks() {
         return projects.flatMap((p) =>
             (p.tasks || [])
                 .filter((t) => !t.archived_at && (t.assignee_id === user.id || t.created_by === user.id))
-                .map((t) => ({ ...t, projectId: p.id, projectName: p.name }))
+                .map((t) => ({ ...t, projectId: p.id, projectName: p.name, pulseTag: p.pulse_tag || null }))
         )
     }, [currentWorkspace, user, projects])
 
