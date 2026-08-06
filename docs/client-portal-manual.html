@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Portal User Manual - xPortal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+            --font-display: 'Syne', system-ui, sans-serif;
+            --bg-primary: #f5f5f9;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #efeff5;
+            --accent: #5b48ee;
+            --accent-light: #7c6cf6;
+            --accent-2: #059669;
+            --spark: #e0982e;
+            --ink: #16161d;
+            --ink-soft: #4d4d59;
+            --ink-muted: #6e6e7a;
+            --line: #e5e5ee;
+            --warn: #b45309;
+            --danger: #be123c;
+            --dispute: #7e22ce;
+            --sidebar: #0b0d13;
+            --shadow-card: 0 1px 2px rgb(22 22 29 / 0.04), 0 12px 32px -16px rgb(22 22 29 / 0.14);
+            --shadow-button: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(22 22 29 / 0.24);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image:
+                radial-gradient(120% 80% at 50% -12%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 58%),
+                radial-gradient(90% 60% at 92% 4%, color-mix(in srgb, var(--spark) 5%, transparent), transparent 60%);
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: var(--ink);
+            line-height: 1.6;
+            padding: 2rem;
+            font-family: var(--font-sans);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Language toggle - mirrors the real LocaleToggle component */
+        .lang-toggle {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+            font-family: var(--font-mono);
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 0.4rem 0.75rem;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--ink-muted);
+            cursor: pointer;
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .lang-toggle:hover {
+            border-color: var(--accent);
+            color: var(--ink);
+        }
+
+        header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+        }
+
+        .logo .accent {
+            color: var(--accent);
+        }
+
+        .eyebrow-brand {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--ink-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-family: var(--font-sans);
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            margin-bottom: 0.5rem;
+            text-wrap: balance;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            color: var(--ink-soft);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        h2 {
+            font-family: var(--font-sans);
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--accent);
+            width: fit-content;
+            text-wrap: balance;
+        }
+
+        h3 {
+            font-family: var(--font-sans);
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            margin-top: 1.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        h4 {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        p {
+            color: var(--ink-soft);
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+
+        section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px -4px rgba(22, 22, 29, 0.1);
+        }
+
+        .feature-card h4 {
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+            margin-bottom: 0;
+        }
+
+        .step-by-step {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            border: 1px solid var(--line);
+        }
+
+        .step {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            background: var(--accent);
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: var(--shadow-button);
+        }
+
+        .step-content h4 {
+            color: var(--ink);
+            margin-top: 0;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-content p {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+            margin-bottom: 0;
+        }
+
+        code {
+            background: var(--bg-tertiary);
+            padding: 0.2rem 0.45rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            color: var(--ink);
+            font-size: 0.85rem;
+        }
+
+        .status-chip {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 999px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid;
+        }
+
+        .chip-good { background: rgba(5, 150, 105, 0.1); border-color: rgba(5, 150, 105, 0.3); color: #059669; }
+        .chip-warn { background: rgba(180, 83, 9, 0.1); border-color: rgba(180, 83, 9, 0.3); color: #b45309; }
+        .chip-danger { background: rgba(190, 18, 60, 0.1); border-color: rgba(190, 18, 60, 0.3); color: #be123c; }
+        .chip-dispute { background: rgba(126, 34, 206, 0.1); border-color: rgba(126, 34, 206, 0.3); color: #7e22ce; }
+        .chip-neutral { background: rgba(110, 110, 122, 0.1); border-color: rgba(110, 110, 122, 0.3); color: #6e6e7a; }
+        .chip-accent { background: rgba(91, 72, 238, 0.1); border-color: rgba(91, 72, 238, 0.3); color: #5b48ee; }
+
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--ink-soft);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .tip, .warning, .important {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .tip { background: rgba(91, 72, 238, 0.06); border-left: 4px solid var(--accent); }
+        .tip strong { color: var(--accent); }
+
+        .warning { background: rgba(180, 83, 9, 0.06); border-left: 4px solid var(--warn); }
+        .warning strong { color: var(--warn); }
+
+        .important { background: rgba(190, 18, 60, 0.06); border-left: 4px solid var(--danger); }
+        .important strong { color: var(--danger); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--line);
+        }
+
+        th {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--ink);
+            font-family: var(--font-sans);
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--line);
+            color: var(--ink-soft);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .glossary-term {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+        }
+
+        .glossary-ko {
+            font-family: var(--font-mono);
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .toc {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--ink);
+        }
+
+        .toc ul {
+            margin: 0;
+            padding-left: 1.5rem;
+            columns: 2;
+        }
+
+        .toc a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--ink-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        time, .mono {
+            font-family: var(--font-mono);
+        }
+
+        /* Sidebar mockup - visually mirrors the real always-dark client sidebar */
+        .nav-mock {
+            background: var(--sidebar);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            max-width: 260px;
+        }
+
+        .nav-mock-brand {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            color: white;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .nav-mock-brand .accent { color: var(--accent-light); }
+
+        .nav-mock-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 0.6rem;
+            border-radius: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 0.15rem;
+        }
+
+        .nav-mock-item .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.6;
+            flex-shrink: 0;
+        }
+
+        .nav-mock-item.active {
+            background: rgba(124, 108, 246, 0.16);
+            color: var(--accent-light);
+        }
+
+        .nav-mock-item.active .dot {
+            opacity: 1;
+        }
+
+        .nav-mock-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .nav-mock-avatar {
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .nav-mock-name {
+            font-size: 12px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .nav-mock-signout {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--line);
+            color: var(--ink-muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .toc ul { columns: 1; }
+            header { text-align: left; }
+            .lang-toggle { top: 1rem; right: 1rem; }
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .lang-toggle { display: none; }
+            section { page-break-inside: avoid; box-shadow: none; }
+            .toc { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <button class="lang-toggle" id="langToggle" aria-label="Switch to Korean">한국어</button>
+
+    <div class="container">
+        <header>
+            <div class="logo-row">
+                <svg width="28" height="28" viewBox="0 0 512 512" style="flex-shrink: 0;">
+                    <rect width="512" height="512" rx="115" fill="#5b48ee"/>
+                    <g stroke="#fff" stroke-width="56" stroke-linecap="round">
+                        <line x1="168" y1="168" x2="344" y2="344"/>
+                        <line x1="344" y1="168" x2="168" y2="344"/>
+                    </g>
+                    <circle cx="256" cy="256" r="40" fill="#5b48ee"/>
+                    <circle cx="256" cy="256" r="15" fill="#fff"/>
+                </svg>
+                <div class="logo">x<span class="accent">Portal</span></div>
+            </div>
+            <div class="eyebrow-brand" data-ko="클라이언트 포털">Client portal</div>
+            <h1 data-ko="클라이언트 포털<br>사용자 매뉴얼">Client Portal<br>User Manual</h1>
+            <p class="subtitle" data-ko="프로젝트 현황, 산출물, 협업을 위한 안내서">Your guide to project visibility, deliverables, and collaboration</p>
+        </header>
+
+        <div class="toc">
+            <h3 data-ko="빠른 이동">Quick Navigation</h3>
+            <ul>
+                <li><a href="#getting-started" data-ko="시작하기">Getting Started</a></li>
+                <li><a href="#home" data-ko="홈">Home</a></li>
+                <li><a href="#projects" data-ko="내 프로젝트">Your Projects</a></li>
+                <li><a href="#deliverables" data-ko="산출물 검토 및 승인">Reviewing Deliverables</a></li>
+                <li><a href="#documents" data-ko="문서 및 파일">Documents & Files</a></li>
+                <li><a href="#calendar" data-ko="캘린더 및 미팅 예약">Calendar & Scheduling</a></li>
+                <li><a href="#billing" data-ko="청구서 및 결제">Billing & Invoices</a></li>
+                <li><a href="#activity" data-ko="활동">Activity</a></li>
+                <li><a href="#account" data-ko="계정 및 환경설정">Account & Preferences</a></li>
+                <li><a href="#glossary" data-ko="용어집">Glossary</a></li>
+                <li><a href="#faq" data-ko="자주 묻는 질문">FAQ & Support</a></li>
+            </ul>
+        </div>
+
+        <section id="getting-started">
+            <h2 data-ko="시작하기">Getting Started</h2>
+
+            <h3 data-ko="포털에 오신 것을 환영합니다">Welcome to Your Portal</h3>
+            <p data-ko="xPortal에서는 프로젝트의 모든 상황을 한눈에 확인할 수 있습니다. 산출물을 검토하고, 진행 상황을 따라가고, 팀과 실시간으로 소통하세요 - 모든 것이 한곳에 있습니다.">xPortal gives you full visibility into your projects: review deliverables, follow progress, and stay in sync with your team - all in one place, in real time.</p>
+
+            <h3 data-ko="로그인 방법">Signing In</h3>
+            <p data-ko="xPortal은 비밀번호 없는 로그인 방식을 사용합니다. 기억할 것은 없습니다 - 이메일만 있으면 됩니다.">xPortal uses passwordless sign-in. There's nothing to remember - just your email address.</p>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4 data-ko="업무용 이메일 입력">Enter Your Work Email</h4>
+                        <p data-ko="로그인 페이지에서 프로젝트 팀에 등록된 이메일 주소를 입력한 후 “로그인 링크 이메일로 받기”를 클릭하세요.">On the sign-in page, type the email address your project team has on file, then click "Email me a sign-in link."</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4 data-ko="받은 편지함 확인">Check Your Inbox</h4>
+                        <p data-ko="잠시 후 로그인 링크가 도착합니다. 링크는 15분간 유효합니다.">A sign-in link arrives within moments. It's valid for 15 minutes.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4 data-ko="링크 클릭">Click the Link</h4>
+                        <p data-ko="이메일의 링크를 클릭하세요. 비밀번호를 설정하거나 기억할 필요 없이 바로 워크스페이스로 이동합니다.">Click the link in the email. You're taken straight into your workspace - no password to set or remember.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4 data-ko="다음에 다시 로그인하기">Sign In Again Later</h4>
+                        <p data-ko="다음 로그인도 동일한 방식입니다: 이메일을 입력하고 새 링크를 받으세요. 링크는 15분 후 만료되므로, 작동하지 않으면 새로 요청하면 됩니다.">Every sign-in works the same way: enter your email, get a new link. Links expire after 15 minutes, so if yours doesn't work, just request a new one.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip" data-ko="<strong>팁:</strong> 이메일을 받지 못하셨나요? 스팸 폴더를 확인하고, 프로젝트 팀이 초대한 이메일 주소와 정확히 일치하는지 확인하세요.">
+                <strong>Tip:</strong> Didn't get the email? Check your spam folder, and confirm you used the exact email address your project team invited.
+            </div>
+
+            <h3 data-ko="화면 구성 살펴보기">Finding Your Way Around</h3>
+            <p data-ko="포털의 모든 화면은 동일한 레이아웃을 공유합니다:">Every screen in the portal shares the same layout:</p>
+
+            <div class="nav-mock">
+                <div class="nav-mock-brand">x<span class="accent">Portal</span></div>
+                <div class="nav-mock-item active"><span class="dot"></span><span data-ko="홈">Home</span></div>
+                <div class="nav-mock-item"><span class="dot"></span><span data-ko="캘린더">Calendar</span></div>
+                <div class="nav-mock-item"><span class="dot"></span><span data-ko="청구서">Billing</span></div>
+                <div class="nav-mock-item"><span class="dot"></span><span data-ko="일정">Schedule</span></div>
+                <div class="nav-mock-item"><span class="dot"></span><span data-ko="활동">Activity</span></div>
+                <div class="nav-mock-footer">
+                    <div class="nav-mock-avatar">A</div>
+                    <div>
+                        <div class="nav-mock-name">Alex Kim</div>
+                        <div class="nav-mock-signout" data-ko="로그아웃">Sign out</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4 data-ko="사이드바 (항상 다크 테마)">Sidebar (Always Dark)</h4>
+                    <p data-ko="왼쪽에 고정되어 있으며 홈, 캘린더, 청구서, 일정, 활동의 5개 메뉴로 구성됩니다. 모바일에서는 아이콘 전용 상단 바로 표시됩니다.">Fixed on the left with five sections: Home, Calendar, Billing, Schedule, and Activity. On mobile, this becomes a top bar with icon-only navigation.</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="계정 정보 및 로그아웃">Account & Sign Out</h4>
+                    <p data-ko="이름, 로그아웃 링크, 언어 전환, 밝은/어두운 테마 전환 버튼이 사이드바 하단에 있습니다.">Your name, a sign-out link, the language switch, and the light/dark theme toggle live at the bottom of the sidebar.</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="메인 콘텐츠 영역">Main Content</h4>
+                    <p data-ko="선택한 메뉴에 따라 대시보드, 프로젝트, 청구서 등의 내용을 표시합니다.">Displays whichever section you've selected - your dashboard, a project, your invoices, and so on.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="home">
+            <h2 data-ko="홈">Home</h2>
+
+            <h3 data-ko="대시보드 한눈에 보기">Your Dashboard at a Glance</h3>
+            <p data-ko="홈은 로그인 후 가장 먼저 보이는 화면입니다 - 이름으로 인사하며 지금 확인이 필요한 항목을 보여줍니다.">Home is the first thing you see after signing in - it greets you by name and surfaces what needs you right now.</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4 data-ko="확인이 필요합니다">Needs Your Attention</h4>
+                    <p data-ko="팀이 기다리고 있는 파일, 검토를 기다리는 산출물, 납부 예정 청구서, 읽지 않은 메시지, 응답이 필요한 미팅 시간이 표시됩니다. 대기 중인 항목이 없으면 “모두 확인했습니다.”라는 문구가 표시됩니다.">Files your team is waiting on, deliverables awaiting your review, invoices coming due, unread messages, and meeting times that need your response. When nothing's pending, you'll see "You're all caught up."</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="내 프로젝트">Your Projects</h4>
+                    <p data-ko="진행 중인 모든 프로젝트와 현재 단계, 진행률, 목표일이 표시됩니다. 차단된 단계는 이곳에서 가장 먼저 표시됩니다.">Every active project, with its current phase, progress fraction, and target date. Blocked phases are flagged here first.</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="다음 미팅">Next Meeting</h4>
+                    <p data-ko="다음 예정된 미팅과 모든 예정 미팅을 관리할 수 있는 링크가 표시됩니다.">Your next scheduled meeting, with a link to manage all upcoming meetings.</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="팀의 최근 소식">Latest From the Team</h4>
+                    <p data-ko="모든 프로젝트의 최근 업데이트와 전체 활동 내역으로 이동하는 링크가 표시됩니다.">Recent updates across your projects, with a link to the full activity history.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects">
+            <h2 data-ko="내 프로젝트">Your Projects</h2>
+
+            <h3 data-ko="프로젝트 열기">Opening a Project</h3>
+            <p data-ko="홈 화면 또는 프로젝트 카드를 클릭하면 프로젝트 상세 페이지가 열립니다. 각 프로젝트에는 5개의 탭이 있습니다.">Click any project on Home, or a project card, to open its detail page. Each project has five tabs.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th data-ko="탭">Tab</th>
+                        <th data-ko="설명">What It Shows</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="glossary-term" data-ko="개요">Overview</span></td>
+                        <td data-ko="프로젝트의 허브 화면입니다: 주요 링크, 우리 팀과 고객사 팀, 현재 진행 중인 작업, 의사결정 기록을 확인할 수 있습니다.">The project hub: key links, your team and ours, what's actively being worked on, and the decision log.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="glossary-term" data-ko="산출물">Deliverables</span></td>
+                        <td data-ko="검토를 위해 제출된 작업물입니다 - 승인하거나 수정을 요청할 수 있습니다.">Work submitted for your review - approve it or request changes.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="glossary-term" data-ko="문서">Documents</span></td>
+                        <td data-ko="계약서, 협약서, 브랜드 자산, 보고서, 그리고 팀이 요청한 파일을 확인할 수 있습니다.">Contracts, agreements, brand assets, reports, and any files your team has requested from you.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="glossary-term" data-ko="진행 상황">Progress</span></td>
+                        <td data-ko="프로젝트 여정을 보여줍니다: 완료, 진행 중, 차단됨, 예정 단계와 함께 지금까지의 진행 상황 및 예정된 일정을 확인할 수 있습니다.">The project journey: which phases are done, active, blocked, or upcoming, plus what's happened and what's coming up.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="glossary-term" data-ko="메시지">Messages</span></td>
+                        <td data-ko="프로젝트 팀과의 단일 대화 스레드입니다.">A single conversation thread with your project team.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 data-ko="단계별 타임라인">The Phase Timeline</h3>
+            <p data-ko="개요 및 진행 상황 탭 상단에는 모든 단계를 한눈에 보여주는 구간형 막대가 있습니다.">Near the top of Overview and Progress, a segmented bar shows every phase at a glance.</p>
+            <ul>
+                <li data-ko="<strong>초록색</strong> - 완료"><strong>Green</strong> - finished</li>
+                <li data-ko="<strong>남색</strong> - 진행 중"><strong>Indigo</strong> - in progress now</li>
+                <li data-ko="<strong>빨간색</strong> - 차단됨, 확인 필요"><strong>Red</strong> - blocked, needs attention</li>
+                <li data-ko="<strong>회색</strong> - 아직 시작 전"><strong>Grey</strong> - hasn't started</li>
+            </ul>
+
+            <div class="tip" data-ko="<strong>팁:</strong> 단계가 차단되었다는 것은 팀이 고객님의 확인이 필요한 사항을 표시했다는 의미입니다 - 개요 탭의 “현재 진행 중인 작업” 섹션을 확인하거나 메시지를 보내 필요한 사항을 문의하세요.">
+                <strong>Tip:</strong> A blocked phase means your team has flagged something that needs your input - check the Overview tab's "We're working on" section, or send a message to ask what's needed.
+            </div>
+
+            <h3 data-ko="핵심 지표">Key Results</h3>
+            <p data-ko="일부 프로젝트는 수치 목표를 추적합니다 - 이 프로젝트를 평가하는 기준이 되는 지표입니다. 초록색은 목표 달성 또는 초과, 주황색은 근접, 빨간색은 목표 미달을 의미합니다.">Some projects track numeric goals - the metrics this project is judged by. Green means the goal is being met or beaten, amber means it's close, red means it's off target.</p>
+
+            <h3 data-ko="의사결정 기록">The Decision Log</h3>
+            <p data-ko="프로젝트에서 내려진 주요 결정 사항의 기록이며, 모든 산출물 승인 내역도 포함됩니다 - 언제 무엇이 합의되었는지 항상 확인할 수 있습니다.">A running record of key decisions made on the project, including every deliverable approval - so there's never a question about what was agreed and when.</p>
+        </section>
+
+        <section id="deliverables">
+            <h2 data-ko="산출물 검토 및 승인">Reviewing & Approving Deliverables</h2>
+
+            <h3 data-ko="산출물 상태">Deliverable Status</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th data-ko="상태">Status</th>
+                        <th data-ko="의미">Meaning</th>
+                        <th data-ko="조치">Your Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="status-chip chip-warn" data-ko="검토 대기 중">Pending Review</span></td>
+                        <td data-ko="팀이 제출했으며 고객님의 결정을 기다리는 중입니다">Submitted by your team, waiting on your decision</td>
+                        <td data-ko="검토 후 승인하거나 수정을 요청하세요">Review it, then approve or request changes</td>
+                    </tr>
+                    <tr>
+                        <td><span class="status-chip chip-good" data-ko="승인됨">Approved</span></td>
+                        <td data-ko="이 버전을 승인하셨으며 최종 확정되었습니다">You've approved this version - it's final</td>
+                        <td data-ko="추가 조치가 필요하지 않습니다">No action needed</td>
+                    </tr>
+                    <tr>
+                        <td><span class="status-chip chip-accent" data-ko="수정 요청됨">Changes Requested</span></td>
+                        <td data-ko="수정을 요청하셨으며 팀이 업데이트 작업 중입니다">You've asked for revisions; the team is working on an update</td>
+                        <td data-ko="수정된 버전을 기다려 주세요">Wait for the revised version</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 data-ko="산출물 승인하기">Approving a Deliverable</h3>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4 data-ko="산출물 열기">Open the Deliverable</h4>
+                        <p data-ko="산출물 탭에서 “결과물 보기”를 클릭하여 제출된 파일 또는 링크를 확인하세요.">From the Deliverables tab, click "View the work" to review the submitted file or link.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4 data-ko="결정하기">Make Your Decision</h4>
+                        <p data-ko="승인 또는 수정 요청 중 하나를 선택하세요.">Choose Approve or Request changes.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4 data-ko="승인 확정">Confirm Approval</h4>
+                        <p data-ko="승인은 최종 처리입니다 - 산출물을 확정하고 즉시 팀에게 알립니다. 확정 전에 한 번 더 확인하는 단계가 있습니다.">Approving is final - it locks the deliverable and notifies your team immediately. There's a confirmation step before it's locked in.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 data-ko="수정 요청하기">Requesting Changes</h3>
+            <p data-ko="수정이 필요하다면 “수정 요청”을 선택하고 정확히 어떤 부분이 달라져야 하는지 설명하세요 - 입력은 필수이며 팀이 내용을 그대로 확인하므로 구체적으로 작성하는 것이 좋습니다.">If something isn't right, choose Request changes and describe exactly what should be different - the note is required, and your team sees it verbatim, so be specific.</p>
+
+            <div class="tip" data-ko="<strong>팁:</strong> 구체적인 페이지, 섹션, 또는 타임스탬프를 언급하세요. 명확한 요청일수록 더 빠르고 정확한 수정을 받을 수 있습니다.">
+                <strong>Tip:</strong> Reference specific pages, sections, or timestamps. A precise note gets you a faster, more accurate revision.
+            </div>
+
+            <h3 data-ko="이전 버전">Previous Versions</h3>
+            <p data-ko="모든 산출물은 이전 기록을 보관합니다. “이전 버전 보기”를 클릭하면 회차별로 무엇이 바뀌었는지 비교할 수 있습니다.">Every deliverable keeps its history. Use "Show previous versions" to compare what changed between rounds.</p>
+        </section>
+
+        <section id="documents">
+            <h2 data-ko="문서 및 파일">Documents & Files</h2>
+
+            <h3 data-ko="문서 카테고리">Document Categories</h3>
+            <p data-ko="문서 탭의 파일은 5개 카테고리로 구분됩니다:">Documents in the Documents tab are grouped into five categories:</p>
+            <ul>
+                <li data-ko="계약서">Contracts</li>
+                <li data-ko="협약서 및 NDA">Agreements & NDAs</li>
+                <li data-ko="참고 자료">Reference</li>
+                <li data-ko="브랜드 자산">Brand assets</li>
+                <li data-ko="보고서">Reports</li>
+            </ul>
+
+            <h3 data-ko="필요한 파일">Files We Need From You</h3>
+            <p data-ko="때때로 팀이 고객님만 제공할 수 있는 파일을 요청하는 경우가 있습니다. 이러한 요청은 문서 탭 상단에 파일 요청으로 표시되며, 이곳에서 직접 업로드하면 요청이 처리됩니다.">Sometimes your team needs a file only you can provide. These show up as file requests at the top of the Documents tab - upload directly there to fulfill the request.</p>
+
+            <h3 data-ko="문서 업로드하기">Uploading a Document</h3>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4 data-ko="문서 탭 열기">Open Documents</h4>
+                        <p data-ko="프로젝트에서 문서 탭을 선택하세요.">Select the Documents tab from within a project.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4 data-ko="파일 선택">Choose a File</h4>
+                        <p data-ko="“파일 선택…”을 클릭하고 기기에서 파일을 선택하세요.">Click "Choose file…" and select the file from your device.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4 data-ko="제목 추가 (선택 사항)">Add a Title (Optional)</h4>
+                        <p data-ko="비워두면 파일명이 제목으로 사용됩니다.">If left blank, the filename is used as the title.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4 data-ko="업로드">Upload</h4>
+                        <p data-ko="업로드를 클릭하세요. 각 문서에는 업로더와 업로드 시각이 표시됩니다.">Click Upload. Each document shows who uploaded it and when.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="calendar">
+            <h2 data-ko="캘린더 및 미팅 예약">Calendar & Scheduling Meetings</h2>
+
+            <h3 data-ko="캘린더">Calendar</h3>
+            <p data-ko="캘린더 탭에서는 미팅, 마일스톤, 단계 종료일, 청구서 납부일을 타임라인으로 확인할 수 있습니다.">The Calendar tab shows everything on a timeline: meetings, milestones, phase end dates, and invoices due.</p>
+            <ul>
+                <li data-ko="미팅">Meetings</li>
+                <li data-ko="마일스톤">Milestones</li>
+                <li data-ko="단계 종료">Phase ends</li>
+                <li data-ko="청구서 납부일">Invoices due</li>
+            </ul>
+
+            <h3 data-ko="미팅 예약하기">Booking a Meeting</h3>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4 data-ko="일정 열기">Open Schedule</h4>
+                        <p data-ko="사이드바에서 일정을 클릭하세요.">Click Schedule in the sidebar.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4 data-ko="주제 입력">Enter a Topic</h4>
+                        <p data-ko="미팅 주제를 입력하세요.">Describe what the meeting is about.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4 data-ko="소요 시간 선택">Pick a Length</h4>
+                        <p data-ko="미팅 소요 시간을 선택하세요.">Choose how long the meeting should run.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4 data-ko="시간 선택">Choose a Time</h4>
+                        <p data-ko="표시된 예약 가능 시간 중 하나를 선택하세요.">Pick from the available slots shown.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4 data-ko="요청하기">Submit</h4>
+                        <p data-ko="요청은 팀이 확정할 때까지 “운영자 응답 대기 중”으로 표시됩니다.">Your request shows as "Awaiting operator response" until your team confirms.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 data-ko="새로운 시간이 제안된 경우">If a New Time Is Proposed</h3>
+            <p data-ko="팀에서 다른 시간을 제안할 수 있습니다. 이를 수락하거나 직접 다른 시간을 제안할 수 있습니다.">Your team may propose a different time. You can Accept it, or suggest a different time yourself.</p>
+
+            <h3 data-ko="미팅 취소하기">Canceling a Meeting</h3>
+            <p data-ko="일정 탭에서 미팅을 열고 취소를 선택하세요. 확정 전에 취소 사유를 입력해야 합니다.">Open the meeting from your Schedule and choose Cancel. You'll be asked for a reason before it's confirmed.</p>
+        </section>
+
+        <section id="billing">
+            <h2 data-ko="청구서 및 결제">Billing & Invoices</h2>
+
+            <h3 data-ko="청구서 현황">Your Billing Overview</h3>
+            <p data-ko="청구서 탭에서는 미결제 금액, 올해 결제 완료 금액, 다음 납부 예정 항목의 합계를 확인할 수 있습니다.">The Billing tab totals what's outstanding, what's been paid this year, and what's due next.</p>
+
+            <h3 data-ko="청구서 상태">Invoice Status</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th data-ko="상태">Status</th>
+                        <th data-ko="의미">Meaning</th>
+                        <th data-ko="조치">Your Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="status-chip chip-good" data-ko="결제 완료">Paid</span></td>
+                        <td data-ko="결제가 완료되었습니다">Payment received</td>
+                        <td data-ko="기록용으로 보관하세요">Keep for your records</td>
+                    </tr>
+                    <tr>
+                        <td><span class="status-chip chip-neutral" data-ko="미결제">Unpaid</span></td>
+                        <td data-ko="발행되었으며 아직 결제되지 않았습니다">Issued, payment not yet received</td>
+                        <td data-ko="계약 조건에 따라 결제해 주세요">Pay according to your contract terms</td>
+                    </tr>
+                    <tr>
+                        <td><span class="status-chip chip-danger" data-ko="연체">Overdue</span></td>
+                        <td data-ko="납부 기한이 지났습니다">Past its due date</td>
+                        <td data-ko="팀에 문의하여 결제를 진행하세요">Contact your team to arrange payment</td>
+                    </tr>
+                    <tr>
+                        <td><span class="status-chip chip-dispute" data-ko="이의 제기 중">Disputed</span></td>
+                        <td data-ko="이의 제기 후 검토 중이며, 독촉이 일시 중지됩니다">Under review after a dispute - escalation is paused</td>
+                        <td data-ko="이의 제기 스레드에서 팀의 후속 연락을 기다려 주세요">Wait for your team's follow-up in the dispute thread</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 data-ko="청구서에 이의 제기하기">Disputing an Invoice</h3>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4 data-ko="청구서 열기">Open the Invoice</h4>
+                        <p data-ko="문의하려는 청구서를 클릭하세요.">Click the invoice you have a question about.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4 data-ko="이의 제기 클릭">Click Dispute</h4>
+                        <p data-ko="청구서 상세 화면에서 이의 제기 버튼을 클릭하세요.">Click the Dispute button on the invoice detail screen.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4 data-ko="문제 설명">Explain What's Wrong</h4>
+                        <p data-ko="구체적으로 작성하세요 - 예: “이 단계는 12시간으로 안내받았는데 청구서에는 20시간으로 표시되어 있습니다.” 이 입력은 필수입니다.">Be specific - e.g. "We were quoted 12 hours for this phase, but the invoice shows 20." This is required.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4 data-ko="제출">Submit</h4>
+                        <p data-ko="청구서가 일시 중지되고 팀과의 대화창이 열립니다. 팀에서 직접 연락드립니다.">The invoice pauses and a thread opens with your team. They'll follow up with you directly.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 data-ko="사본 다운로드">Downloading a Copy</h3>
+            <p data-ko="모든 청구서에는 기록용 PDF 다운로드 링크가 있습니다.">Every invoice has a PDF link for your records.</p>
+        </section>
+
+        <section id="activity">
+            <h2 data-ko="활동">Activity</h2>
+            <p data-ko="모든 프로젝트에서 발생한 일들을 시간순으로 정리한 기록입니다 - 산출물 승인, 새 문서, 메시지, 미팅 업데이트 등이 포함됩니다. 자리를 비운 뒤 놓친 내용을 확인하거나 예전 일을 찾아볼 때 활용하세요.">A chronological history of everything that's happened across your projects - deliverable approvals, new documents, messages, meeting updates, and more. Use it to catch up after time away, or to find something that happened a while back.</p>
+        </section>
+
+        <section id="account">
+            <h2 data-ko="계정 및 환경설정">Account & Preferences</h2>
+            <p data-ko="클라이언트 포털은 계정 관련 설정을 최소화했습니다 - 관련 기능은 모두 사이드바 하단에 있습니다.">The client portal keeps account controls minimal - everything lives at the bottom of the sidebar.</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4 data-ko="언어 전환">Switch Language</h4>
+                    <p data-ko="EN / 한국어 전환 버튼을 클릭하면 포털 전체가 영어와 한국어 사이에서 전환됩니다. 선택한 언어는 계정에 저장됩니다.">Click the EN / 한국어 toggle to switch the entire portal between English and Korean. Your choice is saved to your account.</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="테마 전환">Switch Theme</h4>
+                    <p data-ko="밝은 모드와 어두운 모드를 전환할 수 있습니다. 사이드바는 이 설정과 관계없이 항상 어두운 테마를 유지합니다.">Toggle between light and dark mode. The sidebar itself always stays dark, regardless of this setting.</p>
+                </div>
+                <div class="feature-card">
+                    <h4 data-ko="로그아웃">Sign Out</h4>
+                    <p data-ko="이름을 클릭한 후 로그아웃을 선택하면 세션이 종료됩니다. 다음에 접속할 때는 새 로그인 링크가 필요합니다.">Click your name, then Sign out, to end your session. You'll need a new sign-in link next time.</p>
+                </div>
+            </div>
+
+            <div class="tip" data-ko="<strong>참고:</strong> 관리할 비밀번호나 별도의 프로필 페이지는 없습니다 - 로그인은 항상 이메일로 받은 링크를 통해 이루어집니다.">
+                <strong>Note:</strong> There's no password to manage and no separate profile page - sign-in is always via an emailed link.
+            </div>
+        </section>
+
+        <section id="glossary">
+            <h2 data-ko="용어집">Glossary</h2>
+            <p data-ko="포털 화면에서 실제로 보게 될 용어와 한국어 UI에 표시되는 정확한 표현입니다.">Terms you'll see on screen, with the exact wording used in the Korean UI.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>English</th>
+                        <th>한국어</th>
+                        <th data-ko="의미">Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="glossary-term">Home</td><td class="glossary-ko">홈</td><td data-ko="대시보드 - 확인이 필요한 항목, 내 프로젝트, 최근 업데이트를 보여줍니다.">Your dashboard - what needs attention, your projects, and recent updates.</td></tr>
+                    <tr><td class="glossary-term">Calendar</td><td class="glossary-ko">캘린더</td><td data-ko="미팅, 마일스톤, 단계 종료일, 청구서 납부일을 함께 보여주는 화면입니다.">A combined view of meetings, milestones, phase ends, and invoice due dates.</td></tr>
+                    <tr><td class="glossary-term">Billing</td><td class="glossary-ko">청구서</td><td data-ko="청구서와 결제 상태를 확인하는 화면입니다.">Your invoices and payment status.</td></tr>
+                    <tr><td class="glossary-term">Schedule</td><td class="glossary-ko">일정</td><td data-ko="팀과의 미팅을 예약하고 관리하는 화면입니다.">Where you book and manage meetings with your team.</td></tr>
+                    <tr><td class="glossary-term">Activity</td><td class="glossary-ko">활동</td><td data-ko="프로젝트 이벤트의 전체 시간순 기록입니다.">The full chronological history of project events.</td></tr>
+                    <tr><td class="glossary-term">Overview</td><td class="glossary-ko">개요</td><td data-ko="프로젝트의 허브 화면 - 링크, 팀, 현재 작업, 결정 사항을 보여줍니다.">A project's hub - links, team, current work, and decisions.</td></tr>
+                    <tr><td class="glossary-term">Deliverables</td><td class="glossary-ko">산출물</td><td data-ko="검토 및 승인을 위해 제출된 작업물입니다.">Work submitted for your review and approval.</td></tr>
+                    <tr><td class="glossary-term">Documents</td><td class="glossary-ko">문서</td><td data-ko="계약서, 협약서, 브랜드 자산, 보고서, 요청된 파일입니다.">Contracts, agreements, brand assets, reports, and requested files.</td></tr>
+                    <tr><td class="glossary-term">Progress</td><td class="glossary-ko">진행 상황</td><td data-ko="프로젝트의 단계별 진행 여정입니다.">The phase-by-phase journey of a project.</td></tr>
+                    <tr><td class="glossary-term">Messages</td><td class="glossary-ko">메시지</td><td data-ko="프로젝트 팀과 나누는 대화 스레드입니다.">Your conversation thread with the project team.</td></tr>
+                    <tr><td class="glossary-term">On track</td><td class="glossary-ko">정상 진행 중</td><td data-ko="프로젝트가 계획대로 진행되고 있습니다.">The project is progressing as planned.</td></tr>
+                    <tr><td class="glossary-term">Needs attention</td><td class="glossary-ko">확인 필요</td><td data-ko="고객님의 확인이나 조치가 필요한 사항이 있습니다.">Something requires your input or awareness.</td></tr>
+                    <tr><td class="glossary-term">Blocked</td><td class="glossary-ko">차단됨</td><td data-ko="조치 없이는 해당 단계가 진행될 수 없습니다.">A phase can't move forward without action.</td></tr>
+                    <tr><td class="glossary-term">Pending review</td><td class="glossary-ko">검토 대기 중</td><td data-ko="산출물이 고객님의 결정을 기다리고 있습니다.">A deliverable is waiting for your decision.</td></tr>
+                    <tr><td class="glossary-term">Approved</td><td class="glossary-ko">승인됨</td><td data-ko="승인을 완료하여 산출물이 최종 확정되었습니다.">You've signed off; the deliverable is final.</td></tr>
+                    <tr><td class="glossary-term">Changes requested</td><td class="glossary-ko">수정 요청됨</td><td data-ko="수정을 요청하셨습니다.">You've asked for revisions.</td></tr>
+                    <tr><td class="glossary-term">Paid</td><td class="glossary-ko">결제 완료</td><td data-ko="결제가 완료되었습니다.">Payment has been received.</td></tr>
+                    <tr><td class="glossary-term">Unpaid</td><td class="glossary-ko">미결제</td><td data-ko="발행되었으나 아직 결제되지 않았습니다.">Issued, not yet paid.</td></tr>
+                    <tr><td class="glossary-term">Overdue</td><td class="glossary-ko">연체</td><td data-ko="납부 기한이 지났습니다.">Past its due date.</td></tr>
+                    <tr><td class="glossary-term">Disputed</td><td class="glossary-ko">이의 제기 중</td><td data-ko="이의 제기 후 검토 중입니다.">Under review after a dispute.</td></tr>
+                    <tr><td class="glossary-term">Dispute</td><td class="glossary-ko">이의 제기</td><td data-ko="청구서에 공식적으로 문제를 제기하는 조치입니다.">The action of formally questioning an invoice.</td></tr>
+                    <tr><td class="glossary-term">Milestone</td><td class="glossary-ko">마일스톤</td><td data-ko="단계 내의 특정 체크포인트입니다.">A specific checkpoint inside a phase.</td></tr>
+                    <tr><td class="glossary-term">Key results</td><td class="glossary-ko">핵심 지표</td><td data-ko="프로젝트를 평가하는 기준이 되는 수치 목표입니다.">The numeric goals a project is judged against.</td></tr>
+                    <tr><td class="glossary-term">Decision log</td><td class="glossary-ko">의사결정 기록</td><td data-ko="언제 무엇이 합의되었는지에 대한 기록입니다.">The record of what was agreed and when.</td></tr>
+                    <tr><td class="glossary-term">Sign out</td><td class="glossary-ko">로그아웃</td><td data-ko="세션을 종료하는 것입니다.">Ends your session.</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="faq">
+            <h2 data-ko="자주 묻는 질문">FAQ & Support</h2>
+
+            <h3 data-ko="자주 묻는 질문">Frequently Asked Questions</h3>
+
+            <h4 data-ko="비밀번호를 만들어야 하나요?">Do I need to create a password?</h4>
+            <p data-ko="아니요. xPortal은 비밀번호 없는 로그인 방식을 사용하며, 매번 이메일로 새 로그인 링크를 받습니다.">No. xPortal uses passwordless sign-in - you'll always get a fresh link by email.</p>
+
+            <h4 data-ko="로그인 링크가 만료되었어요. 어떻게 해야 하나요?">My sign-in link expired - now what?</h4>
+            <p data-ko="로그인 페이지로 돌아가 새 링크를 요청하세요. 링크는 15분간 유효합니다.">Go back to the sign-in page and request a new one. Links are valid for 15 minutes.</p>
+
+            <h4 data-ko="프로젝트 정보를 직접 수정할 수 있나요?">Can I edit project details myself?</h4>
+            <p data-ko="아니요 - 프로젝트 세부 정보는 팀에서 관리합니다. 변경이 필요하면 메시지 탭을 이용해 요청하세요.">No - project details are managed by your team. Use the Messages tab to request a change.</p>
+
+            <h4 data-ko="화면에 보이는 정보는 얼마나 최신인가요?">How current is the information I see?</h4>
+            <p data-ko="팀이 변경 사항을 반영하는 즉시 실시간으로 업데이트됩니다 - 새로고침하거나 기다릴 필요가 없습니다.">Everything updates in real time as your team makes changes - no need to refresh or wait.</p>
+
+            <h4 data-ko="산출물을 승인한 후 취소할 수 있나요?">Once I approve a deliverable, can I undo it?</h4>
+            <p data-ko="아니요 - 승인은 최종 처리이며 즉시 팀에게 알림이 전송됩니다. 승인 후 문제가 발견되면 팀에게 메시지를 보내주세요.">No - approving is final and notifies your team immediately. If something's wrong after approving, send a message to your team.</p>
+
+            <h4 data-ko="회사의 다른 사람도 접근할 수 있나요?">Can other people at my company get access?</h4>
+            <p data-ko="네 - 프로젝트 담당자에게 초대를 요청하세요. 각자 본인의 이메일로 로그인합니다.">Yes - ask your project lead to send them an invitation. Each person signs in with their own email.</p>
+
+            <h4 data-ko="어떤 브라우저에서 사용할 수 있나요?">What browsers work with the portal?</h4>
+            <p data-ko="Chrome, Firefox, Safari, Edge의 최신 버전에서 모두 사용할 수 있습니다.">Any current version of Chrome, Firefox, Safari, or Edge.</p>
+
+            <h3 data-ko="문제 해결">Troubleshooting</h3>
+
+            <h4 data-ko="로그인 이메일이 오지 않아요">I'm not receiving the sign-in email</h4>
+            <ul>
+                <li data-ko="스팸 폴더를 확인하세요">Check your spam folder</li>
+                <li data-ko="팀이 초대한 이메일 주소가 맞는지 확인하세요">Confirm you're using the exact email your team invited</li>
+                <li data-ko="잠시 기다린 후 다시 요청하세요">Wait a minute, then request another link</li>
+                <li data-ko="포털 사용자로 등록되어 있는지 팀에 확인 요청하세요">Ask your team to confirm you're set up as a portal user</li>
+            </ul>
+
+            <h4 data-ko="문서가 다운로드되지 않아요">A document won't download</h4>
+            <ul>
+                <li data-ko="인터넷 연결을 확인하세요">Check your internet connection</li>
+                <li data-ko="브라우저의 다운로드 허용 여부를 확인하세요">Make sure your browser allows downloads</li>
+                <li data-ko="다른 브라우저를 시도해보세요">Try a different browser</li>
+                <li data-ko="다운로드 폴더를 확인하세요 - 알림 없이 저장되었을 수 있습니다">Check your downloads folder - it may have saved without a visible notification</li>
+            </ul>
+
+            <h4 data-ko="포털이 느리게 느껴져요">The portal feels slow</h4>
+            <ul>
+                <li data-ko="인터넷 속도를 확인하세요">Check your connection speed</li>
+                <li data-ko="사용하지 않는 탭을 닫으세요">Close unused browser tabs</li>
+                <li data-ko="브라우저 캐시를 삭제하세요">Clear your browser cache</li>
+                <li data-ko="다른 기기에서 시도해보세요">Try a different device</li>
+            </ul>
+
+            <div class="important" data-ko="<strong>추가 도움이 필요하신가요?</strong> 여기에서 다루지 않은 내용은 메시지 탭을 통해 프로젝트 팀에 문의하거나, 긴급한 사항은 담당 매니저에게 직접 연락하세요.">
+                <strong>Need more help?</strong> For anything not covered here, send a message to your project team from the Messages tab, or contact your account manager directly for urgent matters.
+            </div>
+        </section>
+
+        <footer>
+            <p data-ko="xPortal 클라이언트 포털 사용자 매뉴얼 | 최종 업데이트: 2026년 7월">xPortal Client Portal User Manual | Last Updated: July 2026</p>
+            <p data-ko="추가 지원이 필요하시면 메시지 탭 또는 담당 매니저에게 문의하세요.">For additional support, use the Messages tab or contact your account manager.</p>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            var STORAGE_KEY = 'xportal_manual_lang';
+            var btn = document.getElementById('langToggle');
+
+            function apply(lang) {
+                document.querySelectorAll('[data-ko]').forEach(function (el) {
+                    if (el.dataset.enCache === undefined) {
+                        el.dataset.enCache = el.innerHTML;
+                    }
+                    el.innerHTML = lang === 'ko' ? el.dataset.ko : el.dataset.enCache;
+                });
+                btn.textContent = lang === 'ko' ? 'EN' : '한국어';
+                btn.setAttribute('aria-label', lang === 'ko' ? 'Switch to English' : 'Switch to Korean');
+                document.documentElement.lang = lang;
+                localStorage.setItem(STORAGE_KEY, lang);
+            }
+
+            btn.addEventListener('click', function () {
+                var current = document.documentElement.lang === 'ko' ? 'ko' : 'en';
+                apply(current === 'en' ? 'ko' : 'en');
+            });
+
+            apply(localStorage.getItem(STORAGE_KEY) || 'en');
+        })();
+    </script>
+</body>
+</html>

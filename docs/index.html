@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdgeX Portal Manuals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --bg-primary: #f5f5f9;
+            --bg-secondary: #ffffff;
+            --accent-admin: #3b82f6;
+            --accent-client: #5b48ee;
+            --ink: #16161d;
+            --ink-soft: #4d4d59;
+            --line: #e5e5ee;
+            --shadow-card: 0 1px 2px rgba(22, 22, 29, 0.04), 0 12px 32px -16px rgba(22, 22, 29, 0.14);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--ink);
+            line-height: 1.6;
+            padding: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            color: var(--ink);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--ink-soft);
+            margin-bottom: 0.5rem;
+        }
+
+        .description {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+            max-width: 600px;
+            margin: 1.5rem auto 0;
+        }
+
+        .manuals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .manual-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .manual-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px -4px rgba(22, 22, 29, 0.15);
+        }
+
+        .manual-badge {
+            display: inline-block;
+            width: fit-content;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 1rem;
+        }
+
+        .badge-admin {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .badge-client {
+            background: rgba(91, 72, 238, 0.1);
+            color: #5b48ee;
+            border: 1px solid rgba(91, 72, 238, 0.2);
+        }
+
+        .manual-card h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--ink);
+        }
+
+        .manual-card .subtitle-card {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .manual-features {
+            list-style: none;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .manual-features li {
+            padding: 0.5rem 0;
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+        }
+
+        .manual-features li:before {
+            content: "✓ ";
+            color: var(--accent-admin);
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        .badge-client ~ .manual-features li:before {
+            color: var(--accent-client);
+        }
+
+        .manual-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            text-decoration: none;
+            gap: 0.5rem;
+        }
+
+        .button-admin {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .button-admin:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .button-client {
+            background: #5b48ee;
+            color: white;
+        }
+
+        .button-client:hover {
+            background: #4c3aa8;
+            transform: translateY(-1px);
+        }
+
+        .info-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+        }
+
+        .info-section h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--ink);
+        }
+
+        .info-section p {
+            color: var(--ink-soft);
+            margin-bottom: 0.75rem;
+            line-height: 1.7;
+        }
+
+        .info-section ul {
+            margin-left: 1.5rem;
+            color: var(--ink-soft);
+        }
+
+        .info-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--line);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .manuals-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Portal User Manuals</h1>
+            <p class="subtitle">Complete guides to the Admin Portal and Client Portal</p>
+            <p class="description">Choose a manual below to access comprehensive documentation, step-by-step guides, and troubleshooting information for each portal.</p>
+        </header>
+
+        <div class="manuals-grid">
+            <a href="admin-portal-manual.html" class="manual-card">
+                <div class="manual-badge badge-admin">Admin Portal</div>
+                <h2>Admin Portal</h2>
+                <p class="subtitle-card">Complete operational guide for managing projects, teams, and your organization.</p>
+                <ul class="manual-features">
+                    <li>Project & task management</li>
+                    <li>Team administration</li>
+                    <li>Dashboard & analytics</li>
+                    <li>Glossary of terms</li>
+                    <li>Troubleshooting guide</li>
+                </ul>
+                <button class="manual-button button-admin">
+                    Open Manual
+                    <span>→</span>
+                </button>
+            </a>
+
+            <a href="client-portal-manual.html" class="manual-card">
+                <div class="manual-badge badge-client">Client Portal</div>
+                <h2>Client Portal</h2>
+                <p class="subtitle-card">Client-focused guide for viewing projects, deliverables, billing, and communication.</p>
+                <ul class="manual-features">
+                    <li>Dashboard overview</li>
+                    <li>Project tracking & deliverables</li>
+                    <li>Billing & invoices</li>
+                    <li>Bilingual glossary (EN/한국어)</li>
+                    <li>Full 한국어 language toggle</li>
+                </ul>
+                <button class="manual-button button-client">
+                    Open Manual
+                    <span>→</span>
+                </button>
+            </a>
+        </div>
+
+        <div class="info-section">
+            <h3>About These Manuals</h3>
+            <p>These user manuals provide comprehensive documentation for both the Admin Portal and Client Portal applications. Each manual is designed to match the look and feel of its respective application and includes:</p>
+            <ul>
+                <li><strong>Getting Started:</strong> Login instructions and interface overview</li>
+                <li><strong>Feature Guides:</strong> Detailed instructions for each major feature</li>
+                <li><strong>Step-by-Step Tutorials:</strong> Visual walkthroughs of common tasks</li>
+                <li><strong>Reference Tables:</strong> Status definitions, roles, and configurations</li>
+                <li><strong>Troubleshooting:</strong> Common issues and solutions</li>
+                <li><strong>FAQ:</strong> Answers to frequently asked questions</li>
+            </ul>
+        </div>
+
+        <div class="info-section">
+            <h3>How to Use These Manuals</h3>
+            <p><strong>Viewing:</strong> Click on a manual above to open it in your browser. The manual is fully responsive and works on desktop, tablet, and mobile devices.</p>
+            <p><strong>Navigation:</strong> Each manual includes a quick navigation menu at the top for easy access to sections.</p>
+            <p><strong>Printing:</strong> You can print any manual directly from your browser. Use File → Print or press Ctrl+P (Windows) / Cmd+P (Mac).</p>
+            <p><strong>Exporting:</strong> To save as PDF, use your browser's print dialog and select "Save as PDF" as the destination.</p>
+        </div>
+
+        <footer>
+            <p>Portal User Manuals | Last Updated: July 2026</p>
+            <p>For additional support, contact your account manager or support team.</p>
+        </footer>
+    </div>
+</body>
+</html>

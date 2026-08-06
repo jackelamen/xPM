@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "xportal-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "xportal"],
+      "port": 3100
+    },
+    {
+      "name": "manuals-static",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "docs", "-l", "4173"],
+      "port": 4173
+    }
+  ]
+}

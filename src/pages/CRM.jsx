@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ContactDetail, CompanyDetail, DealDetail } from "../components/CRMDetailPanel";
+import CRMImport from "../components/CRMImport";
 import { format, isPast, isWithinInterval, addDays } from "date-fns";
 
 const TABS = ["Dashboard", "Contacts", "Companies", "Deals"];
@@ -117,6 +118,7 @@ function Contacts({ workspaceId }) {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [showImport, setShowImport] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
     const [form, setForm] = useState({ name: "", name_other: "", email: "", phone: "", title: "", company_id: "", linkedin_url: "", last_contacted_at: "", source: "", notes: "" });
     const [saving, setSaving] = useState(false);
@@ -234,9 +236,15 @@ function Contacts({ workspaceId }) {
                                 </select>
                             )}
                         </div>
-                        <PrimaryBtn onClick={() => setShowForm(true)}>
-                            <PlusIcon className="size-3.5" /> New Contact
-                        </PrimaryBtn>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setShowImport(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition">
+                                <UploadIcon className="size-3.5" /> Import CSV
+                            </button>
+                            <PrimaryBtn onClick={() => setShowForm(true)}>
+                                <PlusIcon className="size-3.5" /> New Contact
+                            </PrimaryBtn>
+                        </div>
                     </>
                 }
                 footer={
@@ -316,6 +324,14 @@ function Contacts({ workspaceId }) {
                     onDeleted={() => { setContacts((prev) => prev.filter((c) => c.id !== selectedId)); setSelectedId(null); }}
                 />
             )}
+
+            <CRMImport
+                isOpen={showImport}
+                onClose={() => setShowImport(false)}
+                workspaceId={workspaceId}
+                target="contacts"
+                onImported={fetchAll}
+            />
         </div>
     );
 }
@@ -326,6 +342,7 @@ function Companies({ workspaceId }) {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [showImport, setShowImport] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
     const [openContactId, setOpenContactId] = useState(null);
     const [form, setForm] = useState({ name: "", industry: "", brand_names: "", website: "", linkedin_url: "", phone: "", address: "", city: "", province: "", country: "", notes: "" });
@@ -455,9 +472,15 @@ function Companies({ workspaceId }) {
                                 </select>
                             )}
                         </div>
-                        <PrimaryBtn onClick={() => setShowForm(true)}>
-                            <PlusIcon className="size-3.5" /> New Company
-                        </PrimaryBtn>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setShowImport(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition">
+                                <UploadIcon className="size-3.5" /> Import CSV
+                            </button>
+                            <PrimaryBtn onClick={() => setShowForm(true)}>
+                                <PlusIcon className="size-3.5" /> New Company
+                            </PrimaryBtn>
+                        </div>
                     </>
                 }
                 footer={
@@ -567,6 +590,14 @@ function Companies({ workspaceId }) {
                     onDeleted={() => setOpenContactId(null)}
                 />
             )}
+
+            <CRMImport
+                isOpen={showImport}
+                onClose={() => setShowImport(false)}
+                workspaceId={workspaceId}
+                target="companies"
+                onImported={fetchCompanies}
+            />
         </div>
     );
 }

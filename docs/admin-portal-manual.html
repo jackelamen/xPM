@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal User Manual</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --bg-primary: #f4f5f7;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #efeff5;
+            --accent: #059669;
+            --accent-light: #10b981;
+            --ink: #16161d;
+            --ink-soft: #4d4d59;
+            --ink-muted: #6e6e7a;
+            --line: #e5e5ee;
+            --danger: #be123c;
+            --shadow-card: 0 1px 2px rgba(22, 22, 29, 0.04), 0 12px 32px -16px rgba(22, 22, 29, 0.14);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--ink);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--ink-soft);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+            width: fit-content;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            color: var(--ink-soft);
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+
+        section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+        }
+
+        .feature-card h4 {
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+        }
+
+        .step-by-step {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            background: var(--accent);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .step-content h4 {
+            color: var(--ink);
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .step-content p {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+        }
+
+        code {
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: var(--ink);
+            font-size: 0.9rem;
+        }
+
+        .button-example {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin: 0.25rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .button-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .button-secondary {
+            background: transparent;
+            color: var(--ink-soft);
+            border: 1px solid var(--line);
+        }
+
+        .button-destructive {
+            background: var(--danger);
+            color: white;
+        }
+
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--ink-soft);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .tip {
+            background: rgba(5, 150, 105, 0.05);
+            border-left: 4px solid var(--accent);
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1.5rem 0;
+        }
+
+        .tip strong {
+            color: var(--accent);
+        }
+
+        .warning {
+            background: rgba(190, 18, 60, 0.05);
+            border-left: 4px solid var(--danger);
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1.5rem 0;
+        }
+
+        .warning strong {
+            color: var(--danger);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--line);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--line);
+            color: var(--ink-soft);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .toc {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--ink);
+        }
+
+        .toc ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .toc a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--line);
+            color: var(--ink-muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1.5rem; justify-content: center;">
+                <svg width="28" height="28" viewBox="0 0 512 512" style="flex-shrink: 0;">
+                    <rect width="512" height="512" rx="115" fill="#059669"/>
+                    <g stroke="#fff" stroke-width="56" stroke-linecap="round">
+                        <line x1="168" y1="168" x2="344" y2="344"/>
+                        <line x1="344" y1="168" x2="168" y2="344"/>
+                    </g>
+                    <circle cx="256" cy="256" r="40" fill="#059669"/>
+                    <circle cx="256" cy="256" r="15" fill="#fff"/>
+                </svg>
+                <span style="font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; color: var(--ink);">x<span style="color: #059669;">Portal</span></span>
+            </div>
+            <h1>Admin Portal User Manual</h1>
+            <p class="subtitle">Complete guide to managing projects, teams, and operations</p>
+        </header>
+
+        <div class="toc">
+            <h3>Quick Navigation</h3>
+            <ul>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#dashboard">Dashboard Overview</a></li>
+                <li><a href="#projects">Managing Projects</a></li>
+                <li><a href="#tasks">Task Management</a></li>
+                <li><a href="#team">Team Management</a></li>
+                <li><a href="#settings">Settings & Configuration</a></li>
+                <li><a href="#glossary">Glossary</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+            </ul>
+        </div>
+
+        <section id="getting-started">
+            <h2>Getting Started</h2>
+
+            <h3>Login & Access</h3>
+            <p>To access the Admin Portal, navigate to your organization's operator sign-in page and log in with your email and password.</p>
+
+            <div class="tip">
+                <strong>Important:</strong> The Admin Portal does not use a separate password. Sign in with the same email and password as your <strong>xPM account</strong>. There's nothing new to set up.
+            </div>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Enter Your Work Email</h4>
+                        <p>Use the same email address you use for your xPM account.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Enter Your xPM Password</h4>
+                        <p>Use the same password as your xPM account. It is not a separate credential.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Click Sign In</h4>
+                        <p>You'll be redirected to the Admin Portal dashboard.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip">
+                <strong>Tip:</strong> Forgot your password? Click "Forgot Password" on the login page to reset it via email.
+            </div>
+
+            <h3>Interface Layout</h3>
+            <p>The admin portal features a clean, organized interface designed for efficiency:</p>
+            <ul>
+                <li><strong>Sidebar Navigation:</strong> Access main sections on the left</li>
+                <li><strong>Top Bar:</strong> Shows current date, status indicators, and user menu</li>
+                <li><strong>Main Content Area:</strong> Displays active section and data</li>
+                <li><strong>Breadcrumbs:</strong> Navigate back through your path</li>
+            </ul>
+        </section>
+
+        <section id="dashboard">
+            <h2>Dashboard Overview</h2>
+
+            <p>Your dashboard provides a comprehensive snapshot of your organization's status and recent activity.</p>
+
+            <h3>Key Dashboard Sections</h3>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Key Performance Indicators</h4>
+                    <p>View real-time KPIs including project count, team size, and completion rates at a glance.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Recent Projects</h4>
+                    <p>Quick access to your most recently active projects with status indicators.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Team Status</h4>
+                    <p>See team member availability and their current task assignments.</p>
+                </div>
+            </div>
+
+            <h3>Reading Your Dashboard</h3>
+            <ul>
+                <li>Color-coded status indicators show project health (green = on track, amber = needs attention, red = blocked)</li>
+                <li>Click any project card to view detailed information</li>
+                <li>Use the filter options to customize your view</li>
+                <li>Data refreshes automatically every few minutes</li>
+            </ul>
+
+            <div class="tip">
+                <strong>Tip:</strong> Customize your dashboard by pinning frequently accessed projects to the top.
+            </div>
+        </section>
+
+        <section id="projects">
+            <h2>Managing Projects</h2>
+
+            <h3>Creating a New Project</h3>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Navigate to Projects</h4>
+                        <p>Click "Projects" in the left sidebar.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Click "New Project"</h4>
+                        <p>Use the primary button at the top of the projects list.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Fill Project Details</h4>
+                        <p>Enter project name, description, client, start/end dates, and assign a lead.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Define Phases</h4>
+                        <p>Break your project into phases with milestone dates and deliverables.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Save Project</h4>
+                        <p>Click the "Create Project" button to complete setup.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Project Status Types</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Description</th>
+                        <th>Action Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>On Track</strong> (Green)</td>
+                        <td>Project progressing as planned</td>
+                        <td>Continue monitoring</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Needs Attention</strong> (Amber)</td>
+                        <td>Minor issues or timeline concerns</td>
+                        <td>Review and address issues</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Blocked</strong> (Red)</td>
+                        <td>Significant blocker preventing progress</td>
+                        <td>Immediate intervention needed</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Editing Project Details</h3>
+            <ol>
+                <li>Click on a project from the list</li>
+                <li>Click the pencil icon or "Edit" button at the top</li>
+                <li>Modify project information as needed</li>
+                <li>Update timeline or phases if needed</li>
+                <li>Click "Save Changes" when complete</li>
+            </ol>
+
+            <div class="warning">
+                <strong>Warning:</strong> Archiving a project cannot be undone. Archived projects can be restored from the Archive section, but use caution.
+            </div>
+
+            <h3>Project Timeline & Phases</h3>
+            <p>Each project is divided into phases with specific deliverables and milestones:</p>
+            <ul>
+                <li>View the phase timeline on the project details page</li>
+                <li>See upcoming milestones and their due dates</li>
+                <li>Track progress against scheduled dates</li>
+                <li>Add or modify milestones as needed</li>
+            </ul>
+        </section>
+
+        <section id="tasks">
+            <h2>Task Management</h2>
+
+            <h3>Creating Tasks</h3>
+            <p>Tasks are the smallest unit of work in your projects. Create tasks to assign specific work to team members.</p>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>From a Project</h4>
+                        <p>Click a project, then "Add Task" in the tasks section.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Enter Task Details</h4>
+                        <p>Title, description, priority, and due date are required fields.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Assign Team Member</h4>
+                        <p>Select a team member from the dropdown to assign the task.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Set Dependencies (Optional)</h4>
+                        <p>Mark other tasks that must be completed before this one starts.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Save Task</h4>
+                        <p>Click "Create Task" to complete.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Task Status & Updates</h3>
+            <ul>
+                <li><strong>To Do:</strong> Task not started</li>
+                <li><strong>In Progress:</strong> Task being worked on</li>
+                <li><strong>In Review:</strong> Task completed, awaiting review</li>
+                <li><strong>Done:</strong> Task completed and approved</li>
+                <li><strong>Blocked:</strong> Task cannot proceed due to dependencies</li>
+            </ul>
+
+            <h3>Viewing All Tasks</h3>
+            <p>Access the "All Tasks" view from the sidebar to see every task across all projects:</p>
+            <ul>
+                <li>Filter by project, assignee, status, or due date</li>
+                <li>Sort by any column</li>
+                <li>Bulk update task status</li>
+                <li>Export task list as CSV</li>
+            </ul>
+
+            <div class="tip">
+                <strong>Tip:</strong> Use the workload view to see task distribution across your team and identify overallocated members.
+            </div>
+        </section>
+
+        <section id="team">
+            <h2>Team Management</h2>
+
+            <h3>Adding Team Members</h3>
+
+            <div class="step-by-step">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Open Team Section</h4>
+                        <p>Click "Team" in the left sidebar.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Click "Add Member"</h4>
+                        <p>Use the primary button to start adding a team member.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Enter Email Address</h4>
+                        <p>Provide the team member's email address.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Assign Role</h4>
+                        <p>Choose their role: Admin, Lead, or Member.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Send Invite</h4>
+                        <p>Click "Send Invite" to notify them of their account.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Team Member Roles</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Permissions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Admin</strong></td>
+                        <td>Full access to all features, can manage team and settings</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lead</strong></td>
+                        <td>Can manage projects and team members within their projects</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Member</strong></td>
+                        <td>Can view and work on assigned tasks and projects</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Team Spaces</h3>
+            <p>Organize team members into spaces for better collaboration:</p>
+            <ul>
+                <li>Create spaces by team, department, or project type</li>
+                <li>Assign team members to multiple spaces</li>
+                <li>Set space-specific permissions and defaults</li>
+                <li>Use spaces to organize dashboards and reports</li>
+            </ul>
+
+            <h3>Managing Team Workload</h3>
+            <p>The Workload view helps you understand team capacity:</p>
+            <ul>
+                <li>See total tasks per team member</li>
+                <li>Identify members who are over or under-allocated</li>
+                <li>Rebalance workload by reassigning tasks</li>
+                <li>View team velocity and capacity trends</li>
+            </ul>
+        </section>
+
+        <section id="settings">
+            <h2>Settings & Configuration</h2>
+
+            <h3>Organization Settings</h3>
+            <p>Configure your organization from the Settings page:</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Organization Name</h4>
+                    <p>Update your organization's display name and branding.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Workspace Name</h4>
+                    <p>Customize the workspace URL and display name.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Team Defaults</h4>
+                    <p>Set default project templates and task categories.</p>
+                </div>
+            </div>
+
+            <h3>User Profile Settings</h3>
+            <p>Manage your personal account settings:</p>
+            <ol>
+                <li>Click your avatar in the top-right corner</li>
+                <li>Select "Profile Settings"</li>
+                <li>Update your name, avatar, and preferences</li>
+                <li>Change your password in the security section</li>
+                <li>Manage notification preferences</li>
+            </ol>
+
+            <h3>Data & Privacy</h3>
+            <ul>
+                <li>Export project data and team information</li>
+                <li>Configure data retention policies</li>
+                <li>Manage API access and integrations</li>
+                <li>View audit logs of all administrative actions</li>
+            </ul>
+
+            <div class="warning">
+                <strong>Warning:</strong> Some settings changes affect all team members. Proceed with caution when modifying organization-wide settings.
+            </div>
+        </section>
+
+        <section id="glossary">
+            <h2>Glossary</h2>
+            <p>Terms used throughout the admin portal, in the order you'll typically encounter them.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Term</th>
+                        <th>Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Workspace</strong></td>
+                        <td>The top-level container for your organization's projects and team. Created once, on first login.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Space</strong></td>
+                        <td>A sub-grouping of projects inside a workspace - by team, department, or client - used to organize dashboards and access.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Project</strong></td>
+                        <td>A body of work with its own timeline, phases, tasks, and team assignments.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase</strong></td>
+                        <td>A stage within a project's timeline (visible on the project Gantt view). Phases can contain milestones.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Milestone</strong></td>
+                        <td>A specific checkpoint or target date inside a phase.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Task</strong></td>
+                        <td>The smallest unit of work - has a title, assignee, priority, due date, and status.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>My Tasks</strong></td>
+                        <td>The view showing only tasks assigned to you, across all your projects.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Workload</strong></td>
+                        <td>The view showing task distribution across team members, used to spot over- or under-allocation.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CRM</strong></td>
+                        <td>The contact and client relationship tracking section of the portal.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Archive</strong></td>
+                        <td>Storage for completed or removed projects and tasks. Archived items can be restored.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Task status</strong></td>
+                        <td>To Do, In Progress, In Review, Done, or Blocked - where a task stands right now.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Role</strong></td>
+                        <td>Admin, Lead, or Member - determines what a team member can see and change.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="troubleshooting">
+            <h2>Troubleshooting & Support</h2>
+
+            <h3>Common Issues</h3>
+
+            <h4>Can't Log In</h4>
+            <ul>
+                <li>Check that you're using the correct email address</li>
+                <li>Verify your password is correct (case-sensitive)</li>
+                <li>Use "Forgot Password" to reset your password</li>
+                <li>Ensure your account has admin privileges</li>
+            </ul>
+
+            <h4>Tasks Not Appearing</h4>
+            <ul>
+                <li>Check applied filters-you may have filtered out the tasks</li>
+                <li>Verify the task's project is visible to your space</li>
+                <li>Ensure you have permission to view the project</li>
+            </ul>
+
+            <h4>Team Member Can't See Their Tasks</h4>
+            <ul>
+                <li>Confirm the task is assigned to their account</li>
+                <li>Verify they have access to the project</li>
+                <li>Check that their team member status is active, not archived</li>
+            </ul>
+
+            <h4>Slow Performance</h4>
+            <ul>
+                <li>Clear your browser cache</li>
+                <li>Disable browser extensions that may interfere</li>
+                <li>Ensure you have a stable internet connection</li>
+                <li>Try accessing from a different browser</li>
+            </ul>
+
+            <h3>Getting Help</h3>
+            <p>If you need additional support:</p>
+            <ul>
+                <li>Check the in-app help documentation</li>
+                <li>Contact your organization's administrator</li>
+                <li>Reach out to our support team through the help menu</li>
+            </ul>
+
+            <div class="tip">
+                <strong>Tip:</strong> Most questions are answered in the contextual help sections throughout the app. Look for the <code>?</code> icon.
+            </div>
+        </section>
+
+        <footer>
+            <p>Admin Portal User Manual | Last Updated: July 2026</p>
+            <p>For additional support, contact your organization administrator or visit the help center.</p>
+        </footer>
+    </div>
+</body>
+</html>
