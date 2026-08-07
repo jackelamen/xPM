@@ -549,6 +549,7 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
 
 // ─── Company Detail ───────────────────────────────────────────────────────────
 export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenContact }) {
+    const { user } = useAuth()
     const [company, setCompany] = useState(null)
     const [contacts, setContacts] = useState([])
     const [saving, setSaving] = useState(false)
@@ -556,6 +557,9 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenConta
     const [uploadingPhoto, setUploadingPhoto] = useState(false)
     const [activeTab, setActiveTab] = useState("details")
     const [tagInput, setTagInput] = useState("")
+    const [showAddContact, setShowAddContact] = useState(false)
+    const [savingContact, setSavingContact] = useState(false)
+    const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", title: "" })
 
     useEffect(() => { fetchAll() }, [id])
 
@@ -637,6 +641,32 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenConta
         toast.success("Company deleted")
         onDeleted()
         onClose()
+    }
+
+    const handleAddContact = async (e) => {
+        e.preventDefault()
+        if (!newContact.name.trim()) return
+        setSavingContact(true)
+        try {
+            const { data, error } = await supabase.from("contacts").insert({
+                workspace_id: workspaceId,
+                owner_id: user.id,
+                company_id: id,
+                name: newContact.name.trim(),
+                email: newContact.email || null,
+                phone: newContact.phone || null,
+                title: newContact.title || null,
+            }).select("id, name, title, email").single()
+            if (error) throw error
+            setContacts(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
+            toast.success("Contact added")
+            setNewContact({ name: "", email: "", phone: "", title: "" })
+            setShowAddContact(false)
+        } catch (err) {
+            toast.error(err.message || "Failed to add contact")
+        } finally {
+            setSavingContact(false)
+        }
     }
 
     if (loading) return <PanelShell onClose={onClose} badge="Company"><div className="flex justify-center py-12"><Loader2Icon className="size-6 animate-spin text-zinc-400" /></div></PanelShell>
@@ -753,6 +783,47 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenConta
                 )}
                 {activeTab === "contacts" && (
                     <>
+                        {!showAddContact && (
+                            <button
+                                onClick={() => setShowAddContact(true)}
+                                className="w-full flex items-center justify-center gap-1.5 py-2 mb-3 text-sm font-medium text-blue-600 dark:text-blue-400 border border-dashed border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors"
+                            >
+                                <PlusIcon className="size-3.5" /> Add Contact
+                            </button>
+                        )}
+
+                        {showAddContact && (
+                            <form onSubmit={handleAddContact} className="mb-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2.5">
+                                <div>
+                                    <label className={labelCls}>Name *</label>
+                                    <input value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} className={inputCls} required autoFocus />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label className={labelCls}>Email</label>
+                                        <input type="email" value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} className={inputCls} />
+                                    </div>
+                                    <div>
+                                        <label className={labelCls}>Phone</label>
+                                        <input value={newContact.phone} onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })} className={inputCls} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Title</label>
+                                    <input value={newContact.title} onChange={(e) => setNewContact({ ...newContact, title: e.target.value })} className={inputCls} />
+                                </div>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">Company is set to {company.name}. Add more details later from the Contacts tab.</p>
+                                <div className="flex justify-end gap-2 pt-1">
+                                    <button type="button" onClick={() => { setShowAddContact(false); setNewContact({ name: "", email: "", phone: "", title: "" }) }}
+                                        className="px-3 py-1.5 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Cancel</button>
+                                    <button type="submit" disabled={savingContact || !newContact.name.trim()}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition">
+                                        {savingContact && <Loader2Icon className="size-3.5 animate-spin" />} Save Contact
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
                         {contacts.length === 0 ? (
                             <p className="text-sm text-zinc-400 dark:text-zinc-500 py-4 text-center">No contacts at this company</p>
                         ) : (
