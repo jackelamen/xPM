@@ -2,6 +2,7 @@ import { PanelLeft } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
 import UserAvatar from './UserAvatar'
 import NotificationBell from './NotificationBell'
+import WorkspaceDropdown from './WorkspaceDropdown'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -29,6 +30,11 @@ const Navbar = ({ setIsSidebarOpen }) => {
                 >
                     <PanelLeft size={16} />
                 </button>
+
+                {/* Mobile workspace switcher — the sidebar one is off-screen on small viewports */}
+                <div className="sm:hidden">
+                    <WorkspaceDropdown variant="compact" />
+                </div>
 
                 {/* Search */}
                 <div className="flex-1 min-w-0">

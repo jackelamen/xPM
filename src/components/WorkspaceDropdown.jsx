@@ -19,7 +19,8 @@ function WorkspaceAvatar({ name, iconUrl, size = "sm" }) {
     )
 }
 
-function WorkspaceDropdown() {
+function WorkspaceDropdown({ variant = "sidebar" }) {
+    const compact = variant === "compact"
     const { workspaces, currentWorkspace } = useSelector((state) => state.workspace);
     const [isOpen, setIsOpen] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -63,28 +64,38 @@ function WorkspaceDropdown() {
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("touchstart", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
     }, []);
 
     return (
-        <div className="relative px-3 py-2.5" ref={dropdownRef}>
+        <div className={compact ? "relative flex-shrink-0" : "relative px-3 py-2.5"} ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(prev => !prev)}
-                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors text-left"
+                aria-label="Switch workspace"
+                title={currentWorkspace?.name || "Select workspace"}
+                className={compact
+                    ? "flex items-center gap-1 p-1 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors"
+                    : "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors text-left"}
             >
                 <WorkspaceAvatar name={currentWorkspace?.name} iconUrl={currentWorkspace?.icon_url} size="lg" />
-                <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white text-[13px] truncate leading-tight">
-                        {currentWorkspace?.name || "Select Workspace"}
-                    </p>
+                {!compact && (
+                    <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 dark:text-white text-[13px] truncate leading-tight">
+                            {currentWorkspace?.name || "Select Workspace"}
+                        </p>
 
-                </div>
+                    </div>
+                )}
                 <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-60 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/[0.08] rounded-lg shadow-xl shadow-black/10 top-full left-3 mt-1">
-                    <div className="p-1.5">
+                <div className={`absolute z-50 w-60 max-w-[calc(100vw-2rem)] bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/[0.08] rounded-lg shadow-xl shadow-black/10 top-full mt-1 ${compact ? "left-0" : "left-3"}`}>
+                    <div className="p-1.5 max-h-[50vh] overflow-y-auto">
                         <p className="text-[10px] font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1 px-2 pt-1">
                             Workspaces
                         </p>
