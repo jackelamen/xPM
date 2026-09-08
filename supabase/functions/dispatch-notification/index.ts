@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
         const wantEmail = prefs ? prefs[prefCol.email] !== false : true
         const wantPush = prefs ? prefs[prefCol.push] !== false : true
 
-        const taskUrl = n.task_id ? `${appUrl}/tasks/${n.task_id}` : appUrl
+        const taskUrl = n.task_id && n.project_id
+            ? `${appUrl}/projectsDetail?id=${n.project_id}&tab=tasks&task=${n.task_id}`
+            : appUrl
         const results: Record<string, unknown> = {}
 
         // ---- Email via Resend ----
