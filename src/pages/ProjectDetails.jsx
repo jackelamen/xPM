@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon,
     FileStackIcon, LayoutDashboardIcon, GanttChartIcon,
-    FileTextIcon, NetworkIcon, CheckCircle2, Clock, Users, ListTodo
+    FileTextIcon, NetworkIcon, CheckCircle2, Clock, Users, ListTodo, Loader2Icon
 } from "lucide-react";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
@@ -16,6 +16,8 @@ import ProjectTimeline from "../components/ProjectTimeline";
 import ProjectNotes from "../components/ProjectNotes";
 import ProjectGantt from "../components/ProjectGantt";
 import TaskPanel from "../components/TaskPanel";
+import { supabase } from "../lib/supabase";
+import { setCurrentWorkspace, fetchWorkspaceDetail } from "../features/workspaceSlice";
 
 export default function ProjectDetail() {
 
@@ -25,13 +27,20 @@ export default function ProjectDetail() {
     const taskParam = searchParams.get('task');
 
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const projects = useSelector((state) => state?.workspace?.currentWorkspace?.projects || []);
+    const workspaces = useSelector((state) => state?.workspace?.workspaces || []);
+    const workspacesLoading = useSelector((state) => state?.workspace?.loading);
+    const detailLoading = useSelector((state) => state?.workspace?.detailLoading);
+    const currentWorkspaceId = useSelector((state) => state?.workspace?.currentWorkspace?.id);
 
     const [project, setProject] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [activeTab, setActiveTab] = useState(tab || "tasks");
     const [selectedTaskId, setSelectedTaskId] = useState(null);
+    // 'idle' | 'switching' | 'unavailable' - tracks the cross-workspace lookup below.
+    const [resolvingWorkspace, setResolvingWorkspace] = useState('idle');
 
     useEffect(() => {
         if (tab) setActiveTab(tab);
@@ -53,6 +62,46 @@ export default function ProjectDetail() {
         }
     }, [id, projects]);
 
+    // A notification can point at a project in a workspace other than the one
+    // currently loaded, and only the current workspace's projects live in the
+    // store - so the link used to dead-end on "Project not found". Look the
+    // project's workspace up and switch to it, provided the user is a member
+    // (`workspaces` holds exactly their memberships, and setCurrentWorkspace
+    // ignores anything not in that list).
+    useEffect(() => {
+        if (!id) return;
+        // Already resolved, or the current workspace's projects simply haven't
+        // arrived yet - either way there is nothing to switch to.
+        if (projects.some((p) => p.id === id)) { setResolvingWorkspace('idle'); return; }
+        if (projects.length === 0 || workspacesLoading || workspaces.length === 0) return;
+
+        let cancelled = false;
+        setResolvingWorkspace('switching');
+
+        (async () => {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('workspace_id')
+                .eq('id', id)
+                .maybeSingle();
+            if (cancelled) return;
+
+            const workspaceId = data?.workspace_id;
+            // No such project, or one in a workspace the user isn't a member of
+            // (RLS also hides it, which surfaces here as no row).
+            if (error || !workspaceId || workspaceId === currentWorkspaceId
+                || !workspaces.some((w) => w.id === workspaceId)) {
+                setResolvingWorkspace('unavailable');
+                return;
+            }
+
+            dispatch(setCurrentWorkspace(workspaceId));
+            dispatch(fetchWorkspaceDetail(workspaceId));
+        })();
+
+        return () => { cancelled = true; };
+    }, [id, projects, workspaces, workspacesLoading, currentWorkspaceId, dispatch]);
+
     const statusColors = {
         PLANNING: "bg-zinc-200 text-zinc-900 dark:bg-zinc-600 dark:text-zinc-200",
         ACTIVE: "bg-emerald-200 text-emerald-900 dark:bg-emerald-500 dark:text-emerald-900",
@@ -60,6 +109,15 @@ export default function ProjectDetail() {
         COMPLETED: "bg-blue-200 text-blue-900 dark:bg-blue-500 dark:text-blue-900",
         CANCELLED: "bg-red-200 text-red-900 dark:bg-red-500 dark:text-red-900",
     };
+
+    if (!project && (resolvingWorkspace === 'switching' || detailLoading)) {
+        return (
+            <div className="p-6 flex flex-col items-center justify-center gap-3 mt-40 text-zinc-500 dark:text-zinc-400">
+                <Loader2Icon className="size-6 animate-spin text-blue-500" />
+                <p className="text-sm">Switching workspace...</p>
+            </div>
+        );
+    }
 
     if (!project) {
         return (

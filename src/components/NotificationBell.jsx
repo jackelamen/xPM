@@ -70,9 +70,25 @@ export default function NotificationBell() {
             await supabase.from('notifications').update({ read_at: now }).eq('id', n.id)
         }
         setOpen(false)
-        if (n.task_id && n.project_id) {
-            navigate(`/projectsDetail?id=${n.project_id}&tab=tasks&task=${n.task_id}`)
+        if (!n.task_id) return
+
+        // project_id is null on older rows and on tasks bridged in from Pulse;
+        // recover it from the task so the click still lands on the task rather
+        // than doing nothing. ProjectDetails switches workspace on its own if
+        // the project lives in another one the user belongs to.
+        let projectId = n.project_id
+        if (!projectId) {
+            const { data: task } = await supabase
+                .from('xpm_tasks')
+                .select('project_id')
+                .eq('id', n.task_id)
+                .maybeSingle()
+            projectId = task?.project_id
         }
+
+        navigate(projectId
+            ? `/projectsDetail?id=${projectId}&tab=tasks&task=${n.task_id}`
+            : '/my-tasks')
     }
 
     return (

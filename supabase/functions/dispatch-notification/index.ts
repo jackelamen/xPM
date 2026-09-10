@@ -69,8 +69,27 @@ Deno.serve(async (req) => {
         const wantEmail = prefs ? prefs[prefCol.email] !== false : true
         const wantPush = prefs ? prefs[prefCol.push] !== false : true
 
-        const taskUrl = n.task_id && n.project_id
-            ? `${appUrl}/projectsDetail?id=${n.project_id}&tab=tasks&task=${n.task_id}`
+        // A notification always knows its task, but project_id can be null on
+        // rows written before it was populated (and on tasks bridged in from
+        // Pulse). Falling straight back to the bare app URL dropped the reader
+        // on the dashboard with no way to tell which task it was about, so
+        // recover the project from the task itself first.
+        let projectId: string | null = n.project_id ?? null
+        if (n.task_id && !projectId) {
+            const { data: task } = await admin
+                .from("xpm_tasks")
+                .select("project_id")
+                .eq("id", n.task_id)
+                .maybeSingle()
+            projectId = task?.project_id ?? null
+        }
+
+        // Last resort for a task with genuinely no project: My Tasks lists it
+        // and at least names what the notification is about.
+        const taskUrl = n.task_id
+            ? (projectId
+                ? `${appUrl}/projectsDetail?id=${projectId}&tab=tasks&task=${n.task_id}`
+                : `${appUrl}/my-tasks`)
             : appUrl
         const results: Record<string, unknown> = {}
 
