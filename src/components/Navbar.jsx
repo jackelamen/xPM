@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import Tooltip from './Tooltip'
 
 const Navbar = ({ setIsSidebarOpen }) => {
     const { displayName, user } = useAuth()
@@ -45,10 +46,12 @@ const Navbar = ({ setIsSidebarOpen }) => {
                 <NotificationBell />
 
                 {/* Avatar — links to settings */}
-                <button onClick={() => navigate('/settings')} title="Settings"
-                    className="hover:opacity-80 transition-opacity flex-shrink-0">
-                    <UserAvatar name={displayName} avatarUrl={avatarUrl} size={32} />
-                </button>
+                <Tooltip label="Your settings" side="bottom">
+                    <button onClick={() => navigate('/settings')} aria-label="Your settings"
+                        className="hover:opacity-80 transition-opacity flex-shrink-0">
+                        <UserAvatar name={displayName} avatarUrl={avatarUrl} size={32} />
+                    </button>
+                </Tooltip>
             </div>
         </div>
     )

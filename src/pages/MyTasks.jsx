@@ -17,6 +17,7 @@ import { usePulse } from '../context/PulseContext'
 import { useSyncedPref } from '../lib/useSyncedPref'
 import MyTasksList from '../components/MyTasksList'
 import { supabase } from '../lib/supabase'
+import Tooltip from '../components/Tooltip'
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
@@ -306,13 +307,15 @@ function SendToPulseCell({ task, userId, workspaceId, alreadyLinked }) {
         ? 'Send this task to Pulse'
         : [where ? `In Pulse · ${where.label}` : (alreadyLinked && !wasSent ? 'Already linked to Pulse' : 'In Pulse'), state?.pulseTask ? scheduleText(state.pulseTask) : null].filter(Boolean).join('\n')
     return (
-        <button onClick={handle} disabled={sent || loading} title={tip}
+        <Tooltip label={tip}>
+        <button onClick={handle} disabled={sent || loading} aria-label={tip.split('\n')[0]}
             className={`flex items-center gap-1.5 transition-colors ${sent ? 'text-violet-500 cursor-default' : 'text-zinc-400 hover:text-violet-500'}`}>
             {loading
                 ? <span className="size-3 border border-violet-400 border-t-transparent rounded-full animate-spin inline-block" />
                 : <ZapIcon size={14} strokeWidth={2.5} fill={sent ? 'currentColor' : 'none'} />}
             {sent && where && <span className="text-[11px] font-medium">{where.label}</span>}
         </button>
+        </Tooltip>
     )
 }
 

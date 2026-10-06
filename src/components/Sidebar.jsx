@@ -14,23 +14,14 @@ import { useAuth } from '../context/AuthContext'
 import { usePulse } from '../context/PulseContext'
 import { useInbox } from '../context/InboxContext'
 import { PULSE_URL } from '../lib/pulse'
+import Tooltip from './Tooltip'
 
 const COLLAPSED_KEY = 'xpm_sidebar_collapsed'
 const MORE_KEY = 'xpm_sidebar_more'
 
 // ── Tooltip for icon-only mode ────────────────────────────────────────────────
 function Tip({ label, children }) {
-    return (
-        <div className="relative group/tip">
-            {children}
-            <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50
-                px-2 py-1 rounded-md bg-gray-900 dark:bg-zinc-100 text-white dark:text-gray-900
-                text-[11px] font-medium whitespace-nowrap shadow-lg
-                opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150">
-                {label}
-            </div>
-        </div>
-    )
+    return <Tooltip label={label} side="right" delay={150}>{children}</Tooltip>
 }
 
 const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
@@ -72,14 +63,14 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     // Daily-use pages first; everything else lives under "More".
     const simpleItems = [
         { name: 'Home',     href: '/',         icon: HomeIcon },
-        { name: 'Inbox',    href: '/inbox',    icon: InboxIcon, badge: inboxCount },
+        { name: 'Inbox',    href: '/inbox',    icon: InboxIcon, badge: inboxCount, badgeLabel: `${inboxCount} captured item${inboxCount === 1 ? '' : 's'} to triage` },
         { name: 'My Tasks', href: '/my-tasks', icon: CheckSquareIcon },
         { name: 'Week',     href: '/week',     icon: CalendarDaysIcon },
     ]
     const afterProjectsItems = [
         { name: 'xPlan', href: '/xplan', icon: MapIcon },
         { name: 'CRM',   href: '/crm',   icon: ContactIcon },
-        ...(pulseEnabled ? [{ name: 'Pulse inbox', href: '/pulse-inbox', icon: ZapIcon, badge: reviewCount }] : []),
+        ...(pulseEnabled ? [{ name: 'Pulse inbox', href: '/pulse-inbox', icon: ZapIcon, badge: reviewCount, badgeLabel: `${reviewCount} Pulse task${reviewCount === 1 ? '' : 's'} need a project` }] : []),
     ]
     const moreItems = [
         { name: 'Reports',   href: '/reports',  icon: BarChart3Icon },
@@ -215,7 +206,9 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             <item.icon size={16} strokeWidth={1.75} />
                             <span>{item.name}</span>
                             {item.badge > 0 && (
-                                <span className='ml-auto min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-signal-500 text-ink-950'>{item.badge}</span>
+                                <Tooltip label={item.badgeLabel} side="right" className="ml-auto">
+                                    <span className='min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-signal-500 text-ink-950'>{item.badge}</span>
+                                </Tooltip>
                             )}
                         </NavLink>
                     ))}
@@ -247,7 +240,9 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             <item.icon size={16} strokeWidth={1.75} />
                             <span>{item.name}</span>
                             {item.badge > 0 && (
-                                <span className='ml-auto min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-500 text-white'>{item.badge}</span>
+                                <Tooltip label={item.badgeLabel} side="right" className="ml-auto">
+                                    <span className='min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-500 text-white'>{item.badge}</span>
+                                </Tooltip>
                             )}
                         </NavLink>
                     ))}
@@ -319,10 +314,12 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                     <SettingsIcon size={14} strokeWidth={1.75} />
                     <span>Settings</span>
                 </NavLink>
-                <button onClick={toggleCollapsed} title="Collapse sidebar"
-                    className={`p-2 rounded-lg transition-all flex-shrink-0 ${inactiveClass}`}>
-                    <PanelLeftCloseIcon size={15} strokeWidth={1.75} />
-                </button>
+                <Tooltip label="Collapse sidebar" side="right">
+                    <button onClick={toggleCollapsed} aria-label="Collapse sidebar"
+                        className={`p-2 rounded-lg transition-all flex-shrink-0 ${inactiveClass}`}>
+                        <PanelLeftCloseIcon size={15} strokeWidth={1.75} />
+                    </button>
+                </Tooltip>
             </div>
         </div>
     )

@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { updateTask } from '../features/workspaceSlice'
 import { useThisWeek } from '../lib/useThisWeek'
 import { allTasks, fmtMins, isMine, minutesOf, openLeaves, weekStartOf, whenOf, ymd } from '../lib/flow'
+import Tooltip from './Tooltip'
 
 const Dot = ({ color }) => <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: color || '#6489b3' }} />
 
@@ -26,10 +27,12 @@ function BacklogRow({ t, days, isNow, onAssign }) {
             </div>
             <div className="flex gap-1 mt-2">
                 {days.map((d, i) => (
-                    <button key={i} onClick={() => onAssign(t, d)} title={`Plan for ${format(d, 'EEEE')}`}
-                        className="w-7 h-7 rounded-md text-[12px] font-medium text-gray-500 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700 hover:bg-signal-500 hover:border-signal-500 hover:text-ink-950 transition-colors">
-                        {format(d, 'EEEEE')}
-                    </button>
+                    <Tooltip key={i} label={`Plan for ${format(d, 'EEEE, MMM d')}`}>
+                        <button onClick={() => onAssign(t, d)} aria-label={`Plan for ${format(d, 'EEEE, MMM d')}`}
+                            className="w-7 h-7 rounded-md text-[12px] font-medium text-gray-500 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700 hover:bg-signal-500 hover:border-signal-500 hover:text-ink-950 transition-colors">
+                            {format(d, 'EEEEE')}
+                        </button>
+                    </Tooltip>
                 ))}
             </div>
         </li>
@@ -128,9 +131,11 @@ export default function WeekPlan({ weekKind, onWeekKind }) {
                                 className={`px-3.5 py-1.5 rounded-md font-medium transition-colors whitespace-nowrap ${weekKind === k ? 'bg-ink-900 text-white dark:bg-white dark:text-ink-950' : 'text-gray-600 dark:text-zinc-300 hover:text-gray-900'}`}>{label}</button>
                         ))}
                     </div>
-                    <button onClick={done} className="px-5 py-2.5 rounded-lg text-[15px] font-semibold bg-signal-500 hover:bg-signal-400 text-ink-950 transition-colors whitespace-nowrap">
-                        Done planning · {planned}
-                    </button>
+                    <Tooltip label="Marks the week as planned and takes you back Home" side="bottom">
+                        <button onClick={done} className="px-5 py-2.5 rounded-lg text-[15px] font-semibold bg-signal-500 hover:bg-signal-400 text-ink-950 transition-colors whitespace-nowrap">
+                            Done planning · {planned}
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -194,11 +199,13 @@ export default function WeekPlan({ weekKind, onWeekKind }) {
                                         {isToday && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-signal-500 text-ink-950">Today</span>}
                                     </div>
                                     <p className={`font-display font-bold text-[38px] leading-none mt-0.5 tabular-nums ${isToday ? 'text-signal-500' : 'text-ink-900 dark:text-white'}`}>{format(c.date, 'd')}</p>
-                                    <p className={`mt-2 text-[12px] tabular-nums ${overCap ? 'font-semibold text-red-500' : isToday ? 'text-ink-300' : 'text-gray-400'}`}>
-                                        {cap > 0
-                                            ? (overCap ? `${fmtMins(mins - cap)} over` : `${fmtMins(cap - mins)} free`)
-                                            : mins > 0 ? fmtMins(mins) : 'open'}
-                                    </p>
+                                    <Tooltip label={cap > 0 ? `${fmtMins(mins) || '0m'} planned of ${fmtMins(cap)} capacity. Change capacity under "Daily capacity".` : `${fmtMins(mins) || '0m'} planned. No capacity set for this day.`} className="mt-2">
+                                        <p className={`text-[12px] tabular-nums ${overCap ? 'font-semibold text-red-500' : isToday ? 'text-ink-300' : 'text-gray-400'}`}>
+                                            {cap > 0
+                                                ? (overCap ? `${fmtMins(mins - cap)} over` : `${fmtMins(cap - mins)} free`)
+                                                : mins > 0 ? fmtMins(mins) : 'open'}
+                                        </p>
+                                    </Tooltip>
                                     {cap > 0 && (
                                         <div className={`mt-1.5 h-1 rounded-full overflow-hidden ${isToday ? 'bg-white/15' : 'bg-gray-100 dark:bg-zinc-800'}`}>
                                             <div className={`h-full rounded-full ${overCap ? 'bg-red-500' : 'bg-signal-500'}`} style={{ width: `${Math.min(100, (mins / cap) * 100)}%` }} />

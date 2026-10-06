@@ -5,10 +5,12 @@ import { ChevronRightIcon, CircleIcon, CheckCircle2Icon, ZapIcon } from 'lucide-
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { usePulse } from '../context/PulseContext'
+import { scheduleText } from '../lib/pulse'
 import { updateTask } from '../features/workspaceSlice'
 import { BUCKETS, allTasks, bucketOf, day, isMine, openLeaves, whenOf, ymd } from '../lib/flow'
 import { CaptureButton } from './QuickCapture'
 import TaskPanel from './TaskPanel'
+import Tooltip from './Tooltip'
 
 const EMPTY_TEXT = {
     overdue: 'Nothing overdue.',
@@ -34,18 +36,22 @@ function Row({ t, onOpen, onToggle, pulse }) {
     const inPulse = st || t.custom_fields?.sent_to_pulse
     return (
         <li className="group flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-zinc-800/60 last:border-0 hover:bg-gray-50/70 dark:hover:bg-zinc-800/30">
-            <button onClick={() => onToggle(t)} aria-label={done ? 'Mark not done' : 'Mark done'}
-                className={done ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600 hover:text-emerald-500'}>
-                {done ? <CheckCircle2Icon size={18} strokeWidth={1.75} /> : <CircleIcon size={18} strokeWidth={1.75} />}
-            </button>
+            <Tooltip label={done ? 'Mark not done' : 'Mark done'} side="right">
+                <button onClick={() => onToggle(t)} aria-label={done ? 'Mark not done' : 'Mark done'}
+                    className={done ? 'text-emerald-500' : 'text-zinc-300 dark:text-zinc-600 hover:text-emerald-500'}>
+                    {done ? <CheckCircle2Icon size={18} strokeWidth={1.75} /> : <CircleIcon size={18} strokeWidth={1.75} />}
+                </button>
+            </Tooltip>
             <button onClick={() => onOpen(t)} className="min-w-0 flex-1 text-left">
                 <span className={`text-[14px] ${done ? 'line-through text-zinc-400' : 'text-gray-900 dark:text-zinc-100'}`}>{t.title}</span>
                 <span className="ml-2 text-[12px] text-gray-400 dark:text-zinc-500">{t.projectName}</span>
             </button>
             {pulse.enabled && inPulse && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 dark:text-violet-400">
-                    <ZapIcon className="size-3" fill="currentColor" />{st?.location?.label || 'In Pulse'}
-                </span>
+                <Tooltip label={st?.pulseTask ? `In Pulse · ${st.location?.label || ''}\n${scheduleText(st.pulseTask)}` : 'Sent to Pulse'}>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 dark:text-violet-400">
+                        <ZapIcon className="size-3" fill="currentColor" />{st?.location?.label || 'In Pulse'}
+                    </span>
+                </Tooltip>
             )}
             <When date={whenOf(t)} due={t.due_date} />
         </li>

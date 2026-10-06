@@ -8,12 +8,13 @@ import { useAuth } from '../context/AuthContext'
 import { usePulse } from '../context/PulseContext'
 import { useInbox } from '../context/InboxContext'
 import { patchTask, setTaskAssignees, updateTask } from '../features/workspaceSlice'
-import { sendTaskToPulse } from '../lib/pulse'
+import { scheduleText, sendTaskToPulse } from '../lib/pulse'
 import { allTasks, bucketOf, nextStep, openLeaves, whenOf, isMine, weekStartOf, ymd } from '../lib/flow'
 import { XPlanThisWeekCard } from '../components/XPlanThisWeek'
 import { CaptureButton } from '../components/QuickCapture'
 import CreateProjectDialog from '../components/CreateProjectDialog'
 import TaskPanel from '../components/TaskPanel'
+import Tooltip from '../components/Tooltip'
 
 const SOON_DAYS = 7
 const todayStr = () => format(new Date(), 'yyyy-MM-dd')
@@ -206,14 +207,18 @@ export default function Home() {
                             <ul>
                                 {todayTasks.slice(0, 7).map((t) => (
                                     <li key={t.id} className="flex items-center gap-3 py-3 border-b border-white/10 last:border-0">
-                                        <button onClick={() => complete(t)} aria-label={`Mark "${t.title}" done`}
-                                            className="size-5 rounded-full border-2 border-ink-400 hover:border-signal-500 hover:bg-signal-500/20 flex-shrink-0 transition-colors" />
+                                        <Tooltip label="Mark done" side="left">
+                                            <button onClick={() => complete(t)} aria-label={`Mark "${t.title}" done`}
+                                                className="size-5 rounded-full border-2 border-ink-400 hover:border-signal-500 hover:bg-signal-500/20 flex-shrink-0 transition-colors" />
+                                        </Tooltip>
                                         <button onClick={() => open(t)} className="min-w-0 flex-1 text-left">
                                             <p className="text-[16px] text-white truncate">{t.title}</p>
                                             <ProjectTag task={t} className="text-[12px] text-ink-300" />
                                         </button>
                                         {pulseEnabled && (byXpmTask.get(t.id) || t.custom_fields?.sent_to_pulse) && (
-                                            <ZapIcon className="size-3.5 text-violet-300 flex-shrink-0" fill="currentColor" />
+                                            <Tooltip label={`In Pulse${byXpmTask.get(t.id)?.location ? ' · ' + byXpmTask.get(t.id).location.label : ''}${byXpmTask.get(t.id)?.pulseTask ? '\n' + scheduleText(byXpmTask.get(t.id).pulseTask) : ''}`} side="left">
+                                                <ZapIcon className="size-3.5 text-violet-300 flex-shrink-0" fill="currentColor" />
+                                            </Tooltip>
                                         )}
                                     </li>
                                 ))}

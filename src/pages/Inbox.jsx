@@ -6,6 +6,7 @@ import { CheckCircle2Icon, Loader2Icon, Trash2Icon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useInbox } from '../context/InboxContext'
 import { ymd } from '../lib/flow'
+import Tooltip from '../components/Tooltip'
 
 const PRESETS = [
     { key: 'today', label: 'Today', date: () => ymd(new Date()) },
@@ -146,9 +147,11 @@ export default function Inbox() {
                     </button>
                     <button type="button" onClick={() => setSkipped((s) => [...s, task.id])} disabled={inbox.tasks.length < 2}
                         className="text-[13px] text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white disabled:opacity-30">Skip</button>
-                    <button type="button" onClick={remove} className="ml-auto text-gray-400 hover:text-red-600" title="Delete this task" aria-label="Delete">
-                        <Trash2Icon className="size-4" />
-                    </button>
+                    <Tooltip label="Delete this task" className="ml-auto">
+                        <button type="button" onClick={remove} className="text-gray-400 hover:text-red-600" aria-label="Delete this task">
+                            <Trash2Icon className="size-4" />
+                        </button>
+                    </Tooltip>
                 </div>
             </form>
         </div>

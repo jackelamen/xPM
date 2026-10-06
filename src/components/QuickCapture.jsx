@@ -9,6 +9,7 @@ import { parseCapture } from '../lib/parseCapture'
 import { PlusIcon, XIcon, Loader2Icon, ZapIcon, CalendarIcon, FolderIcon, FlagIcon, ClockIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import Tooltip from './Tooltip'
 
 const OPEN_EVENT = 'xpm:capture'
 
@@ -114,14 +115,15 @@ function CaptureBar() {
 
     return (
         <>
+            <Tooltip label="Quick capture" shortcut="⌘⇧K" side="left" className="fixed bottom-6 right-6 z-40">
             <button
                 onClick={() => setOpen(true)}
-                title="Quick capture (⌘⇧K)"
                 aria-label="Quick capture"
-                className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-signal-500 text-ink-950 shadow-lg shadow-ink-950/20 hover:bg-signal-400 active:scale-95 transition-all flex items-center justify-center"
+                className="size-12 rounded-full bg-signal-500 text-ink-950 shadow-lg shadow-ink-950/20 hover:bg-signal-400 active:scale-95 transition-all flex items-center justify-center"
             >
                 <PlusIcon className="size-5" />
             </button>
+            </Tooltip>
 
             {open && (
                 <>
@@ -162,11 +164,12 @@ function CaptureBar() {
 
                         <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60">
                             {pulse.enabled ? (
-                                <label className={`inline-flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 ${toInbox ? 'opacity-40' : 'cursor-pointer'}`}
-                                    title={toInbox ? 'Pick a project first; Inbox tasks are triaged before they go to Pulse' : undefined}>
+                                <Tooltip label={toInbox ? 'Pick a project first. Inbox tasks are triaged before they go to Pulse.' : null} side="top">
+                                <label className={`inline-flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 ${toInbox ? 'opacity-40' : 'cursor-pointer'}`}>
                                     <input type="checkbox" disabled={toInbox} checked={toPulse && !toInbox} onChange={(e) => setToPulse(e.target.checked)} className="rounded" />
                                     <ZapIcon className="size-3 text-violet-500" /> Also send to Pulse
                                 </label>
+                                </Tooltip>
                             ) : <span className="text-[11px] text-zinc-400">↵ add · Esc close</span>}
                             <button type="submit" disabled={submitting || !title}
                                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-40 hover:opacity-90 transition">
@@ -183,9 +186,9 @@ function CaptureBar() {
 
 export function CaptureButton({ label = 'Quick Capture', onDark = false }) {
     return (
+        <Tooltip label="Capture a task from anywhere" shortcut="⌘⇧K" side="bottom">
         <button
             onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))}
-            title="Quick capture (⌘⇧K)"
             className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap ${onDark
                 ? 'bg-white/10 text-white hover:bg-white/[0.16]'
                 : 'bg-ink-900 text-white hover:bg-ink-800 dark:bg-white dark:text-ink-950 dark:hover:bg-ink-100'}`}
@@ -194,6 +197,7 @@ export function CaptureButton({ label = 'Quick Capture', onDark = false }) {
             {label}
             <span className="ml-1 text-[10px] opacity-60 font-normal hidden lg:inline">⌘⇧K</span>
         </button>
+        </Tooltip>
     )
 }
 
