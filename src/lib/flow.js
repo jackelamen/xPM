@@ -44,17 +44,32 @@ export function bucketOf(t, now = new Date()) {
 }
 
 // What the person should do next, in order: triage, plan, review.
-// `rituals` is { planned: <week start>, reviewed: <week start> }.
-export function nextStep({ inboxCount, rituals = {}, now = new Date() }) {
+// `rituals` is { planned: <week start>, reviewed: <week start> }. The counts let it
+// tell "never planned" from "started planning" from "marked planned but empty".
+export function nextStep({ inboxCount, rituals = {}, now = new Date(), weekPlanned = 0, nextWeekPlanned = 0, overdue = 0 }) {
     const dow = now.getDay() // 0 Sun .. 6 Sat
     const thisWeek = ymd(weekStartOf(now))
     const nextWeek = ymd(addDays(weekStartOf(now), 7))
     const endOfWeek = dow === 5 || dow === 6 || dow === 0
+    const waiting = overdue > 0 ? `${overdue} overdue ${overdue > 1 ? "are" : "is"} waiting` : null
 
-    if (inboxCount > 0) return { key: "triage", to: "/inbox", title: `Triage your inbox`, detail: `${inboxCount} item${inboxCount > 1 ? "s" : ""} waiting`, cta: "Start triage" }
-    if (!endOfWeek && rituals.planned !== thisWeek) return { key: "plan", to: "/week?tab=plan", title: "Plan your week", detail: "Pick what you'll work on each day", cta: "Plan the week" }
+    if (inboxCount > 0) return { key: "triage", to: "/inbox", title: "Triage your inbox", detail: `${inboxCount} item${inboxCount > 1 ? "s" : ""} waiting`, cta: "Start triage" }
+
+    if (!endOfWeek) {
+        if (rituals.planned !== thisWeek) {
+            return weekPlanned > 0
+                ? { key: "plan", to: "/week?tab=plan", title: "Finish planning your week", detail: `${weekPlanned} planned so far`, cta: `Continue planning · ${weekPlanned}` }
+                : { key: "plan", to: "/week?tab=plan", title: "Plan your week", detail: waiting || "Pick what you'll work on each day", cta: "Plan the week" }
+        }
+        // Marked planned, but nothing is actually in the week.
+        if (weekPlanned === 0) return { key: "plan", to: "/week?tab=plan", title: "Your week is empty", detail: waiting || "Nothing is planned yet", cta: "Plan the week" }
+    }
     if (endOfWeek && rituals.reviewed !== thisWeek) return { key: "review", to: "/week?tab=review", title: "Review your week", detail: "Close out what didn't happen", cta: "Review the week" }
-    if (endOfWeek && rituals.planned !== nextWeek) return { key: "plan-next", to: "/week?tab=plan&week=next", title: "Plan next week", detail: "Start Monday with a plan", cta: "Plan next week" }
+    if (endOfWeek && rituals.planned !== nextWeek) {
+        return nextWeekPlanned > 0
+            ? { key: "plan-next", to: "/week?tab=plan&week=next", title: "Finish planning next week", detail: `${nextWeekPlanned} planned so far`, cta: `Continue planning · ${nextWeekPlanned}` }
+            : { key: "plan-next", to: "/week?tab=plan&week=next", title: "Plan next week", detail: "Start Monday with a plan", cta: "Plan next week" }
+    }
     return null
 }
 

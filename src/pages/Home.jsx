@@ -9,7 +9,7 @@ import { usePulse } from '../context/PulseContext'
 import { useInbox } from '../context/InboxContext'
 import { patchTask, setTaskAssignees, updateTask } from '../features/workspaceSlice'
 import { sendTaskToPulse } from '../lib/pulse'
-import { allTasks, bucketOf, nextStep, openLeaves, whenOf, isMine } from '../lib/flow'
+import { allTasks, bucketOf, nextStep, openLeaves, whenOf, isMine, weekStartOf, ymd } from '../lib/flow'
 import { XPlanThisWeekCard } from '../components/XPlanThisWeek'
 import { CaptureButton } from '../components/QuickCapture'
 import CreateProjectDialog from '../components/CreateProjectDialog'
@@ -85,7 +85,7 @@ export default function Home() {
     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
     const firstName = (displayName || '').split(' ')[0]
 
-    const { overdue, todayTasks, weekTasks, noDate, waiting, unsent, inPulseCounts } = useMemo(() => {
+    const { overdue, todayTasks, weekTasks, nextWeekCount, noDate, waiting, unsent, inPulseCounts } = useMemo(() => {
         const colors = Object.fromEntries(projects.map((p) => [p.id, p.color]))
         const all = allTasks(projects).map((t) => ({ ...t, projectColor: colors[t.projectId] }))
         const open = openLeaves(all)
@@ -99,7 +99,9 @@ export default function Home() {
         const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0, inbox: 0 }
         for (const t of mine) { const k = byXpmTask.get(t.id)?.location?.key; if (k && counts[k] !== undefined) counts[k]++ }
         const n = new Date()
+        const nwStart = ymd(addDays(weekStartOf(n), 7)), nwEnd = ymd(addDays(weekStartOf(n), 13))
         return {
+            nextWeekCount: mine.filter((t) => !t.custom_fields?.someday && whenOf(t) && whenOf(t) >= nwStart && whenOf(t) <= nwEnd).length,
             overdue: overdueT,
             todayTasks: mine.filter((t) => bucketOf(t, n) === 'today').sort(byWhen),
             weekTasks: mine.filter((t) => bucketOf(t, n) === 'week').sort(byWhen),
@@ -134,7 +136,8 @@ export default function Home() {
         if (sent) { toast.success(`Sent ${sent} to Pulse`); reload() }
     }
 
-    const step = inbox.loading ? null : nextStep({ inboxCount: inbox.count, rituals })
+    const weekPlanned = todayTasks.length + weekTasks.length
+    const step = inbox.loading ? null : nextStep({ inboxCount: inbox.count, rituals, weekPlanned, nextWeekPlanned: nextWeekCount, overdue: overdue.length })
     const open = (t) => setSelected({ taskId: t.id, projectId: t.projectId })
     const pulseProps = { byXpmTask, enabled: pulseEnabled }
 
@@ -146,13 +149,7 @@ export default function Home() {
             <section className="rounded-2xl bg-ink-900 text-white overflow-hidden">
                 <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
                     <div className="p-7 sm:p-9 flex flex-col">
-                        <div className="flex items-start justify-between gap-3">
-                            <p className="text-[15px] text-ink-200">{greeting}, {firstName}</p>
-                            <div className="flex items-center gap-1 -mt-1">
-                                <button onClick={() => setShowNewProject(true)} className="hidden sm:block px-3 py-2 text-[13px] text-ink-300 hover:text-white">New project</button>
-                                <CaptureButton label="Add task" onDark />
-                            </div>
-                        </div>
+                        <p className="text-[15px] text-ink-200">{greeting}, {firstName}</p>
                         <div className="mt-4 flex items-end gap-4">
                             <span className="font-display font-bold text-[88px] sm:text-[112px] leading-[0.8] text-signal-500 tabular-nums -ml-1">{format(now, 'd')}</span>
                             <div className="pb-1">
@@ -174,21 +171,36 @@ export default function Home() {
                                     <Link to={step.to} className="mt-4 inline-flex items-center px-5 py-2.5 rounded-lg bg-signal-500 hover:bg-signal-400 text-ink-950 text-[15px] font-semibold transition-colors">{step.cta}</Link>
                                 </>
                             ) : (
-                                <p className="font-display text-[22px] font-semibold text-ink-100">Inbox clear, week planned. Do the work.</p>
+                                <p className="font-display text-[22px] font-semibold text-ink-100">
+                                    {todayTasks.length > 0 ? 'Inbox clear, week planned. Do the work.' : 'Inbox clear, week planned. Today is open.'}
+                                </p>
                             )}
                         </div>
                     </div>
 
                     <div className="bg-ink-800 p-7 sm:p-9">
-                        <div className="flex items-baseline gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-3">
                             <h2 className="text-[22px] font-semibold">Today</h2>
                             <span className="text-[14px] text-ink-300 tabular-nums">{todayTasks.length}</span>
+                            <div className="ml-auto flex items-center gap-1">
+                                <button onClick={() => setShowNewProject(true)} className="hidden sm:block px-3 py-2 text-[13px] text-ink-300 hover:text-white">New project</button>
+                                <CaptureButton label="Add task" onDark />
+                            </div>
                         </div>
                         {todayTasks.length === 0 ? (
                             <div className="py-6">
                                 <p className="text-[17px] text-ink-100">Nothing planned for today.</p>
-                                <p className="text-[14px] text-ink-300 mt-1">Pull something in from the week, or from "No date".</p>
-                                <Link to="/week?tab=plan" className="mt-4 inline-flex px-4 py-2 rounded-lg border border-white/20 text-[14px] font-medium hover:bg-white/10">Plan the week</Link>
+                                <p className="text-[14px] text-ink-300 mt-1">
+                                    {weekTasks.length > 0
+                                        ? `Next up: ${weekTasks[0].title} · ${format(parseDay(whenOf(weekTasks[0])), 'EEE')}`
+                                        : overdue.length > 0 ? `${overdue.length} overdue ${overdue.length > 1 ? 'are' : 'is'} waiting for a new day.` : 'Pull something in from the week, or from "No date".'}
+                                </p>
+                                {/* The left panel already offers this exact action when it's the next step. */}
+                                {!step?.to?.startsWith('/week?tab=plan') && (
+                                    <Link to="/week?tab=plan" className="mt-4 inline-flex items-center px-5 py-2.5 rounded-lg bg-signal-500 hover:bg-signal-400 text-ink-950 text-[15px] font-semibold transition-colors">
+                                        {weekPlanned > 0 ? `Pull something into today · ${weekPlanned} planned` : 'Plan the week'}
+                                    </Link>
+                                )}
                             </div>
                         ) : (
                             <ul>
