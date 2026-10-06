@@ -57,18 +57,18 @@ const Login = () => {
     return (
         <div className="min-h-screen flex bg-[#f8f8f8] dark:bg-[#0e0e0e]">
             {/* Left panel */}
-            <div className="hidden lg:flex flex-col justify-between w-[380px] bg-gray-900 dark:bg-black p-10 flex-shrink-0">
+            <div className="hidden lg:flex flex-col justify-between w-[420px] bg-ink-900 p-11 flex-shrink-0">
                 <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
-                        <span className="text-gray-900 font-bold text-[11px] tracking-tight">xPM</span>
+                    <div className="w-8 h-8 rounded-lg bg-signal-500 flex items-center justify-center">
+                        <span className="text-ink-950 font-bold text-[12px] tracking-tight">xPM</span>
                     </div>
-                    <span className="text-white font-semibold text-[14px]">EDGEx PM</span>
+                    <span className="font-display text-white font-semibold text-[17px]">EDGEx PM</span>
                 </div>
                 <div>
-                    <blockquote className="text-gray-300 text-[15px] leading-relaxed font-light italic mb-4">
-                        "The workspace built for how we actually work."
-                    </blockquote>
-                    <p className="text-gray-500 text-[12px]">Replace Asana. Keep control.</p>
+                    <p className="font-display font-bold text-[52px] leading-[1.02] text-white tracking-tight">
+                        Capture.<br />Triage.<br />Plan.<br /><span className="text-signal-500">Do the work.</span>
+                    </p>
+                    <p className="mt-6 text-ink-300 text-[15px] max-w-[300px]">xPM keeps the work in order. Pulse keeps your day.</p>
                 </div>
             </div>
 
@@ -77,13 +77,13 @@ const Login = () => {
                 <div className="w-full max-w-[340px]">
                     {/* Mobile logo */}
                     <div className="flex items-center gap-2 mb-8 lg:hidden">
-                        <div className="w-7 h-7 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
-                            <span className="text-white dark:text-gray-900 font-bold text-[11px]">xPM</span>
+                        <div className="w-7 h-7 rounded-lg bg-ink-900 dark:bg-signal-500 flex items-center justify-center">
+                            <span className="text-white dark:text-ink-950 font-bold text-[11px]">xPM</span>
                         </div>
                         <span className="text-gray-900 dark:text-white font-semibold text-[14px]">EDGEx PM</span>
                     </div>
 
-                    <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white mb-1">
+                    <h1 className="text-[26px] font-bold tracking-tight text-ink-900 dark:text-white mb-1">
                         {mode === 'login' ? 'Sign in' : mode === 'forgot' ? 'Reset your password' : 'Create account'}
                     </h1>
                     <p className="text-[13px] text-gray-500 dark:text-zinc-400 mb-7">

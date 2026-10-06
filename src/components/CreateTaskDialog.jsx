@@ -188,7 +188,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         <button type="button" onClick={() => setShowCreateTask(false)} className="rounded border border-zinc-300 dark:border-zinc-700 px-5 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition" >
                             Cancel
                         </button>
-                        <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 rounded px-5 py-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white transition disabled:opacity-60" >
+                        <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 rounded px-5 py-2 text-sm bg-ink-800 hover:bg-ink-900 hover:opacity-90 text-white transition disabled:opacity-60" >
                             {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
                             {isSubmitting ? "Creating..." : "Create Task"}
                         </button>

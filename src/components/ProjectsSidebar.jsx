@@ -39,10 +39,10 @@ const ProjectSidebar = ({ compact = false }) => {
             <div key={project.id}>
                 <button
                     onClick={() => toggleProject(project.id)}
-                    className={`w-full flex items-center gap-2 py-1.5 rounded-md transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-white/70 dark:hover:bg-white/[0.04] ${indent ? 'pl-4 pr-2.5' : 'px-2.5'}`}
+                    className={`w-full flex items-center gap-2 py-1.5 rounded-md transition-colors text-ink-300 hover:text-white hover:bg-white/[0.05] ${indent ? 'pl-4 pr-2.5' : 'px-2.5'}`}
                 >
-                    <ChevronRightIcon className={`size-3 text-zinc-400 dark:text-zinc-600 transition-transform duration-150 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
-                    <div className="size-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500 flex-shrink-0" />
+                    <ChevronRightIcon className={`size-3 text-ink-400 transition-transform duration-150 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                    <div className="size-1.5 rounded-full flex-shrink-0" style={{ background: project.color || '#6489b3' }} />
                     <span className="truncate text-[13px] font-medium">{project.name}</span>
                 </button>
 
@@ -57,7 +57,7 @@ const ProjectSidebar = ({ compact = false }) => {
                                 <Link
                                     key={subItem.title}
                                     to={subItem.url}
-                                    className={`flex items-center gap-2 px-2.5 py-1 rounded-md transition-colors text-[12px] ${isActive ? 'bg-white dark:bg-white/[0.07] text-zinc-900 dark:text-zinc-100 font-medium ring-1 ring-black/[0.06] dark:ring-white/[0.08]' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-white/[0.03]'}`}
+                                    className={`flex items-center gap-2 px-2.5 py-1 rounded-md transition-colors text-[12px] ${isActive ? 'bg-white/[0.09] text-white font-medium' : 'text-ink-400 hover:text-ink-100 hover:bg-white/[0.04]'}`}
                                 >
                                     <subItem.icon className="size-3 flex-shrink-0" strokeWidth={1.5} />
                                     {subItem.title}
@@ -97,13 +97,13 @@ const ProjectSidebar = ({ compact = false }) => {
                         <div key={space.id}>
                             <button
                                 onClick={() => toggleSpace(space.id)}
-                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-white/70 dark:hover:bg-white/[0.04]"
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-ink-300 hover:text-white hover:bg-white/[0.05]"
                             >
-                                <ChevronRightIcon className={`size-3 text-zinc-400 dark:text-zinc-600 transition-transform duration-150 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                                <ChevronRightIcon className={`size-3 text-ink-400 transition-transform duration-150 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
                                 <span className="truncate text-[13px] font-medium">{space.name}</span>
                                 {spaceProjects.length > 0 && (
-                                    <span className="ml-auto text-[10px] text-zinc-400 dark:text-zinc-600 flex-shrink-0">{spaceProjects.length}</span>
+                                    <span className="ml-auto text-[10px] text-ink-400 flex-shrink-0">{spaceProjects.length}</span>
                                 )}
                             </button>
 
@@ -112,7 +112,7 @@ const ProjectSidebar = ({ compact = false }) => {
                                     {spaceProjects.length === 0 ? (
                                         <button
                                             onClick={() => navigate(`/spaces/${space.id}`)}
-                                            className="w-full text-left pl-9 pr-2.5 py-1 text-[12px] text-zinc-400 dark:text-zinc-600 hover:text-zinc-600 dark:hover:text-zinc-400"
+                                            className="w-full text-left pl-9 pr-2.5 py-1 text-[12px] text-ink-400 hover:text-ink-200"
                                         >
                                             No projects yet
                                         </button>
@@ -129,8 +129,8 @@ const ProjectSidebar = ({ compact = false }) => {
                 {unassigned.length > 0 && (
                     <div>
                         <div className="px-2.5 py-1.5 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-600 flex-shrink-0" />
-                            <span className="text-[12px] text-zinc-400 dark:text-zinc-500">Unassigned</span>
+                            <span className="w-2 h-2 rounded-full bg-ink-500 flex-shrink-0" />
+                            <span className="text-[12px] text-ink-400">Unassigned</span>
                         </div>
                         {unassigned.map((p) => renderProject(p, true))}
                     </div>

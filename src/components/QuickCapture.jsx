@@ -118,7 +118,7 @@ function CaptureBar() {
                 onClick={() => setOpen(true)}
                 title="Quick capture (⌘⇧K)"
                 aria-label="Quick capture"
-                className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+                className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-signal-500 text-ink-950 shadow-lg shadow-ink-950/20 hover:bg-signal-400 active:scale-95 transition-all flex items-center justify-center"
             >
                 <PlusIcon className="size-5" />
             </button>
@@ -181,12 +181,14 @@ function CaptureBar() {
     )
 }
 
-export function CaptureButton({ label = 'Quick Capture' }) {
+export function CaptureButton({ label = 'Quick Capture', onDark = false }) {
     return (
         <button
             onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))}
             title="Quick capture (⌘⇧K)"
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors shadow-sm whitespace-nowrap"
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap ${onDark
+                ? 'bg-white/10 text-white hover:bg-white/[0.16]'
+                : 'bg-ink-900 text-white hover:bg-ink-800 dark:bg-white dark:text-ink-950 dark:hover:bg-ink-100'}`}
         >
             <PlusIcon className="size-3.5" strokeWidth={2.5} />
             {label}

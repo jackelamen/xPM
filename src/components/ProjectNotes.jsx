@@ -92,7 +92,7 @@ function NoteEditor({ note, onSave, onCancel, onDelete, isNew = false }) {
                         Cancel
                     </button>
                     <button onClick={handleSave} disabled={saving || !title.trim()}
-                        className="flex items-center gap-2 px-4 py-1.5 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition">
+                        className="flex items-center gap-2 px-4 py-1.5 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60 hover:opacity-90 transition">
                         {saving ? <Loader2Icon className="size-4 animate-spin" /> : <SaveIcon className="size-4" />}
                         {isNew ? "Create Note" : "Save"}
                     </button>
@@ -218,7 +218,7 @@ export default function ProjectNotes({ projectId }) {
                 <button
                     onClick={() => setEditingId("new")}
                     disabled={editingId === "new"}
-                    className="ml-auto flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition disabled:opacity-60"
+                    className="ml-auto flex items-center gap-2 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white hover:opacity-90 transition disabled:opacity-60"
                 >
                     <PlusIcon className="size-4" /> New Note
                 </button>

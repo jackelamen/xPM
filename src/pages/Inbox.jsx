@@ -27,6 +27,10 @@ export default function Inbox() {
     const [busy, setBusy] = useState(false)
     const [handled, setHandled] = useState(0)
 
+    // Most-used projects first, as one-click chips; the rest live in a menu.
+    const ranked = useMemo(() => [...projects].sort((a, b) => (b.tasks?.length || 0) - (a.tasks?.length || 0)), [projects])
+    const chips = ranked.slice(0, 8), rest = ranked.slice(8)
+
     const queue = useMemo(() => {
         const fresh = inbox.tasks.filter((t) => !skipped.includes(t.id))
         return fresh.length ? fresh : inbox.tasks
@@ -84,36 +88,48 @@ export default function Inbox() {
     return (
         <div className="max-w-xl mx-auto">
             <div className="flex items-baseline justify-between mb-4">
-                <h1 className="text-[22px] font-bold tracking-tight text-gray-900 dark:text-white">Inbox</h1>
+                <h1 className="text-[34px] font-bold tracking-tight leading-none text-ink-900 dark:text-white">Inbox</h1>
                 <p className="text-[13px] text-gray-500 dark:text-zinc-400 tabular-nums">{handled + 1} of {total}</p>
             </div>
-            <div className="h-1 rounded-full bg-gray-100 dark:bg-zinc-800 mb-6 overflow-hidden">
-                <div className="h-full bg-emerald-500 transition-all" style={{ width: `${(handled / Math.max(total, 1)) * 100}%` }} />
+            <div className="h-1.5 rounded-full bg-gray-200 dark:bg-zinc-800 mb-6 overflow-hidden">
+                <div className="h-full bg-signal-500 transition-all" style={{ width: `${(handled / Math.max(total, 1)) * 100}%` }} />
             </div>
 
-            <form onSubmit={apply} className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm p-6">
-                <h2 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{task.title}</h2>
+            <form onSubmit={apply} className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-7">
+                <h2 className="text-[28px] font-semibold leading-tight text-ink-900 dark:text-white">{task.title}</h2>
                 {task.description && <p className="text-[13px] text-gray-500 dark:text-zinc-400 mt-1">{task.description}</p>}
                 <p className="text-[12px] text-gray-400 mt-1">Captured {format(new Date(task.created_at), 'EEE MMM d, h:mm a')}</p>
 
-                <label className="block mt-6 text-[12px] font-medium text-gray-500 dark:text-zinc-400">Project</label>
-                <select value={projectId} onChange={(e) => setProjectId(e.target.value)} autoFocus
-                    className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-[14px] text-gray-900 dark:text-zinc-100">
-                    <option value="">Choose a project…</option>
-                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                <p className="mt-7 text-[14px] font-semibold text-gray-900 dark:text-zinc-100">Where does it live?</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {chips.map((p) => (
+                        <button type="button" key={p.id} onClick={() => setProjectId(p.id)}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[14px] border transition-colors ${projectId === p.id
+                                ? 'bg-ink-900 text-white border-ink-900 dark:bg-white dark:text-ink-950 dark:border-white'
+                                : 'border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-ink-400'}`}>
+                            <span className="size-2 rounded-full" style={{ background: p.color || '#6489b3' }} />{p.name}
+                        </button>
+                    ))}
+                    {rest.length > 0 && (
+                        <select value={rest.some((p) => p.id === projectId) ? projectId : ''} onChange={(e) => e.target.value && setProjectId(e.target.value)}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-transparent text-[14px] text-gray-600 dark:text-zinc-300">
+                            <option value="">More projects…</option>
+                            {rest.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    )}
+                </div>
 
-                <p className="mt-5 text-[12px] font-medium text-gray-500 dark:text-zinc-400">When</p>
-                <div className="mt-1.5 flex flex-wrap gap-2">
+                <p className="mt-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100">When?</p>
+                <div className="mt-2 flex flex-wrap gap-2">
                     {(task.start_date || task.due_date) && (
                         <button type="button" onClick={() => setWhen('keep')}
-                            className={`px-3 py-1.5 rounded-full text-[13px] border ${when === 'keep' ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300'}`}>
+                            className={`px-3 py-1.5 rounded-full text-[13px] border ${when === 'keep' ? 'bg-ink-900 text-white border-ink-900 dark:bg-white dark:text-ink-950 dark:border-white' : 'border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300'}`}>
                             Keep {format(new Date(`${task.start_date || task.due_date}T00:00:00`), 'MMM d')}
                         </button>
                     )}
                     {PRESETS.map((p) => (
                         <button type="button" key={p.key} onClick={() => setWhen(p.key)}
-                            className={`px-3 py-1.5 rounded-full text-[13px] border ${when === p.key ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300'}`}>
+                            className={`px-3 py-1.5 rounded-full text-[13px] border ${when === p.key ? 'bg-ink-900 text-white border-ink-900 dark:bg-white dark:text-ink-950 dark:border-white' : 'border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300'}`}>
                             {p.label}
                         </button>
                     ))}
@@ -125,7 +141,7 @@ export default function Inbox() {
 
                 <div className="mt-7 flex items-center gap-3">
                     <button type="submit" disabled={!projectId || busy}
-                        className="px-4 py-2 rounded-lg text-[14px] font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-40">
+                        className="px-5 py-2.5 rounded-lg text-[15px] font-semibold bg-signal-500 hover:bg-signal-400 text-ink-950 disabled:opacity-40 transition-colors">
                         {busy ? 'Saving…' : 'Done · next'}
                     </button>
                     <button type="button" onClick={() => setSkipped((s) => [...s, task.id])} disabled={inbox.tasks.length < 2}

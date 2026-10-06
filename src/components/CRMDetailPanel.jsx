@@ -533,7 +533,7 @@ export function ContactDetail({ id, workspaceId, onClose, onDeleted }) {
                             <button onClick={handleDelete} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition">
                                 <TrashIcon className="size-4" /> Delete
                             </button>
-                            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition">
+                            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60 hover:opacity-90 transition">
                                 {saving ? <Loader2Icon className="size-4 animate-spin" /> : <SaveIcon className="size-4" />} Save
                             </button>
                         </div>
@@ -775,7 +775,7 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenConta
                             <button onClick={handleDelete} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition">
                                 <TrashIcon className="size-4" /> Delete
                             </button>
-                            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition">
+                            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60 hover:opacity-90 transition">
                                 {saving ? <Loader2Icon className="size-4 animate-spin" /> : <SaveIcon className="size-4" />} Save
                             </button>
                         </div>
@@ -817,7 +817,7 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenConta
                                     <button type="button" onClick={() => { setShowAddContact(false); setNewContact({ name: "", email: "", phone: "", title: "" }) }}
                                         className="px-3 py-1.5 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Cancel</button>
                                     <button type="submit" disabled={savingContact || !newContact.name.trim()}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition">
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60 hover:opacity-90 transition">
                                         {savingContact && <Loader2Icon className="size-3.5 animate-spin" />} Save Contact
                                     </button>
                                 </div>
@@ -834,7 +834,7 @@ export function CompanyDetail({ id, workspaceId, onClose, onDeleted, onOpenConta
                                         onClick={() => onOpenContact?.(c.id)}
                                         className="w-full flex items-center gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors text-left group"
                                     >
-                                        <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                        <div className="size-8 rounded-full bg-ink-800 hover:bg-ink-900 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                                             {c.name[0].toUpperCase()}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -1044,7 +1044,7 @@ export function DealDetail({ id, stages, contacts, companies, workspaceId, onClo
                                 <button onClick={handleDelete} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition">
                                     <TrashIcon className="size-4" /> Delete
                                 </button>
-                                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition">
+                                <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60 hover:opacity-90 transition">
                                     {saving ? <Loader2Icon className="size-4 animate-spin" /> : <SaveIcon className="size-4" />} Save
                                 </button>
                             </div>

@@ -114,7 +114,7 @@ export default function AcceptInvite() {
                 {/* Header */}
                 <div className="px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
                     <div className="flex items-center gap-2 mb-3">
-                        <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                        <div className="size-8 rounded-lg bg-ink-800 flex items-center justify-center">
                             <ZapIcon className="size-4 text-white" />
                         </div>
                         <span className="font-semibold text-zinc-900 dark:text-white">EDGEx PM</span>
@@ -200,7 +200,7 @@ export default function AcceptInvite() {
                                         placeholder="••••••••" className={inputCls} required minLength={6} />
                                 </div>
                                 <button type="submit" disabled={submitting}
-                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium disabled:opacity-60 hover:opacity-90 transition mt-2">
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-ink-800 hover:bg-ink-900 text-white text-sm font-medium disabled:opacity-60 hover:opacity-90 transition mt-2">
                                     {submitting && <Loader2Icon className="size-4 animate-spin" />}
                                     {authMode === "login" ? "Sign in & accept invite" : "Create account & accept invite"}
                                 </button>

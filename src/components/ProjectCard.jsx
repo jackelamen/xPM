@@ -15,7 +15,8 @@ const ProjectCard = ({ project, selected = false, onToggleSelect }) => {
 
     return (
         <div
-            className={`relative bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border rounded-lg p-5 transition-all duration-200 group ${
+            style={{ borderTopColor: project.color || undefined }}
+            className={`relative bg-white dark:bg-zinc-900 border border-t-[4px] rounded-lg p-5 transition-all duration-200 group ${
                 selected
                     ? "border-amber-400 dark:border-amber-500 ring-1 ring-amber-300 dark:ring-amber-700"
                     : "border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
@@ -43,7 +44,7 @@ const ProjectCard = ({ project, selected = false, onToggleSelect }) => {
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0 pr-6">
-                    <h3 className="font-semibold text-gray-900 dark:text-zinc-200 mb-1 truncate group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
+                    <h3 className="font-semibold text-gray-900 dark:text-zinc-200 mb-1 truncate group-hover:text-ink-600 dark:group-hover:text-ink-300 transition-colors text-[17px]">
                         {project.name}
                     </h3>
                     <p className="text-gray-500 dark:text-zinc-400 text-sm line-clamp-2 mb-3">

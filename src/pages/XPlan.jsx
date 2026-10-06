@@ -679,16 +679,21 @@ export default function XPlan() {
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-5 sm:gap-6 pb-12">
-            <div className="border-b border-gray-200 dark:border-zinc-800 overflow-x-auto no-scrollbar">
-                <div className="flex gap-4 sm:gap-6 min-w-max">
+            <header>
+                <h1 className="text-[34px] sm:text-[40px] font-bold tracking-tight leading-none text-ink-900 dark:text-white">xPlan</h1>
+                <p className="mt-2 text-[15px] text-gray-500 dark:text-zinc-400">What we're committing to, and when it lands.</p>
+            </header>
+
+            <div className="border-b border-gray-200 dark:border-zinc-800 overflow-x-auto no-scrollbar -mt-1">
+                <div className="flex gap-6 sm:gap-8 min-w-max">
                     {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-3 text-[14px] sm:text-[15px] font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+                            className={`font-display pb-3 text-[17px] font-semibold border-b-[3px] transition-colors -mb-px whitespace-nowrap ${
                                 activeTab === tab
-                                    ? "border-gray-900 dark:border-white text-gray-900 dark:text-white"
-                                    : "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
+                                    ? "border-signal-500 text-ink-900 dark:text-white"
+                                    : "border-transparent text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200"
                             }`}
                         >
                             {tab}

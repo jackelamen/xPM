@@ -36,36 +36,16 @@ export default function ProjectsOverviewCard() {
     }, [currentWorkspace])
 
     const kpis = [
-        {
-            label: 'Active',
-            value: stats.active,
-            icon: FolderOpen,
-            gradient: 'bg-gradient-to-br from-[#4A88FF] to-[#6063ee]',
-        },
-        {
-            label: 'Completed',
-            value: stats.completed,
-            icon: CheckCircle2,
-            gradient: 'bg-gradient-to-br from-[#34D399] to-[#10B981]',
-        },
-        {
-            label: 'Due This Week',
-            value: stats.tasksDueThisWeek,
-            icon: Clock,
-            gradient: 'bg-gradient-to-br from-[#FBBF24] to-[#F59E0B]',
-        },
-        {
-            label: 'Overdue',
-            value: stats.overdue,
-            icon: AlertTriangle,
-            gradient: stats.overdue > 0 ? 'bg-gradient-to-br from-[#F87171] to-[#EF4444]' : 'bg-gradient-to-br from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-800',
-        },
+        { label: 'Active', value: stats.active, tile: 'bg-ink-900 text-white', sub: 'text-ink-300', icon: FolderOpen },
+        { label: 'Completed', value: stats.completed, tile: 'bg-gray-100 dark:bg-zinc-800 text-ink-900 dark:text-white', sub: 'text-gray-500 dark:text-zinc-400', icon: CheckCircle2 },
+        { label: 'Due This Week', value: stats.tasksDueThisWeek, tile: 'bg-signal-500/15 text-ink-900 dark:text-white', sub: 'text-signal-700 dark:text-signal-400', icon: Clock },
+        { label: 'Overdue', value: stats.overdue, tile: stats.overdue > 0 ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300' : 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500', sub: stats.overdue > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-zinc-500', icon: AlertTriangle },
     ]
 
     return (
         <div className="glass-panel rounded-2xl p-6">
             <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-white">Overview</h2>
+                <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">Overview</h2>
                 <Link to="/spaces" className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
                     All spaces <ArrowUpRightIcon size={11} />
                 </Link>
@@ -85,12 +65,9 @@ export default function ProjectsOverviewCard() {
             ) : (
                 <div className="grid grid-cols-2 gap-3">
                     {kpis.map((kpi) => (
-                        <div key={kpi.label} className={`glass-card-hover ${kpi.gradient} rounded-xl p-4 text-white`}>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-semibold opacity-90">{kpi.label}</span>
-                                <kpi.icon className="size-3.5 opacity-80" />
-                            </div>
-                            <div className="text-2xl font-bold">{kpi.value}</div>
+                        <div key={kpi.label} className={`${kpi.tile} rounded-xl p-4`}>
+                            <div className="font-display text-[40px] font-bold leading-none tabular-nums">{kpi.value}</div>
+                            <div className={`mt-2 text-[13px] font-medium ${kpi.sub}`}>{kpi.label}</div>
                         </div>
                     ))}
                 </div>

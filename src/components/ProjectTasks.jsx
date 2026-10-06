@@ -269,17 +269,17 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
 
                 {/* Reset filters */}
                 {(filters.status || filters.type || filters.priority || filters.assignee) && (
-                    <button type="button" onClick={() => setFilters({ status: "", type: "", priority: "", assignee: "" })} className="px-3 py-1 flex items-center gap-2 rounded bg-gradient-to-br from-purple-400 to-purple-500 text-zinc-100 dark:text-zinc-200 text-sm transition-colors" >
+                    <button type="button" onClick={() => setFilters({ status: "", type: "", priority: "", assignee: "" })} className="px-3 py-1 flex items-center gap-2 rounded border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm transition-colors" >
                         <XIcon className="size-3" /> Reset
                     </button>
                 )}
 
                 {selectedTasks.length > 0 && (
                     <>
-                        <button type="button" onClick={handleArchiveTasks} className="px-3 py-1 flex items-center gap-2 rounded bg-gradient-to-br from-amber-400 to-amber-500 text-zinc-100 dark:text-zinc-200 text-sm transition-colors">
+                        <button type="button" onClick={handleArchiveTasks} className="px-3 py-1 flex items-center gap-2 rounded bg-signal-500 hover:bg-signal-400 text-ink-950 font-medium text-sm transition-colors">
                             <ArchiveIcon className="size-3" /> Archive ({selectedTasks.length})
                         </button>
-                        <button type="button" onClick={handleDelete} className="px-3 py-1 flex items-center gap-2 rounded bg-gradient-to-br from-indigo-400 to-indigo-500 text-zinc-100 dark:text-zinc-200 text-sm transition-colors">
+                        <button type="button" onClick={handleDelete} className="px-3 py-1 flex items-center gap-2 rounded bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors">
                             <Trash className="size-3" /> Delete
                         </button>
                     </>
@@ -480,7 +480,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                 const { background, prioritycolor } = priorityTexts[task.priority] || {};
 
                                 return (
-                                    <div key={task.id} className={`dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2 ${task.status === "DONE" ? "opacity-50" : ""} ${task._isSub ? "ml-5" : ""}`}>
+                                    <div key={task.id} className={`dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2 ${task.status === "DONE" ? "opacity-50" : ""} ${task._isSub ? "ml-5" : ""}`}>
                                         <div className="flex items-center justify-between gap-2">
                                             {task._isSub && <CornerDownRight className="size-4 text-zinc-300 dark:text-zinc-600 shrink-0" />}
                                             <button

@@ -20,7 +20,7 @@ const Navbar = ({ setIsSidebarOpen }) => {
     }, [user?.id])
 
     return (
-        <div className="w-full bg-white/60 dark:bg-black/30 backdrop-blur-xl border-b border-white/50 dark:border-white/[0.06] px-5 py-2 flex-shrink-0 sticky top-0 z-40">
+        <div className="w-full bg-paper dark:bg-paper-dark border-b border-gray-200/80 dark:border-white/[0.06] px-5 py-2 flex-shrink-0 sticky top-0 z-40">
             <div className="flex items-center justify-between gap-4">
 
                 {/* Mobile hamburger */}

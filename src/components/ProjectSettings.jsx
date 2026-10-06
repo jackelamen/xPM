@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 
 const inputClasses = "w-full px-3 py-2 rounded mt-1 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500";
 const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
-const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border-zinc-300 dark:border-zinc-800";
+const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800";
 
 export default function ProjectSettings({ project }) {
     const dispatch = useDispatch();
@@ -165,7 +165,7 @@ export default function ProjectSettings({ project }) {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="flex items-center gap-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white px-4 py-2 rounded disabled:opacity-60 hover:opacity-90 transition"
+                        className="flex items-center gap-2 text-sm bg-ink-800 hover:bg-ink-900 text-white px-4 py-2 rounded disabled:opacity-60 hover:opacity-90 transition"
                     >
                         {isSubmitting ? <Loader2Icon className="size-4 animate-spin" /> : <Save className="size-4" />}
                         {isSubmitting ? "Saving..." : "Save Changes"}
@@ -183,7 +183,7 @@ export default function ProjectSettings({ project }) {
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                         {(project.members || []).map((member) => (
                             <div key={member.id || member.user_id} className="flex items-center gap-3 px-3 py-2 rounded dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-300">
-                                <div className="size-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium">
+                                <div className="size-6 rounded-full bg-ink-800 hover:bg-ink-900 flex items-center justify-center text-white text-xs font-medium">
                                     {(member.user?.name || member.user?.email || "?")[0].toUpperCase()}
                                 </div>
                                 <span className="flex-1 truncate">{member.user?.name || member.user?.email}</span>

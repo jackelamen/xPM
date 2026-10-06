@@ -13,7 +13,7 @@ function WorkspaceAvatar({ name, iconUrl, size = "sm" }) {
         <img src={iconUrl} alt={name} className={`${sizeClass} rounded-md object-cover flex-shrink-0`} />
     )
     return (
-        <div className={`${sizeClass} rounded-md bg-gray-900 dark:bg-zinc-200 flex items-center justify-center text-white dark:text-zinc-900 font-bold flex-shrink-0 tracking-tight`}>
+        <div className={`${sizeClass} rounded-md bg-signal-500 flex items-center justify-center text-ink-950 font-bold flex-shrink-0 tracking-tight`}>
             {initials}
         </div>
     )
@@ -79,18 +79,18 @@ function WorkspaceDropdown({ variant = "sidebar" }) {
                 title={currentWorkspace?.name || "Select workspace"}
                 className={compact
                     ? "flex items-center gap-1 p-1 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors"
-                    : "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors text-left"}
+                    : "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-white/[0.06] transition-colors text-left"}
             >
                 <WorkspaceAvatar name={currentWorkspace?.name} iconUrl={currentWorkspace?.icon_url} size="lg" />
                 {!compact && (
                     <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 dark:text-white text-[13px] truncate leading-tight">
+                        <p className="font-display font-semibold text-white text-[15px] truncate leading-tight">
                             {currentWorkspace?.name || "Select Workspace"}
                         </p>
 
                     </div>
                 )}
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
+                <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 ${compact ? "text-gray-400 dark:text-zinc-500" : "text-ink-400"}`} />
             </button>
 
             {isOpen && (

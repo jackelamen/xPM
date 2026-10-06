@@ -22,10 +22,10 @@ const ZOOMS = {
 };
 
 const STATUS_FILL = {
-    planned:   { fill: "#a1a1aa", text: "#ffffff" },
-    active:    { fill: "#3b82f6", text: "#ffffff" },
-    "at-risk": { fill: "#f59e0b", text: "#ffffff" },
-    done:      { fill: "#10b981", text: "#ffffff" },
+    planned:   { fill: "#8aa0bd", text: "#ffffff" },
+    active:    { fill: "#0f3a68", text: "#ffffff" },
+    "at-risk": { fill: "#d98a0b", text: "#ffffff" },
+    done:      { fill: "#2b9c78", text: "#ffffff" },
 };
 
 // ─── Timeline ─────────────────────────────────────────────────────────────────
@@ -180,7 +180,8 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
         };
     }, [dragging, onMove, onUp]);
 
-    const svgH = HEADER_H + laneSections.totalH + 8;
+    const svgH = HEADER_H + Math.max(laneSections.totalH, 0) + 8;
+    const isEmpty = scheduled.length === 0;
     const todayX = xOf(today);
     const step = zoom === "quarters" ? 90 : zoom === "months" ? 30 : 14;
 
@@ -194,7 +195,7 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
                         <ChevronLeftIcon className="size-4" />
                     </button>
                     <button onClick={() => setViewStart(subDays(today, 7))}
-                        className="px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+                        className="px-3 py-1.5 text-[13px] font-medium rounded-md border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition">
                         Today
                     </button>
                     <button onClick={() => setViewStart((p) => addDays(p, step))}
@@ -210,7 +211,7 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
                         <button key={z} onClick={() => setZoom(z)}
                             className={`px-3 py-1.5 text-xs font-medium capitalize transition ${
                                 zoom === z
-                                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                                    ? "bg-ink-900 dark:bg-white text-white dark:text-ink-950"
                                     : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                             }`}>
                             {z}
@@ -219,8 +220,17 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
                 </div>
             </div>
 
+            {isEmpty && (
+                <div className="rounded-2xl border border-dashed border-gray-300 dark:border-zinc-700 px-6 py-10 text-center">
+                    <p className="text-[18px] font-semibold text-gray-900 dark:text-white font-display">Nothing on the timeline yet</p>
+                    <p className="text-[14px] text-gray-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
+                        Give a project a start and end date and it shows up here as a bar you can drag. {unscheduled.length > 0 ? "Your undated projects are listed below." : "Create a project to begin."}
+                    </p>
+                </div>
+            )}
+
             {/* Chart */}
-            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+            <div className={`rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden ${isEmpty ? "hidden" : ""}`}>
                 <div className="flex">
                     {/* Lane labels */}
                     <div className="flex-shrink-0 border-r border-gray-100 dark:border-zinc-800" style={{ width: LANE_LABEL_W }}>
@@ -241,13 +251,23 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
                     {/* Scrollable timeline */}
                     <div className="overflow-x-auto flex-1">
                         <svg width={totalW} height={svgH} className="block select-none">
-                            {/* Month bands + labels */}
-                            {monthLabels.map((m, i) => (
-                                <g key={i}>
-                                    <line x1={m.x} y1={0} x2={m.x} y2={svgH} className="stroke-gray-100 dark:stroke-zinc-800" strokeWidth={1} />
-                                    <text x={m.x + 8} y={20} className="fill-gray-500 dark:fill-zinc-400 text-[11px] font-semibold">{m.label}</text>
-                                </g>
-                            ))}
+                            {/* Month bands + labels. Each label is clipped to its own column, and a
+                                column too narrow for its name (e.g. one leftover day of the
+                                previous month) shows a short name or nothing, so labels never overlap. */}
+                            {monthLabels.map((m, i) => {
+                                const full = m.w >= 96, short = m.w >= 34
+                                const text = full ? m.label : short ? m.label.replace(/\s.*$/, "").slice(0, 3) : "";
+                                return (
+                                    <g key={i}>
+                                        <line x1={m.x} y1={0} x2={m.x} y2={svgH} className="stroke-gray-200 dark:stroke-zinc-800" strokeWidth={1} />
+                                        {text && (
+                                            <svg x={m.x} y={0} width={m.w} height={26}>
+                                                <text x={8} y={19} className="fill-ink-800 dark:fill-zinc-300 text-[12px] font-semibold">{text}</text>
+                                            </svg>
+                                        )}
+                                    </g>
+                                );
+                            })}
                             {weekTicks.map((t, i) => (
                                 <g key={i}>
                                     <line x1={t.x} y1={HEADER_H - 16} x2={t.x} y2={svgH} className="stroke-gray-50 dark:stroke-zinc-800/60" strokeWidth={1} />
@@ -265,9 +285,9 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
                             {/* Today line */}
                             {todayX >= 0 && todayX <= totalW && (
                                 <g>
-                                    <line x1={todayX} y1={HEADER_H - 16} x2={todayX} y2={svgH} stroke="#ef4444" strokeWidth={1.5} />
-                                    <rect x={todayX - 18} y={HEADER_H - 30} width={36} height={14} rx={7} fill="#ef4444" />
-                                    <text x={todayX} y={HEADER_H - 19.5} textAnchor="middle" className="fill-white text-[9px] font-semibold">Today</text>
+                                    <line x1={todayX} y1={HEADER_H - 16} x2={todayX} y2={svgH} stroke="#ffb020" strokeWidth={2} />
+                                    <rect x={todayX - 20} y={HEADER_H - 32} width={40} height={16} rx={8} fill="#ffb020" />
+                                    <text x={todayX} y={HEADER_H - 20.5} textAnchor="middle" className="fill-ink-950 text-[10px] font-bold">Today</text>
                                 </g>
                             )}
 
@@ -300,10 +320,19 @@ export default function XPlanTimeline({ rows, lanes, onBarClick, onDatesSaved })
                                             {r.status === "at-risk" && (
                                                 <circle cx={x + w - 8} cy={y + BAR_H / 2} r={3} fill="#fff" opacity={0.9} />
                                             )}
-                                            <text x={x + 8} y={y + BAR_H / 2 + 3.5}
-                                                className="pointer-events-none text-[11px] font-medium" fill="#ffffff">
-                                                {w > 60 ? (r.title.length > w / 7 ? r.title.slice(0, Math.floor(w / 7)) + "…" : r.title) : ""}
-                                            </text>
+                                            {/* Keep the title in view when the bar starts left of the window. */}
+                                            {(() => {
+                                                const lx = Math.max(x, 0);
+                                                const room = x + w - lx;
+                                                const max = Math.floor((room - 16) / 7);
+                                                if (max < 4) return null;
+                                                return (
+                                                    <text x={lx + 8} y={y + BAR_H / 2 + 3.5}
+                                                        className="pointer-events-none text-[11px] font-medium" fill="#ffffff">
+                                                        {r.title.length > max ? r.title.slice(0, max - 1) + "…" : r.title}
+                                                    </text>
+                                                );
+                                            })()}
                                         </g>
                                     );
                                 })

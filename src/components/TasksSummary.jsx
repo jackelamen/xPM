@@ -45,7 +45,7 @@ export default function TasksSummary() {
     return (
         <div className="space-y-6">
             {summaryCards.map((card) => (
-                <div key={card.title} className="bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 rounded-lg overflow-hidden">
+                <div key={card.title} className="bg-white dark:bg-zinc-950 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 rounded-lg overflow-hidden">
                     <div className="border-b border-zinc-200 dark:border-zinc-800 p-4 pb-3">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-zinc-50 dark:bg-zinc-800 rounded-lg">

@@ -9,15 +9,11 @@ import CreateProjectDialog from '../components/CreateProjectDialog'
 import QuickCapture from '../components/QuickCapture'
 import { XPlanThisWeekCard } from '../components/XPlanThisWeek'
 import { useSelector } from 'react-redux'
-import { useAuth } from '../context/AuthContext'
 
 const Dashboard = () => {
-    const { displayName } = useAuth()
     const workspaceId = useSelector((state) => state.workspace?.currentWorkspace?.id)
+    const workspaceName = useSelector((state) => state.workspace?.currentWorkspace?.name)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-    const hour = new Date().getHours()
-    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
     return (
         <div className='max-w-[1400px] mx-auto'>
@@ -25,18 +21,16 @@ const Dashboard = () => {
             <div className="mb-5 sm:mb-7">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <p className="hidden sm:block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5">
-                            Manage and track your projects
-                        </p>
-                        <h1 className="text-[22px] sm:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight leading-snug">
-                            {greeting}, {displayName}
+                        <h1 className="text-[28px] sm:text-[34px] font-bold text-ink-900 dark:text-white tracking-tight leading-none">
+                            Portfolio overview
                         </h1>
+                        <p className="mt-2 text-[14px] text-gray-500 dark:text-zinc-400">Every project, space and deadline in {workspaceName || 'this workspace'}.</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 pt-1">
                         <QuickCapture variant="inline" />
                         <button
                             onClick={() => setIsDialogOpen(true)}
-                            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors shadow-sm whitespace-nowrap"
+                            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-lg bg-ink-900 hover:bg-ink-800 dark:bg-white dark:text-ink-950 text-white transition-colors whitespace-nowrap"
                         >
                             <span className="hidden sm:inline">+ New Project</span>
                             <span className="sm:hidden">+</span>

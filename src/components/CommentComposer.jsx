@@ -124,7 +124,7 @@ export default function CommentComposer({ members, task, project, submitting, on
                     className="flex-1 text-sm px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                 />
                 <button onClick={submit} disabled={submitting || !value.trim()}
-                    className="flex items-center justify-center px-3 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 transition">
+                    className="flex items-center justify-center px-3 rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-50 transition">
                     {submitting ? <Loader2Icon className="size-4 animate-spin" /> : <span className="text-sm">Post</span>}
                 </button>
             </div>

@@ -236,7 +236,7 @@ export default function AsanaImport({ isOpen, setIsOpen }) {
                             <button
                                 onClick={handleImport}
                                 disabled={!projectName.trim()}
-                                className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition"
+                                className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60 hover:opacity-90 transition"
                             >
                                 Import {parsedTasks.length} Tasks
                             </button>
@@ -275,7 +275,7 @@ export default function AsanaImport({ isOpen, setIsOpen }) {
                         </p>
                         <button
                             onClick={handleClose}
-                            className="mt-4 px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition"
+                            className="mt-4 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white hover:opacity-90 transition"
                         >
                             Done
                         </button>

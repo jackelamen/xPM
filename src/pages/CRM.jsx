@@ -91,10 +91,14 @@ function SearchInput({ value, onChange, placeholder }) {
     );
 }
 
-function Avatar({ name, color = "from-blue-500 to-indigo-600", size = "size-8", text = "text-xs" }) {
+// Flat brand-palette tile; the colour comes from the name so a person always gets the same one.
+const AVATAR_COLORS = ["#0f3a68", "#2b9c78", "#7c5cd6", "#c2410c", "#a8325e"];
+function Avatar({ name, size = "size-8", text = "text-xs" }) {
+    const n = name || "?";
+    const bg = AVATAR_COLORS[[...n].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
     return (
-        <div className={`${size} rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white ${text} font-semibold flex-shrink-0`}>
-            {(name || "?")[0].toUpperCase()}
+        <div className={`${size} rounded-full flex items-center justify-center text-white ${text} font-semibold flex-shrink-0`} style={{ background: bg }}>
+            {n[0].toUpperCase()}
         </div>
     );
 }

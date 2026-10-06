@@ -103,7 +103,7 @@ const AddProjectMember = ({ isDialogOpen, setIsDialogOpen }) => {
                             <button
                                 type="submit"
                                 disabled={isAdding || !selectedUserId}
-                                className="flex items-center gap-2 px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 hover:opacity-90 transition"
+                                className="flex items-center gap-2 px-5 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-50 hover:opacity-90 transition"
                             >
                                 {isAdding && <Loader2Icon className="size-4 animate-spin" />}
                                 {isAdding ? "Adding..." : "Confirm"}

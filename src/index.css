@@ -1,10 +1,82 @@
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@100..900&display=swap');
 @import "tailwindcss";
 
-* {
-    font-family: 'Hanken Grotesk', sans-serif;
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   One dominant colour (ink, the brand navy), one accent (signal amber, used only
+   for "now" and the next action). Greys are tinted toward the navy so every
+   neutral belongs to the same family. */
+@theme {
+    --font-sans: 'Hanken Grotesk', system-ui, sans-serif;
+    --font-display: 'Familjen Grotesk', 'Hanken Grotesk', system-ui, sans-serif;
+
+    --color-ink-50: #f2f6fb;
+    --color-ink-100: #e1eaf4;
+    --color-ink-200: #c4d4e6;
+    --color-ink-300: #9db6d2;
+    --color-ink-400: #6489b3;
+    --color-ink-500: #3b6594;
+    --color-ink-600: #234d7d;
+    --color-ink-700: #0f3a68;
+    --color-ink-800: #083160;
+    --color-ink-900: #042c53;
+    --color-ink-950: #021a31;
+
+    --color-signal-300: #ffd27a;
+    --color-signal-400: #ffc24d;
+    --color-signal-500: #ffb020;
+    --color-signal-600: #e89a00;
+    --color-signal-700: #b45f06;
+
+    --color-paper: #eef2f7;
+    --color-paper-dark: #060e1a;
+
+    --color-gray-50: #f6f8fb;
+    --color-gray-100: #eef2f7;
+    --color-gray-200: #e1e7ef;
+    --color-gray-300: #cbd4e0;
+    --color-gray-400: #97a3b4;
+    --color-gray-500: #6b7789;
+    --color-gray-600: #4d586a;
+    --color-gray-700: #374254;
+    --color-gray-800: #232d3d;
+    --color-gray-900: #121b2a;
+    --color-gray-950: #0a121f;
+
+    --color-zinc-50: #f5f7fa;
+    --color-zinc-100: #eaeff5;
+    --color-zinc-200: #dde3ec;
+    --color-zinc-300: #c3ccda;
+    --color-zinc-400: #9aa7bc;
+    --color-zinc-500: #6b7a93;
+    --color-zinc-600: #3a4a66;
+    --color-zinc-700: #22324d;
+    --color-zinc-800: #16233a;
+    --color-zinc-900: #0d1726;
+    --color-zinc-950: #070f1b;
+
+    /* Tailwind's stock blue is retired; "blue" now means a deep, brand-leaning blue. */
+    --color-blue-50: #eef4fb;
+    --color-blue-100: #dbe8f6;
+    --color-blue-200: #bcd3ec;
+    --color-blue-300: #8fb4dc;
+    --color-blue-400: #5b90c8;
+    --color-blue-500: #2f6fb3;
+    --color-blue-600: #1f5a9a;
+    --color-blue-700: #144680;
+    --color-blue-800: #0d3562;
+    --color-blue-900: #082a4d;
+}
+
+html, body {
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings carry the display face; sizes and weights stay with each page. */
+h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.012em;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -15,34 +87,31 @@
 
 /* Background */
 .gradient-mesh {
-    background-color: #f4f5f7;
+    background-color: var(--color-paper);
 }
 
 .dark .gradient-mesh {
-    background-color: #0e0e12;
+    background-color: var(--color-paper-dark);
 }
 
 .glass-panel {
-    background: rgba(255,255,255,0.80);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 2px 12px -2px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+    background: #fff;
+    border: 1px solid var(--color-gray-200);
+    box-shadow: 0 1px 2px rgba(4, 44, 83, 0.05);
 }
 
 .dark .glass-panel {
-    background: rgba(30,30,36,0.95);
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 2px 12px -2px rgba(0,0,0,0.5);
+    background: var(--color-zinc-900);
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: none;
 }
 
 .glass-card-hover {
-    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    transition: box-shadow 0.18s ease;
 }
 
 .glass-card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px -4px rgba(0,0,0,0.10);
+    box-shadow: 0 6px 20px -6px rgba(4, 44, 83, 0.18);
 }
 
 .dark .glass-card-hover:hover {
@@ -104,8 +173,8 @@
     }
 
     input[type="checkbox"]:checked {
-        background-color: #3b82f6;
-        border-color: #3b82f6;
+        background-color: var(--color-ink-700);
+        border-color: var(--color-ink-700);
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
         background-size: 100%;
     }

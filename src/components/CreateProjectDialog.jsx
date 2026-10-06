@@ -187,7 +187,7 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen, defaultSpaceId = "
                         <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800" >
                             Cancel
                         </button>
-                        <button disabled={isSubmitting || !currentWorkspace} className="flex items-center gap-2 px-4 py-2 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60" >
+                        <button disabled={isSubmitting || !currentWorkspace} className="flex items-center gap-2 px-4 py-2 rounded bg-ink-800 hover:bg-ink-900 text-white disabled:opacity-60" >
                             {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
                             {isSubmitting ? "Creating..." : "Create Project"}
                         </button>

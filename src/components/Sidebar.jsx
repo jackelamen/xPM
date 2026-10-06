@@ -63,9 +63,10 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
         if (next) { setSpacesExpanded(false); setProjectsExpanded(false) }
     }
 
-    const activeClass   = 'bg-white dark:bg-white/[0.07] text-gray-900 dark:text-white shadow-sm shadow-black/5 dark:shadow-none ring-1 ring-black/[0.06] dark:ring-white/[0.08]'
-    const inactiveClass = 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-white/70 dark:hover:bg-white/[0.04]'
-    const baseClass     = 'flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all text-[14px] font-medium mb-1'
+    // The sidebar is solid navy. The active page gets a white wash and an amber marker.
+    const activeClass   = 'bg-white/[0.09] text-white before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-signal-500'
+    const inactiveClass = 'text-ink-300 hover:text-white hover:bg-white/[0.05]'
+    const baseClass     = 'relative flex items-center gap-3 py-2.5 px-3 rounded-lg transition-colors text-[14px] font-medium mb-1'
     const navLinkClass  = ({ isActive }) => `${baseClass} ${isActive ? activeClass : inactiveClass}`
 
     // Daily-use pages first; everything else lives under "More".
@@ -100,8 +101,8 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }, [setIsSidebarOpen])
 
     // ── Shared wrapper classes ────────────────────────────────────────────────
-    const wrapperBase = `z-10 bg-white/70 dark:bg-black/40 backdrop-blur-xl flex-shrink-0 flex flex-col h-screen
-        border-r border-white/50 dark:border-white/[0.06] transition-all duration-200
+    const wrapperBase = `z-10 bg-ink-950 flex-shrink-0 flex flex-col h-screen
+        border-r border-white/[0.06] transition-all duration-200
         sm:relative sm:translate-x-0
         max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:z-10
         ${isSidebarOpen ? 'max-sm:translate-x-0' : 'max-sm:-translate-x-full'}`
@@ -112,7 +113,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
             <Tip key={href} label={label}>
                 <NavLink to={href} end={end}
                     className={({ isActive }) =>
-                        `flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-all
+                        `relative flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-colors
                         ${isActive ? activeClass : inactiveClass}`
                     }>
                     <Icon size={16} strokeWidth={1.75} />
@@ -123,16 +124,16 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
         return (
             <div ref={sidebarRef} className={`${wrapperBase} w-[56px]`}>
                 {/* Workspace icon — click to expand */}
-                <div className="flex items-center justify-center py-[13px] border-b border-white/50 dark:border-white/[0.06]">
+                <div className="flex items-center justify-center py-[13px] border-b border-white/[0.08]">
                     <Tip label={currentWorkspace?.name || 'Workspace'}>
                         <button onClick={toggleCollapsed}
                             className="flex items-center justify-center w-8 h-8 rounded-lg overflow-hidden flex-shrink-0
                                 hover:ring-2 hover:ring-blue-400 transition-all">
                             {currentWorkspace?.icon_url
                                 ? <img src={currentWorkspace.icon_url} alt={currentWorkspace.name} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full bg-gray-900 dark:bg-zinc-200 flex items-center justify-center">
+                                : <div className="w-full h-full bg-signal-500 flex items-center justify-center">
                                     {currentWorkspace
-                                        ? <span className="text-white dark:text-zinc-900 font-bold text-[11px]">
+                                        ? <span className="text-ink-950 font-bold text-[11px]">
                                             {currentWorkspace.name?.slice(0,2).toUpperCase()}
                                           </span>
                                         : <BuildingIcon size={14} className="text-white" />
@@ -150,7 +151,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                     <Tip label="Projects">
                         <NavLink to="/projects"
                             className={({ isActive }) =>
-                                `flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-all
+                                `relative flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-colors
                                 ${isActive ? activeClass : inactiveClass}`
                             }>
                             <FolderOpenIcon size={16} strokeWidth={1.75} />
@@ -166,11 +167,11 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             </a>
                         </Tip>
                     )}
-                    <div className="w-5 border-t border-gray-200/80 dark:border-white/[0.06] my-1.5" />
+                    <div className="w-5 border-t border-white/[0.08] my-1.5" />
                     <Tip label="Spaces">
                         <NavLink to="/spaces"
                             className={({ isActive }) =>
-                                `flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-all
+                                `relative flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-colors
                                 ${isActive ? activeClass : inactiveClass}`
                             }>
                             <Layers size={16} strokeWidth={1.75} />
@@ -180,11 +181,11 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </div>
 
                 {/* Bottom: settings + toggle */}
-                <div className="flex flex-col items-center px-[7px] py-3 border-t border-gray-200/80 dark:border-white/[0.06] gap-0.5">
+                <div className="flex flex-col items-center px-[7px] py-3 border-t border-white/[0.08] gap-0.5">
                     <Tip label="Settings">
                         <NavLink to="/settings"
                             className={({ isActive }) =>
-                                `flex items-center justify-center w-9 h-9 rounded-lg transition-all
+                                `relative flex items-center justify-center w-9 h-9 rounded-lg transition-colors
                                 ${isActive ? activeClass : inactiveClass}`
                             }>
                             <SettingsIcon size={14} strokeWidth={1.75} />
@@ -214,7 +215,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             <item.icon size={16} strokeWidth={1.75} />
                             <span>{item.name}</span>
                             {item.badge > 0 && (
-                                <span className='ml-auto min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900'>{item.badge}</span>
+                                <span className='ml-auto min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-signal-500 text-ink-950'>{item.badge}</span>
                             )}
                         </NavLink>
                     ))}
@@ -224,7 +225,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         <div className='flex items-center rounded-md overflow-hidden'>
                             <NavLink to='/projects'
                                 className={({ isActive }) =>
-                                    `flex items-center gap-3 py-2.5 pl-3 pr-1 flex-1 rounded-lg transition-all text-[14px] font-medium ${isActive ? activeClass : inactiveClass}`
+                                    `relative flex items-center gap-3 py-2.5 pl-3 pr-1 flex-1 rounded-lg transition-colors text-[14px] font-medium ${isActive ? activeClass : inactiveClass}`
                                 }>
                                 <FolderOpenIcon size={16} strokeWidth={1.75} />
                                 <span>Projects</span>
@@ -272,7 +273,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         <div className='flex items-center rounded-md overflow-hidden'>
                             <NavLink to='/spaces'
                                 className={({ isActive }) =>
-                                    `flex items-center gap-3 py-2.5 pl-3 pr-1 flex-1 rounded-lg transition-all text-[14px] font-medium ${isActive ? activeClass : inactiveClass}`
+                                    `relative flex items-center gap-3 py-2.5 pl-3 pr-1 flex-1 rounded-lg transition-colors text-[14px] font-medium ${isActive ? activeClass : inactiveClass}`
                                 }>
                                 <Layers size={16} strokeWidth={1.75} />
                                 <span>Spaces</span>
@@ -285,14 +286,14 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         {spacesExpanded && (
                             <div className='mt-0.5 mb-1 space-y-0.5'>
                                 {spaces.length === 0
-                                    ? <p className='pl-8 text-[11px] text-zinc-400 dark:text-zinc-600 py-1'>No spaces yet</p>
+                                    ? <p className='pl-8 text-[11px] text-ink-400 py-1'>No spaces yet</p>
                                     : spaces.map((space) => (
                                         <button key={space.id}
                                             onClick={() => navigate(`/spaces/${space.id}`)}
-                                            className='w-full flex items-center gap-2 pl-7 pr-2.5 py-1 rounded-md text-[12px] text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-white/70 dark:hover:bg-white/[0.04] transition-colors'>
+                                            className='w-full flex items-center gap-2 pl-7 pr-2.5 py-1 rounded-md text-[12px] text-ink-300 hover:text-white hover:bg-white/[0.05] transition-colors'>
                                             <span className='w-2 h-2 rounded-full flex-shrink-0' style={{ backgroundColor: space.color }} />
                                             <span className='truncate'>{space.name}</span>
-                                            <span className='ml-auto text-[10px] text-zinc-400 dark:text-zinc-600'>
+                                            <span className='ml-auto text-[10px] text-ink-400'>
                                                 {projects.filter((p) => p.space_id === space.id).length}
                                             </span>
                                         </button>
@@ -313,7 +314,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </div>
             </div>
 
-            <div className='px-3 py-3 border-t border-gray-200/80 dark:border-white/[0.06] flex items-center gap-1'>
+            <div className='px-3 py-3 border-t border-white/[0.08] flex items-center gap-1'>
                 <NavLink to='/settings' className={({ isActive }) => `${baseClass} flex-1 ${isActive ? activeClass : inactiveClass}`}>
                     <SettingsIcon size={14} strokeWidth={1.75} />
                     <span>Settings</span>
