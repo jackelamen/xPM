@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { Plus, Layers, FolderOpen, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { Plus, Layers, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { deleteSpace } from "../features/workspaceSlice"
 import CreateSpaceDialog from "../components/CreateSpaceDialog"
+import Tooltip from "../components/Tooltip"
 import toast from "react-hot-toast"
 
 export default function Spaces() {
@@ -33,33 +34,34 @@ export default function Spaces() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-7">
+        <div className="max-w-6xl mx-auto">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Spaces</h1>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Group projects by client or area of work</p>
+                    <h1 className="text-[34px] sm:text-[40px] font-bold tracking-tight leading-none text-ink-900 dark:text-white">Spaces</h1>
+                    <p className="mt-2 text-[15px] text-gray-500 dark:text-zinc-400">Group projects by client or area of work.</p>
                 </div>
                 <button
                     onClick={() => { setEditSpace(null); setIsDialogOpen(true) }}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition flex-shrink-0"
+                    className="flex items-center gap-1.5 px-4 py-2.5 text-[14px] font-semibold rounded-lg bg-ink-900 hover:bg-ink-800 dark:bg-white dark:text-ink-950 text-white transition-colors flex-shrink-0"
                 >
-                    <Plus className="size-3.5" /> New Space
+                    <Plus className="size-4" /> New space
                 </button>
             </div>
 
             {spaces.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4">
-                    <Layers className="size-10 text-zinc-300 dark:text-zinc-700" />
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm">No spaces yet</p>
+                <div className="rounded-2xl border border-dashed border-gray-300 dark:border-zinc-700 py-20 text-center">
+                    <Layers className="size-9 mx-auto text-gray-300 dark:text-zinc-600 mb-3" />
+                    <p className="font-display text-[20px] font-semibold text-gray-900 dark:text-white">No spaces yet</p>
+                    <p className="text-[14px] text-gray-500 dark:text-zinc-400 mt-1">A space holds the projects for one client or area of work.</p>
                     <button
                         onClick={() => setIsDialogOpen(true)}
-                        className="text-sm font-medium px-4 py-2 rounded-md bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-80 transition"
+                        className="mt-5 text-[14px] font-semibold px-5 py-2.5 rounded-lg bg-signal-500 hover:bg-signal-400 text-ink-950 transition-colors"
                     >
-                        + Create your first space
+                        Create your first space
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {spaces.map((space) => {
                         const spaceProjects = projectsBySpace(space.id)
                         const totalTasks = spaceProjects.reduce((acc, p) => acc + (p.tasks?.length || 0), 0)
@@ -69,69 +71,64 @@ export default function Spaces() {
                         return (
                             <div
                                 key={space.id}
-                                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer group relative"
+                                className="relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 hover:border-ink-300 dark:hover:border-zinc-600 rounded-2xl p-6 transition-colors cursor-pointer group"
                                 onClick={() => navigate(`/spaces/${space.id}`)}
                             >
-                                {/* Color bar */}
-                                <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ backgroundColor: space.color }} />
+                                <div className="flex items-start justify-between">
+                                    <span className="size-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${space.color}22` }}>
+                                        <span className="size-4 rounded-full" style={{ backgroundColor: space.color }} />
+                                    </span>
+                                    <div onClick={(e) => e.stopPropagation()} className="relative -mr-2 -mt-1">
+                                        <Tooltip label="Edit or delete">
+                                            <button
+                                                onClick={() => setMenuOpen(menuOpen === space.id ? null : space.id)}
+                                                aria-label="Space options"
+                                                className="size-8 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+                                            >
+                                                <MoreHorizontal className="size-4" />
+                                            </button>
+                                        </Tooltip>
+                                        {menuOpen === space.id && (
+                                            <div className="absolute right-0 top-9 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px] py-1">
+                                                <button
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                                                    onClick={() => { setEditSpace(space); setIsDialogOpen(true); setMenuOpen(null) }}
+                                                >
+                                                    <Pencil className="size-3.5" /> Edit
+                                                </button>
+                                                <button
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                                    onClick={() => { handleDelete(space); setMenuOpen(null) }}
+                                                >
+                                                    <Trash2 className="size-3.5" /> Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
-                                {/* Menu */}
-                                <div className="absolute top-3 right-3" onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                        onClick={() => setMenuOpen(menuOpen === space.id ? null : space.id)}
-                                        className="w-7 h-7 rounded-md flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition"
-                                    >
-                                        <MoreHorizontal className="size-4" />
-                                    </button>
-                                    {menuOpen === space.id && (
-                                        <div className="absolute right-0 top-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px] py-1">
-                                            <button
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                                                onClick={() => { setEditSpace(space); setIsDialogOpen(true); setMenuOpen(null) }}
-                                            >
-                                                <Pencil className="size-3.5" /> Edit
-                                            </button>
-                                            <button
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                                onClick={() => { handleDelete(space); setMenuOpen(null) }}
-                                            >
-                                                <Trash2 className="size-3.5" /> Delete
-                                            </button>
+                                <h3 className="mt-4 text-[22px] font-semibold leading-tight text-gray-900 dark:text-white truncate">{space.name}</h3>
+                                <p className="mt-1 text-[14px] text-gray-500 dark:text-zinc-400 line-clamp-2 min-h-[42px]">{space.description || "No description yet."}</p>
+
+                                <div className="mt-5 flex items-end gap-6">
+                                    <div>
+                                        <p className="font-display text-[32px] font-bold leading-none tabular-nums text-ink-900 dark:text-white">{spaceProjects.length}</p>
+                                        <p className="mt-1 text-[13px] text-gray-500 dark:text-zinc-400">project{spaceProjects.length !== 1 ? "s" : ""}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-display text-[32px] font-bold leading-none tabular-nums text-ink-900 dark:text-white">{totalTasks}</p>
+                                        <p className="mt-1 text-[13px] text-gray-500 dark:text-zinc-400">task{totalTasks !== 1 ? "s" : ""}</p>
+                                    </div>
+                                    {totalTasks > 0 && (
+                                        <div className="ml-auto text-right">
+                                            <p className="font-display text-[32px] font-bold leading-none tabular-nums" style={{ color: space.color }}>{pct}%</p>
+                                            <p className="mt-1 text-[13px] text-gray-500 dark:text-zinc-400">done</p>
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Space dot + name */}
-                                <div className="flex items-center gap-2.5 mt-2 mb-3">
-                                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
-                                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{space.name}</h3>
+                                <div className="mt-4 h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: space.color }} />
                                 </div>
-
-                                {space.description && (
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-2">{space.description}</p>
-                                )}
-
-                                {/* Stats */}
-                                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 mb-3">
-                                    <span className="flex items-center gap-1">
-                                        <FolderOpen className="size-3.5" />
-                                        {spaceProjects.length} project{spaceProjects.length !== 1 ? "s" : ""}
-                                    </span>
-                                    <span>{totalTasks} task{totalTasks !== 1 ? "s" : ""}</span>
-                                </div>
-
-                                {/* Progress */}
-                                {totalTasks > 0 && (
-                                    <div>
-                                        <div className="flex justify-between text-[10px] text-zinc-400 mb-1">
-                                            <span>Progress</span>
-                                            <span>{pct}%</span>
-                                        </div>
-                                        <div className="h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: space.color }} />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )
                     })}

@@ -93,7 +93,8 @@ const FieldManager = ({ projectId, fieldDefs = [], builtinVisible, onBuiltinVisi
                     </p>
                     <div className="flex flex-col gap-1 mb-4">
                         {BUILTIN_FIELDS.map((f) => {
-                            const visible = builtinVisible?.[f.key] !== false;
+                            // Type starts hidden; everything else starts visible.
+                            const visible = f.key === "type" ? builtinVisible?.type === true : builtinVisible?.[f.key] !== false;
                             return (
                                 <div key={f.key} className="flex items-center justify-between py-1 px-1 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800">
                                     <span className="text-sm text-zinc-700 dark:text-zinc-300">{f.label}</span>

@@ -88,32 +88,30 @@ export default function Projects() {
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
                 <div>
-                    <div className="flex items-center gap-2">
-                        {activeSpaceName && (
-                            <span className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                                <Layers className="size-3" /> {activeSpaceName} /
-                            </span>
-                        )}
-                        <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Projects</h1>
-                    </div>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-0.5">
-                        {activeSpaceName ? `Projects in ${activeSpaceName}` : "All projects across all spaces"}
+                    {activeSpaceName && (
+                        <span className="text-[14px] text-gray-500 dark:text-zinc-400 flex items-center gap-1 mb-1">
+                            <Layers className="size-3.5" /> {activeSpaceName}
+                        </span>
+                    )}
+                    <h1 className="text-[34px] sm:text-[40px] font-bold tracking-tight leading-none text-ink-900 dark:text-white">Projects</h1>
+                    <p className="mt-2 text-[15px] text-gray-500 dark:text-zinc-400">
+                        {activeSpaceName ? `Projects in ${activeSpaceName}` : `${projects.length} across ${spaces.length} space${spaces.length === 1 ? "" : "s"}`}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setIsImportOpen(true)}
-                        className="flex items-center px-4 py-2 text-sm rounded-md border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
+                        className="flex items-center px-4 py-2.5 text-[14px] font-medium rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-colors"
                     >
                         <UploadIcon className="size-3.5 mr-2" /> Import from Asana
                     </button>
                     <button
                         onClick={() => setIsDialogOpen(true)}
-                        className="flex items-center px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
+                        className="flex items-center px-4 py-2.5 text-[14px] font-semibold rounded-lg bg-ink-900 hover:bg-ink-800 dark:bg-white dark:text-ink-950 text-white transition-colors"
                     >
-                        <Plus className="size-3.5 mr-2" /> New Project
+                        <Plus className="size-3.5 mr-2" /> New project
                     </button>
                 </div>
             </div>
@@ -125,14 +123,14 @@ export default function Projects() {
                     <input
                         onChange={(e) => setSearchTerm(e.target.value)}
                         value={searchTerm}
-                        className="w-full pl-9 pr-4 py-2 text-sm rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-1 focus:ring-ink-500"
                         placeholder="Search projects..."
                     />
                 </div>
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm outline-none"
+                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white text-sm outline-none"
                 >
                     <option value="ALL">All Status</option>
                     <option value="ACTIVE">Active</option>
@@ -145,19 +143,19 @@ export default function Projects() {
 
             {/* Bulk action bar */}
             {selectedProjects.length > 0 && (
-                <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                    <span className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-signal-500/15 border border-signal-500/40">
+                    <span className="text-sm text-ink-900 dark:text-signal-300 font-medium">
                         {selectedProjects.length} project{selectedProjects.length > 1 ? "s" : ""} selected
                     </span>
                     <button
                         onClick={handleArchiveProjects}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-amber-500 hover:bg-amber-600 text-white transition"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-signal-500 hover:bg-signal-400 text-ink-950 transition-colors"
                     >
                         <ArchiveIcon className="size-3.5" /> Archive
                     </button>
                     <button
                         onClick={() => setSelectedProjects([])}
-                        className="text-sm text-amber-700 dark:text-amber-400 hover:underline"
+                        className="text-sm text-gray-600 dark:text-zinc-300 hover:underline"
                     >
                         Cancel
                     </button>
@@ -167,17 +165,17 @@ export default function Projects() {
             {/* Projects */}
             {filteredProjects.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <FolderOpen className="size-10 text-zinc-300 dark:text-zinc-700" />
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm">No projects found</p>
+                    <FolderOpen className="size-10 text-gray-300 dark:text-zinc-700" />
+                    <p className="font-display text-[20px] font-semibold text-gray-900 dark:text-white">No projects found</p>
                     <button
                         onClick={() => setIsDialogOpen(true)}
-                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition"
+                        className="flex items-center gap-1.5 px-5 py-2.5 text-[14px] font-semibold rounded-lg bg-signal-500 hover:bg-signal-400 text-ink-950 transition-colors"
                     >
-                        <Plus className="size-3.5" /> New Project
+                        <Plus className="size-3.5" /> New project
                     </button>
                 </div>
             ) : spaceFilter || !grouped ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredProjects.map((project) => (
                         <ProjectCard
                             key={project.id}
@@ -191,22 +189,22 @@ export default function Projects() {
                 <div className="space-y-8">
                     {grouped.map(({ space, projects: groupProjects }) => (
                         <div key={space?.id || "unassigned"}>
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="flex items-center gap-2.5 mb-4">
                                 {space ? (
                                     <>
-                                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
-                                        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{space.name}</h2>
-                                        <span className="text-xs text-zinc-400 dark:text-zinc-600">{groupProjects.length} project{groupProjects.length !== 1 ? "s" : ""}</span>
+                                        <span className="size-3 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
+                                        <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{space.name}</h2>
+                                        <span className="text-[13px] text-gray-400">{groupProjects.length} project{groupProjects.length !== 1 ? "s" : ""}</span>
                                     </>
                                 ) : (
                                     <>
                                         <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-600 flex-shrink-0" />
-                                        <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">Unassigned</h2>
+                                        <h2 className="text-[20px] font-semibold text-gray-500 dark:text-zinc-400">Unassigned</h2>
                                         <span className="text-xs text-zinc-400 dark:text-zinc-600">{groupProjects.length} project{groupProjects.length !== 1 ? "s" : ""}</span>
                                     </>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-2 lg:grid-cols-3 gap-5">
                                 {groupProjects.map((project) => (
                                     <ProjectCard
                                         key={project.id}

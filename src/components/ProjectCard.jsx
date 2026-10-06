@@ -1,85 +1,80 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { format } from "date-fns";
+import { ProjectStatus } from "./Badges";
 
-const statusColors = {
-    PLANNING: "bg-gray-200 dark:bg-zinc-600 text-gray-900 dark:text-zinc-200",
-    ACTIVE: "bg-emerald-200 dark:bg-emerald-500 text-emerald-900 dark:text-emerald-900",
-    ON_HOLD: "bg-amber-200 dark:bg-amber-500 text-amber-900 dark:text-amber-900",
-    COMPLETED: "bg-blue-200 dark:bg-blue-500 text-blue-900 dark:text-blue-900",
-    CANCELLED: "bg-red-200 dark:bg-red-500 text-red-900 dark:text-red-900",
-};
+const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
 const ProjectCard = ({ project, selected = false, onToggleSelect }) => {
     const [hovered, setHovered] = useState(false)
     const showCheckbox = selected || hovered
 
+    const tasks = project.tasks || []
+    const done = tasks.filter((t) => t.status === "DONE").length
+    const open = tasks.length - done
+    const progress = tasks.length ? Math.round((done / tasks.length) * 100) : 0
+    const today = todayStr()
+    const openTasks = tasks.filter((t) => t.status !== "DONE" && !t.archived_at)
+    const overdue = openTasks.filter((t) => t.due_date && t.due_date < today).length
+    const nextDue = openTasks.map((t) => t.due_date).filter((d) => d && d >= today).sort()[0]
+    const color = project.color || "#6489b3"
+
     return (
         <div
-            style={{ borderTopColor: project.color || undefined }}
-            className={`relative bg-white dark:bg-zinc-900 border border-t-[4px] rounded-lg p-5 transition-all duration-200 group ${
+            style={{ borderTopColor: color }}
+            className={`relative bg-white dark:bg-zinc-900 border border-t-[4px] rounded-2xl p-5 transition-colors group ${
                 selected
-                    ? "border-amber-400 dark:border-amber-500 ring-1 ring-amber-300 dark:ring-amber-700"
-                    : "border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
+                    ? "border-signal-500 ring-1 ring-signal-500"
+                    : "border-gray-200 dark:border-zinc-800 hover:border-ink-300 dark:hover:border-zinc-600"
             }`}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            {/* Checkbox */}
             {showCheckbox && onToggleSelect && (
                 <button
                     onClick={(e) => { e.preventDefault(); onToggleSelect(project.id) }}
                     className="absolute top-3 right-3 z-10"
+                    aria-label={selected ? "Deselect project" : "Select project"}
                 >
                     <input
                         type="checkbox"
                         checked={selected}
                         onChange={() => onToggleSelect(project.id)}
-                        className="size-4 accent-amber-500 cursor-pointer"
+                        className="size-4 cursor-pointer"
                         onClick={(e) => e.stopPropagation()}
                     />
                 </button>
             )}
 
             <Link to={`/projectsDetail?id=${project.id}&tab=tasks`} className="block">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0 pr-6">
-                    <h3 className="font-semibold text-gray-900 dark:text-zinc-200 mb-1 truncate group-hover:text-ink-600 dark:group-hover:text-ink-300 transition-colors text-[17px]">
-                        {project.name}
-                    </h3>
-                    <p className="text-gray-500 dark:text-zinc-400 text-sm line-clamp-2 mb-3">
-                        {project.description || "No description"}
-                    </p>
-                </div>
-            </div>
+                <h3 className="text-[20px] font-semibold leading-tight text-gray-900 dark:text-white truncate pr-6 group-hover:text-ink-600 dark:group-hover:text-ink-300 transition-colors">
+                    {project.name}
+                </h3>
+                <p className="mt-1 text-[14px] text-gray-500 dark:text-zinc-400 line-clamp-2 min-h-[42px]">
+                    {project.description || "No description yet."}
+                </p>
 
-            <div className="flex items-center justify-between mb-4">
-                <span className={`px-2 py-0.5 rounded text-xs ${statusColors[project.status]}`}>
-                    {project.status.replace("_", " ")}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-zinc-500">
-                    {project.tasks?.length || 0} task{(project.tasks?.length || 0) !== 1 ? "s" : ""}
-                </span>
-            </div>
-
-            {/* Progress */}
-            {(() => {
-                const tasks = project.tasks || []
-                const done = tasks.filter((t) => t.status === "DONE").length
-                const progress = tasks.length ? Math.round((done / tasks.length) * 100) : 0
-                return (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500 dark:text-zinc-500">Progress</span>
-                            <span className="text-gray-400 dark:text-zinc-400">{progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded">
-                            <div className="h-1.5 rounded bg-blue-500" style={{ width: `${progress}%` }} />
-                        </div>
+                <div className="mt-4 flex items-end justify-between gap-3">
+                    <div>
+                        <p className="font-display text-[34px] font-bold leading-none tabular-nums text-ink-900 dark:text-white">{open}</p>
+                        <p className="mt-1 text-[13px] text-gray-500 dark:text-zinc-400">open task{open !== 1 ? "s" : ""}</p>
                     </div>
-                )
-            })()}
+                    <div className="text-right text-[13px]">
+                        <ProjectStatus status={project.status} className="justify-end" />
+                        {overdue > 0
+                            ? <p className="mt-1 font-semibold text-red-600 dark:text-red-400">{overdue} overdue</p>
+                            : nextDue
+                                ? <p className="mt-1 text-gray-500 dark:text-zinc-400">Next due {format(new Date(`${nextDue}T00:00:00`), "MMM d")}</p>
+                                : <p className="mt-1 text-gray-400 dark:text-zinc-500">Nothing due</p>}
+                    </div>
+                </div>
 
+                <div className="mt-4 flex items-center gap-3">
+                    <div className="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: color }} />
+                    </div>
+                    <span className="text-[12px] tabular-nums text-gray-500 dark:text-zinc-400">{progress}%</span>
+                </div>
             </Link>
         </div>
     );

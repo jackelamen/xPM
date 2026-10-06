@@ -1,4 +1,6 @@
 import { format } from "date-fns";
+import { PriorityTag } from "./Badges";
+import Tooltip from "./Tooltip";
 import { useSyncedPref } from "../lib/useSyncedPref";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
@@ -38,11 +40,6 @@ const StackedAvatars = ({ assignees, size = 20 }) => {
     );
 };
 
-const priorityTexts = {
-    LOW: { background: "bg-red-100 dark:bg-red-950", prioritycolor: "text-red-600 dark:text-red-400" },
-    MEDIUM: { background: "bg-blue-100 dark:bg-blue-950", prioritycolor: "text-blue-600 dark:text-blue-400" },
-    HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
-};
 
 const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitions = [] }) => {
     const dispatch = useDispatch();
@@ -322,7 +319,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                         )}
                                     </th>
                                     <th className="px-4 pl-0 py-3">Title</th>
-                                    {builtinVisible.type !== false && <th className="px-4 py-3">Type</th>}
+                                    {builtinVisible.type === true && <th className="px-4 py-3">Type</th>}
                                     {builtinVisible.priority !== false && <th className="px-4 py-3">Priority</th>}
                                     {builtinVisible.status !== false && <th className="px-4 py-3">Status</th>}
                                     {builtinVisible.assignee !== false && <th className="px-4 py-3">Assignee</th>}
@@ -337,7 +334,6 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                 {orderedTasks.length > 0 ? (
                                     orderedTasks.map((task) => {
                                         const { icon: Icon, color } = typeIcons[task.type] || {};
-                                        const { background, prioritycolor } = priorityTexts[task.priority] || {};
 
                                         const effectiveStatus = optimisticStatuses[task.id] ?? task.status;
                                         const isDone = effectiveStatus === "DONE";
@@ -382,7 +378,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                         </span>
                                                     ) : task.title}
                                                 </td>
-                                                {builtinVisible.type !== false && (
+                                                {builtinVisible.type === true && (
                                                     <td className="px-4 py-2">
                                                         <div className="flex items-center gap-2">
                                                             {Icon && <Icon className={`size-4 ${color}`} />}
@@ -392,9 +388,7 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                 )}
                                                 {builtinVisible.priority !== false && (
                                                     <td className="px-4 py-2">
-                                                        <span className={`text-xs px-2 py-1 rounded ${background} ${prioritycolor}`}>
-                                                            {task.priority}
-                                                        </span>
+                                                        <PriorityTag priority={task.priority} />
                                                     </td>
                                                 )}
                                                 {builtinVisible.status !== false && (
@@ -424,14 +418,16 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                                 {builtinVisible.due_date !== false && (
                                                     <td className="px-4 py-2">
                                                         {task.due_date ? (
-                                                            <div className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
-                                                                <CalendarIcon className="size-4 shrink-0" />
-                                                                {format(new Date(task.due_date), "dd MMMM")}
+                                                            <div className={`flex items-center gap-1 whitespace-nowrap text-[14px] ${
+                                                                task.status !== "DONE" && task.due_date < format(new Date(), "yyyy-MM-dd") ? "font-semibold text-red-600 dark:text-red-400"
+                                                                : task.status !== "DONE" && task.due_date === format(new Date(), "yyyy-MM-dd") ? "font-semibold text-signal-700 dark:text-signal-400"
+                                                                : "text-gray-600 dark:text-zinc-400"}`}>
+                                                                {format(new Date(`${task.due_date}T00:00:00`), "EEE MMM d")}
                                                                 {task.due_time && (
                                                                     <span className="text-zinc-400 dark:text-zinc-500 text-xs">· {task.due_time.slice(0, 5)}</span>
                                                                 )}
                                                                 {task._derivedDue && (
-                                                                    <span title="Rolled up from subtasks" className="text-zinc-300 dark:text-zinc-600 text-[10px] uppercase tracking-wide ml-0.5">auto</span>
+                                                                    <Tooltip label="Rolled up from this task's subtasks"><span className="text-zinc-300 dark:text-zinc-600 text-[10px] ml-0.5">auto</span></Tooltip>
                                                                 )}
                                                             </div>
                                                         ) : <span className="text-zinc-400">—</span>}
@@ -477,7 +473,6 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                         {orderedTasks.length > 0 ? (
                             orderedTasks.map((task) => {
                                 const { icon: Icon, color } = typeIcons[task.type] || {};
-                                const { background, prioritycolor } = priorityTexts[task.priority] || {};
 
                                 return (
                                     <div key={task.id} className={`dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2 ${task.status === "DONE" ? "opacity-50" : ""} ${task._isSub ? "ml-5" : ""}`}>
@@ -498,16 +493,14 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
                                             <input type="checkbox" className="size-4 accent-zinc-600 dark:accent-zinc-500" onChange={() => selectedTasks.includes(task.id) ? setSelectedTasks(selectedTasks.filter((i) => i !== task.id)) : setSelectedTasks((prev) => [...prev, task.id])} checked={selectedTasks.includes(task.id)} />
                                         </div>
 
-                                        <div className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                                            {Icon && <Icon className={`size-4 ${color}`} />}
-                                            <span className={`${color} uppercase`}>{task.type}</span>
-                                        </div>
+                                        {builtinVisible.type === true && (
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
+                                                {Icon && <Icon className={`size-4 ${color}`} />}
+                                                <span className={`${color} uppercase`}>{task.type}</span>
+                                            </div>
+                                        )}
 
-                                        <div>
-                                            <span className={`text-xs px-2 py-1 rounded ${background} ${prioritycolor}`}>
-                                                {task.priority}
-                                            </span>
-                                        </div>
+                                        <PriorityTag priority={task.priority} />
 
                                         <div>
                                             <label className="text-zinc-600 dark:text-zinc-400 text-xs">Status</label>

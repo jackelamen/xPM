@@ -26,21 +26,10 @@ const COLUMNS = [
     { id: "DONE", label: "Done", color: "bg-emerald-500" },
 ]
 
+// Only Urgent and High get a flag. Type is not shown on cards (it's off by default everywhere).
 const priorityColors = {
-    LOW: "text-zinc-400",
-    MEDIUM: "text-blue-500",
-    HIGH: "text-orange-500",
+    HIGH: "text-signal-600",
     URGENT: "text-red-500",
-}
-
-const typeColors = {
-    MEETING: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
-    WRITING: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
-    STRATEGY: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
-    DESIGN: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400",
-    ADMIN: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-    OUTREACH: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400",
-    OTHER: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
 }
 
 // Individual draggable task card
@@ -62,29 +51,26 @@ function TaskCard({ task, onTaskClick, isDragging }) {
             {...attributes}
             {...listeners}
             onClick={() => onTaskClick && onTaskClick(task.id)}
-            className="bg-white dark:bg-[#1c1c1c] border border-gray-200/80 dark:border-white/[0.07] rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-gray-300 dark:hover:border-white/[0.12] hover:shadow-sm dark:hover:shadow-none transition-all select-none group"
+            className="bg-white dark:bg-[#1c1c1c] border border-gray-200/80 dark:border-white/[0.07] rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-ink-300 dark:hover:border-white/[0.12] transition-colors select-none group"
         >
             {/* Title */}
-            <p className="text-[13px] font-medium text-gray-800 dark:text-zinc-100 leading-snug mb-2.5">
+            <p className="text-[14px] font-medium text-gray-800 dark:text-zinc-100 leading-snug mb-2.5">
                 {task.title}
             </p>
 
             {/* Footer */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                    {task.priority && task.priority !== "LOW" && (
-                        <FlagIcon className={`size-3 ${priorityColors[task.priority] || "text-zinc-400"}`} />
+                    {priorityColors[task.priority] && (
+                        <FlagIcon className={`size-3.5 ${priorityColors[task.priority]}`} />
                     )}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[task.type] || typeColors.OTHER}`}>
-                        {task.type}
-                    </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                     {task.due_date && (
-                        <div className={`flex items-center gap-0.5 text-[11px] ${isOverdue ? "text-red-500" : "text-gray-400 dark:text-zinc-500"}`}>
+                        <div className={`flex items-center gap-0.5 text-[12px] ${isOverdue ? "font-semibold text-red-600 dark:text-red-400" : "text-gray-400 dark:text-zinc-500"}`}>
                             <CalendarIcon className="size-3" />
-                            {format(new Date(task.due_date), "MMM d")}
+                            {format(new Date(`${task.due_date}T00:00:00`), "MMM d")}
                         </div>
                     )}
                     {task.assignee
@@ -100,11 +86,8 @@ function TaskCard({ task, onTaskClick, isDragging }) {
 // Drag overlay card (shown while dragging)
 function DragCard({ task }) {
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-blue-400 dark:border-blue-500 rounded-lg p-3 shadow-lg rotate-1 w-64">
-            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${typeColors[task.type] || typeColors.OTHER}`}>
-                {task.type}
-            </span>
-            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100 mt-2 leading-snug">
+        <div className="bg-white dark:bg-zinc-900 border border-signal-500 rounded-lg p-3 shadow-lg rotate-1 w-64">
+            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100 leading-snug">
                 {task.title}
             </p>
         </div>
@@ -120,7 +103,7 @@ function Column({ column, tasks, onTaskClick, activeId }) {
             {/* Column header */}
             <div className="flex items-center gap-2 mb-2.5 px-0.5">
                 <div className={`size-1.5 rounded-full ${column.color}`} />
-                <span className="text-[12px] font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wide">
+                <span className="font-display text-[16px] font-semibold text-gray-800 dark:text-zinc-200">
                     {column.label}
                 </span>
                 <span className="ml-auto text-[11px] font-medium text-gray-400 dark:text-zinc-600 tabular-nums">

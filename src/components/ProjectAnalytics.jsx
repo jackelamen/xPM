@@ -1,13 +1,15 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { CheckCircle, Clock, AlertTriangle, Users, ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 
 // Colors for charts and priorities
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const COLORS = ["#0f3a68", "#2b9c78", "#ffb020", "#c2410c", "#7c5cd6", "#6489b3", "#a8325e"];
+// Urgent is red, High is amber, the rest stay quiet.
 const PRIORITY_COLORS = {
-    LOW: "text-red-600 bg-red-200 dark:text-red-500 dark:bg-red-600",
-    MEDIUM: "text-blue-600 bg-blue-200 dark:text-blue-500 dark:bg-blue-600",
-    HIGH: "text-emerald-600 bg-emerald-200 dark:text-emerald-500 dark:bg-emerald-600",
+    URGENT: "text-red-600 dark:text-red-400",
+    HIGH: "text-signal-600",
+    MEDIUM: "text-ink-500 dark:text-ink-300",
+    LOW: "text-gray-400",
 };
 
 const ProjectAnalytics = ({ project, tasks }) => {
@@ -25,13 +27,13 @@ const ProjectAnalytics = ({ project, tasks }) => {
 
         const statusMap = { TODO: 0, IN_PROGRESS: 0, DONE: 0 };
         const typeMap = { MEETING: 0, WRITING: 0, STRATEGY: 0, DESIGN: 0, ADMIN: 0, OUTREACH: 0, OTHER: 0 };
-        const priorityMap = { LOW: 0, MEDIUM: 0, HIGH: 0 };
+        const priorityMap = { URGENT: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
 
         tasks.forEach((t) => {
             if (t.status === "DONE") stats.completed++;
             if (t.status === "IN_PROGRESS") stats.inProgress++;
             if (t.status === "TODO") stats.todo++;
-            if (new Date(t.due_date) < now && t.status !== "DONE") stats.overdue++;
+            if (t.due_date && new Date(`${t.due_date}T00:00:00`) < now && t.status !== "DONE") stats.overdue++;
 
             if (statusMap[t.status] !== undefined) statusMap[t.status]++;
             if (typeMap[t.type] !== undefined) typeMap[t.type]++;
@@ -53,34 +55,10 @@ const ProjectAnalytics = ({ project, tasks }) => {
     const completionRate = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
 
     const metrics = [
-        {
-            label: "Completion Rate",
-            value: `${completionRate}%`,
-            color: "text-emerald-600 dark:text-emerald-400",
-            icon: <CheckCircle className="size-5 text-emerald-600 dark:text-emerald-400" />,
-            bg: "bg-emerald-200 dark:bg-emerald-500/10",
-        },
-        {
-            label: "Active Tasks",
-            value: stats.inProgress,
-            color: "text-blue-600 dark:text-blue-400",
-            icon: <Clock className="size-5 text-blue-600 dark:text-blue-400" />,
-            bg: "bg-blue-200 dark:bg-blue-500/10",
-        },
-        {
-            label: "Overdue Tasks",
-            value: stats.overdue,
-            color: "text-red-600 dark:text-red-400",
-            icon: <AlertTriangle className="size-5 text-red-600 dark:text-red-400" />,
-            bg: "bg-red-200 dark:bg-red-500/10",
-        },
-        {
-            label: "Team Size",
-            value: project?.members?.length || 0,
-            color: "text-purple-600 dark:text-purple-400",
-            icon: <Users className="size-5 text-purple-600 dark:text-purple-400" />,
-            bg: "bg-purple-200 dark:bg-purple-500/10",
-        },
+        { label: "Completion rate", value: `${completionRate}%`, tone: "text-ink-900 dark:text-white" },
+        { label: "In progress", value: stats.inProgress, tone: "text-ink-900 dark:text-white" },
+        { label: "Overdue", value: stats.overdue, tone: stats.overdue > 0 ? "text-red-600 dark:text-red-400" : "text-gray-400 dark:text-zinc-500" },
+        { label: "Team size", value: project?.members?.length || 0, tone: "text-ink-900 dark:text-white" },
     ];
 
     return (
@@ -90,15 +68,10 @@ const ProjectAnalytics = ({ project, tasks }) => {
                 {metrics.map((m, i) => (
                     <div
                         key={i}
-                        className="not-dark:bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6"
+                        className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5"
                     >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-zinc-600 dark:text-zinc-400 text-sm">{m.label}</p>
-                                <p className={`text-xl font-bold ${m.color}`}>{m.value}</p>
-                            </div>
-                            <div className={`p-2 rounded-md ${m.bg}`}>{m.icon}</div>
-                        </div>
+                        <p className={`font-display text-[38px] font-bold leading-none tabular-nums ${m.tone}`}>{m.value}</p>
+                        <p className="mt-2 text-[14px] text-gray-500 dark:text-zinc-400">{m.label}</p>
                     </div>
                 ))}
             </div>
@@ -106,8 +79,8 @@ const ProjectAnalytics = ({ project, tasks }) => {
             {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Tasks by Status */}
-                <div className="not-dark:bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                    <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Status</h2>
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6">
+                    <h2 className="text-gray-900 dark:text-white mb-4 text-[18px] font-semibold">Tasks by Status</h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={statusData}>
                             <XAxis
@@ -117,14 +90,14 @@ const ProjectAnalytics = ({ project, tasks }) => {
                                 dark={{ stroke: "#27272a" }}
                             />
                             <YAxis tick={{ fill: "#52525b", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
-                            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="value" fill="#0f3a68" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
                 {/* Tasks by Type */}
-                <div className="not-dark:bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                    <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Type</h2>
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6">
+                    <h2 className="text-gray-900 dark:text-white mb-4 text-[18px] font-semibold">Tasks by Type</h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
@@ -146,8 +119,8 @@ const ProjectAnalytics = ({ project, tasks }) => {
             </div>
 
             {/* Priority Breakdown */}
-            <div className="not-dark:bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Priority</h2>
+            <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6">
+                <h2 className="text-gray-900 dark:text-white mb-4 text-[18px] font-semibold">Tasks by Priority</h2>
                 <div className="space-y-4">
                     {priorityData.map((p) => (
                         <div key={p.name} className="space-y-2">

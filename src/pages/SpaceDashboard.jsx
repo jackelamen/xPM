@@ -2,40 +2,26 @@ import { useMemo, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { format, isAfter, isBefore, addDays, parseISO } from "date-fns"
-import {
-    ArrowLeft, FolderOpen, CheckCircle2, Circle,
-    AlertTriangle, Layers, ChevronDown, ChevronRight,
-    CalendarIcon, ArrowUpDown, TrendingUp, Plus,
-} from "lucide-react"
+import { ArrowLeft, Layers, ChevronDown, ChevronRight, Plus } from "lucide-react"
 import CreateProjectDialog from "../components/CreateProjectDialog"
-
-const statusConfig = {
-    ACTIVE:    { label: "On Track",  badge: "bg-emerald-100 text-emerald-700 border border-emerald-200",  bar: "bg-emerald-500" },
-    PLANNING:  { label: "Planning",  badge: "bg-blue-100 text-blue-700 border border-blue-200",            bar: "bg-blue-500" },
-    ON_HOLD:   { label: "On Hold",   badge: "bg-amber-100 text-amber-700 border border-amber-200",         bar: "bg-amber-500" },
-    COMPLETED: { label: "Completed", badge: "bg-zinc-100 text-zinc-600 border border-zinc-200",            bar: "bg-zinc-400" },
-    CANCELLED: { label: "Cancelled", badge: "bg-red-100 text-red-700 border border-red-200",               bar: "bg-red-400" },
-}
-
-const priorityBadge = {
-    HIGH:   "bg-emerald-100 text-emerald-700",
-    MEDIUM: "bg-blue-100 text-blue-700",
-    LOW:    "bg-zinc-100 text-zinc-500",
-}
+import { ProjectStatus, PriorityTag } from "../components/Badges"
+import Tooltip from "../components/Tooltip"
 
 const SORT_OPTIONS = [
-    { value: "priority", label: "Priority" },
-    { value: "progress", label: "Progress" },
+    { value: "priority", label: "Most open tasks" },
+    { value: "progress", label: "Least progress" },
     { value: "status",   label: "Status" },
     { value: "name",     label: "Name" },
 ]
 
-const statCards = (spaceProjects, totalTasks, doneTasks, spacePct) => [
-    { label: "Projects",       value: spaceProjects.length, Icon: FolderOpen },
-    { label: "Total Tasks",    value: totalTasks,           Icon: CheckCircle2 },
-    { label: "Completed",      value: doneTasks,            Icon: CheckCircle2 },
-    { label: "Space Progress", value: `${spacePct}%`,       Icon: TrendingUp },
-]
+function Stat({ value, label, accent }) {
+    return (
+        <div>
+            <p className={`font-display text-[44px] font-bold leading-none tabular-nums ${accent ? "text-signal-500" : "text-white"}`}>{value}</p>
+            <p className="mt-1.5 text-[14px] text-ink-300">{label}</p>
+        </div>
+    )
+}
 
 export default function SpaceDashboard() {
     const { spaceId } = useParams()
@@ -75,8 +61,8 @@ export default function SpaceDashboard() {
             for (const t of p.tasks || []) {
                 if (!t.due_date || t.status === "DONE" || t.archived) continue
                 const due = parseISO(t.due_date)
-                if (isBefore(due, now)) overdue.push({ ...t, projectName: p.name, projectId: p.id, isOverdue: true })
-                else if (!isAfter(due, cutoff)) window.push({ ...t, projectName: p.name, projectId: p.id, isOverdue: false })
+                if (isBefore(due, now)) overdue.push({ ...t, projectName: p.name, projectId: p.id, projectColor: p.color, isOverdue: true })
+                else if (!isAfter(due, cutoff)) window.push({ ...t, projectName: p.name, projectId: p.id, projectColor: p.color, isOverdue: false })
             }
         }
         return [
@@ -91,225 +77,178 @@ export default function SpaceDashboard() {
 
     if (!space) return (
         <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <Layers className="size-10 text-zinc-300" />
-            <p className="text-zinc-500 text-sm">Space not found</p>
-            <button onClick={() => navigate("/spaces")} className="text-sm text-blue-600 hover:underline">Back to Spaces</button>
+            <Layers className="size-10 text-gray-300" />
+            <p className="text-gray-500 text-sm">Space not found</p>
+            <button onClick={() => navigate("/spaces")} className="text-sm font-medium text-ink-700 dark:text-ink-300 hover:underline">Back to Spaces</button>
         </div>
     )
 
     return (
         <>
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-[1240px] mx-auto space-y-8">
 
-            {/* Breadcrumb + title */}
-            <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-sm text-zinc-500">
-                    <button
-                        onClick={() => navigate("/spaces")}
-                        className="hover:text-zinc-900 transition flex items-center gap-1"
-                    >
-                        <ArrowLeft className="size-3.5" />
-                    </button>
-                    <span>/</span>
-                    <span>Spaces</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: space.color }} />
-                        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">{space.name}</h1>
+            {/* Hook: the space, its colour, and where it stands */}
+            <section className="relative rounded-2xl bg-ink-900 text-white overflow-hidden">
+                <span className="absolute inset-y-0 left-0 w-2" style={{ backgroundColor: space.color }} />
+                <div className="p-7 sm:p-9 sm:pl-11">
+                    <div className="flex items-start justify-between gap-4">
+                        <button onClick={() => navigate("/spaces")} className="inline-flex items-center gap-1.5 text-[14px] text-ink-300 hover:text-white">
+                            <ArrowLeft className="size-4" /> Spaces
+                        </button>
+                        <button
+                            onClick={() => setCreateProjectOpen(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/[0.16] text-[14px] font-semibold transition-colors"
+                        >
+                            <Plus className="size-4" /> New project
+                        </button>
                     </div>
-                    <button
-                        onClick={() => setCreateProjectOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
-                    >
-                        <Plus className="size-4" />
-                        New Project
-                    </button>
-                </div>
-                {space.description && <p className="text-sm text-zinc-500 dark:text-zinc-400 ml-7">{space.description}</p>}
-            </div>
-
-            {/* Stat cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {statCards(spaceProjects, totalTasks, doneTasks, spacePct).map(({ label, value, Icon }) => (
-                    <div key={label} className="glass-panel glass-card-hover rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-[0.07]">
-                            <Icon className="size-9" />
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">{label}</p>
-                        <p className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white leading-none">{value}</p>
+                    <h1 className="mt-5 text-[40px] sm:text-[48px] font-bold tracking-tight leading-none">{space.name}</h1>
+                    {space.description && <p className="mt-3 text-[16px] text-ink-200 max-w-2xl">{space.description}</p>}
+                    <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-2xl">
+                        <Stat value={spaceProjects.length} label={spaceProjects.length === 1 ? "project" : "projects"} />
+                        <Stat value={totalTasks} label="tasks" />
+                        <Stat value={doneTasks} label="done" />
+                        <Stat value={`${spacePct}%`} label="complete" accent />
                     </div>
-                ))}
-            </div>
+                </div>
+            </section>
 
-            {/* Main grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-x-10 gap-y-8">
 
-                {/* Projects — 2/3 width */}
-                <div className="lg:col-span-2">
-                    <div className="glass-panel rounded-xl p-6 flex flex-col gap-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-white">Projects</h2>
-                            <div className="flex items-center gap-2">
-                                <ArrowUpDown className="size-3.5 text-zinc-400" />
-                                <select
-                                    value={projectSort}
-                                    onChange={(e) => setProjectSort(e.target.value)}
-                                    className="text-xs border border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-1 text-zinc-600 dark:text-zinc-400 outline-none cursor-pointer bg-white/50 dark:bg-zinc-800/50"
-                                >
-                                    {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                </select>
-                            </div>
+                {/* Projects */}
+                <section>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
+                        <h2 className="text-[22px] font-semibold text-gray-900 dark:text-white">Projects</h2>
+                        <label className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-zinc-400">
+                            Sort
+                            <select
+                                value={projectSort}
+                                onChange={(e) => setProjectSort(e.target.value)}
+                                className="text-[13px] border border-gray-200 dark:border-zinc-700 rounded-md px-2 py-1 text-gray-700 dark:text-zinc-300 outline-none cursor-pointer bg-white dark:bg-zinc-900"
+                            >
+                                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                        </label>
+                    </div>
+
+                    {sortedProjects.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-gray-300 dark:border-zinc-700 py-14 text-center">
+                            <p className="font-display text-[20px] font-semibold text-gray-900 dark:text-white">No projects in this space</p>
+                            <button onClick={() => setCreateProjectOpen(true)} className="mt-4 px-5 py-2.5 rounded-lg bg-signal-500 hover:bg-signal-400 text-ink-950 text-[14px] font-semibold transition-colors">Create a project</button>
                         </div>
+                    ) : (
+                        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 divide-y divide-gray-100 dark:divide-zinc-800">
+                            {sortedProjects.map((project) => {
+                                const isExpanded = expandedProjects[project.id] ?? true
+                                const openTasks = (project.tasks || []).filter(t => t.status !== "DONE" && !t.archived)
+                                const color = project.color || space.color
 
-                        {sortedProjects.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 gap-2">
-                                <FolderOpen className="size-8 text-zinc-300" />
-                                <p className="text-sm text-zinc-400">No projects in this space</p>
-                                <button onClick={() => setCreateProjectOpen(true)} className="text-xs text-blue-600 hover:underline">Create a project</button>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col gap-3">
-                                {sortedProjects.map((project) => {
-                                    const cfg = statusConfig[project.status] || statusConfig.PLANNING
-                                    const isExpanded = expandedProjects[project.id] ?? true
-                                    const openTasks = (project.tasks || []).filter(t => t.status !== "DONE" && !t.archived)
-
-                                    return (
-                                        <div
-                                            key={project.id}
-                                            className="border border-zinc-200/60 dark:border-zinc-700/60 rounded-lg p-5 bg-white/40 dark:bg-white/[0.03] hover:bg-white/70 dark:hover:bg-white/[0.06] transition-colors"
-                                        >
-                                            {/* Project header */}
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => toggleExpand(project.id)}
-                                                        className="text-zinc-400 hover:text-zinc-600 transition"
-                                                    >
-                                                        {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                                                    </button>
-                                                    <Link
-                                                        to={`/projectsDetail?id=${project.id}&tab=tasks`}
-                                                        className="text-base font-semibold text-zinc-800 dark:text-zinc-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                                                    >
-                                                        {project.name}
-                                                    </Link>
-                                                </div>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${cfg.badge}`}>
-                                                    {cfg.label}
-                                                </span>
-                                            </div>
-
-                                            {/* Progress */}
-                                            <div className="space-y-1.5">
-                                                <div className="flex justify-between text-xs text-zinc-500">
-                                                    <span>Progress</span>
-                                                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                                                        {project.progress}% <span className="font-normal text-zinc-400 ml-1">{project.doneCount}/{project.taskCount} tasks</span>
-                                                    </span>
-                                                </div>
-                                                <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
-                                                    <div className={`h-2 rounded-full transition-all ${cfg.bar}`} style={{ width: `${project.progress}%` }} />
-                                                </div>
-                                            </div>
-
-                                            {/* Open tasks */}
-                                            {isExpanded && (
-                                                <div className="mt-4 border-t border-zinc-100 dark:border-zinc-800 pt-4">
-                                                    {openTasks.length === 0 ? (
-                                                        <p className="text-sm text-zinc-400 italic text-center">No open tasks</p>
-                                                    ) : (
-                                                        <div className="flex flex-col gap-1.5">
-                                                            {openTasks.slice(0, 6).map((t) => (
-                                                                <Link
-                                                                    key={t.id}
-                                                                    to={`/projectsDetail?id=${project.id}&tab=tasks`}
-                                                                    className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition py-0.5"
-                                                                >
-                                                                    <Circle className="size-3 flex-shrink-0 text-zinc-300" />
-                                                                    <span className="truncate flex-1">{t.title}</span>
-                                                                    {t.priority && (
-                                                                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${priorityBadge[t.priority] || ""}`}>
-                                                                            {t.priority}
-                                                                        </span>
-                                                                    )}
-                                                                </Link>
-                                                            ))}
-                                                            {openTasks.length > 6 && (
-                                                                <Link to={`/projectsDetail?id=${project.id}&tab=tasks`} className="text-xs text-blue-500 hover:underline mt-1">
-                                                                    +{openTasks.length - 6} more
-                                                                </Link>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                return (
+                                    <div key={project.id} className="p-5">
+                                        <div className="flex items-center gap-3">
+                                            <Tooltip label={isExpanded ? "Hide open tasks" : "Show open tasks"}>
+                                                <button onClick={() => toggleExpand(project.id)} aria-label={isExpanded ? "Hide open tasks" : "Show open tasks"} className="text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition">
+                                                    {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                                                </button>
+                                            </Tooltip>
+                                            <span className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                                            <Link
+                                                to={`/projectsDetail?id=${project.id}&tab=tasks`}
+                                                className="font-display text-[19px] font-semibold text-gray-900 dark:text-white hover:text-ink-600 dark:hover:text-ink-300 transition-colors truncate"
+                                            >
+                                                {project.name}
+                                            </Link>
+                                            <ProjectStatus status={project.status} className="ml-auto flex-shrink-0" />
                                         </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* Upcoming tasks — 1/3 width */}
-                <div className="lg:col-span-1">
-                    <div className="glass-panel rounded-xl p-6 flex flex-col gap-4 min-h-[400px]">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-white">Upcoming Tasks</h2>
-                            <div className="flex items-center gap-1 border border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-1 bg-white/50 dark:bg-zinc-800/50">
-                                <CalendarIcon className="size-3 text-zinc-400" />
-                                <select
-                                    value={upcomingDays}
-                                    onChange={(e) => setUpcomingDays(Number(e.target.value))}
-                                    className="text-xs bg-transparent outline-none cursor-pointer text-zinc-600 dark:text-zinc-400"
-                                >
-                                    <option value={3}>Next 3 days</option>
-                                    <option value={7}>Next 7 days</option>
-                                    <option value={14}>Next 14 days</option>
-                                    <option value={30}>Next 30 days</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {upcomingTasks.length === 0 ? (
-                            <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-60 py-12">
-                                <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
-                                    <CheckCircle2 className="size-7 text-zinc-400" />
-                                </div>
-                                <p className="text-sm text-zinc-400 text-center">No upcoming tasks in this window</p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-                                {upcomingTasks.map((t) => (
-                                    <Link
-                                        key={t.id}
-                                        to={`/projectsDetail?id=${t.projectId}&tab=tasks`}
-                                        className="flex items-start gap-2.5 py-3 first:pt-0 group"
-                                    >
-                                        <Circle className="size-3.5 text-zinc-300 flex-shrink-0 mt-0.5" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate group-hover:text-zinc-900 transition">{t.title}</p>
-                                            <p className="text-[11px] text-zinc-400 truncate">{t.projectName}</p>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                            {t.priority && (
-                                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${priorityBadge[t.priority] || ""}`}>
-                                                    {t.priority}
-                                                </span>
-                                            )}
-                                            <span className={`text-[10px] flex items-center gap-0.5 ${t.isOverdue ? "text-red-500 font-medium" : "text-zinc-400"}`}>
-                                                {t.isOverdue && <AlertTriangle className="size-3" />}
-                                                {format(parseISO(t.due_date), "dd MMM")}
+                                        <div className="mt-3 flex items-center gap-3 pl-[26px]">
+                                            <div className="flex-1 h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full transition-all" style={{ width: `${project.progress}%`, backgroundColor: color }} />
+                                            </div>
+                                            <span className="text-[13px] text-gray-500 dark:text-zinc-400 tabular-nums whitespace-nowrap">
+                                                <span className="font-semibold text-gray-800 dark:text-zinc-200">{project.progress}%</span> · {project.doneCount}/{project.taskCount}
                                             </span>
                                         </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
+
+                                        {isExpanded && (
+                                            <div className="mt-3 pl-[26px]">
+                                                {openTasks.length === 0 ? (
+                                                    <p className="text-[14px] text-gray-400">Nothing open.</p>
+                                                ) : (
+                                                    <ul>
+                                                        {openTasks.slice(0, 6).map((t) => (
+                                                            <li key={t.id}>
+                                                                <Link
+                                                                    to={`/projectsDetail?id=${project.id}&tab=tasks`}
+                                                                    className="flex items-center gap-3 py-1.5 text-[14px] text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white transition"
+                                                                >
+                                                                    <span className="size-3.5 rounded-full border-[1.5px] border-gray-300 dark:border-zinc-600 flex-shrink-0" />
+                                                                    <span className="truncate flex-1">{t.title}</span>
+                                                                    <PriorityTag priority={t.priority} />
+                                                                </Link>
+                                                            </li>
+                                                        ))}
+                                                        {openTasks.length > 6 && (
+                                                            <li>
+                                                                <Link to={`/projectsDetail?id=${project.id}&tab=tasks`} className="inline-block pt-1 text-[13px] text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                                                                    {openTasks.length - 6} more
+                                                                </Link>
+                                                            </li>
+                                                        )}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                {/* Upcoming: quiet, no surface */}
+                <section>
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pb-3">
+                        <h2 className="text-[22px] font-semibold text-gray-900 dark:text-white">Coming up</h2>
+                        <select
+                            value={upcomingDays}
+                            onChange={(e) => setUpcomingDays(Number(e.target.value))}
+                            aria-label="Time window"
+                            className="text-[13px] border border-gray-200 dark:border-zinc-700 rounded-md px-2 py-1 text-gray-700 dark:text-zinc-300 outline-none cursor-pointer bg-white dark:bg-zinc-900"
+                        >
+                            <option value={3}>Next 3 days</option>
+                            <option value={7}>Next 7 days</option>
+                            <option value={14}>Next 14 days</option>
+                            <option value={30}>Next 30 days</option>
+                        </select>
                     </div>
-                </div>
+
+                    {upcomingTasks.length === 0 ? (
+                        <p className="py-3 text-[14px] text-gray-500 dark:text-zinc-400">Nothing due in the next {upcomingDays} days.</p>
+                    ) : (
+                        <ul>
+                            {upcomingTasks.map((t) => (
+                                <li key={t.id}>
+                                    <Link
+                                        to={`/projectsDetail?id=${t.projectId}&tab=tasks`}
+                                        className="flex items-center gap-3 py-3 border-b border-gray-200 dark:border-zinc-800 group"
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[15px] text-gray-900 dark:text-zinc-100 truncate group-hover:text-ink-600 dark:group-hover:text-ink-300 transition-colors">{t.title}</p>
+                                            <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-gray-400 dark:text-zinc-500 min-w-0">
+                                                <span className="size-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.projectColor || "#6489b3" }} />
+                                                <span className="truncate">{t.projectName}</span>
+                                            </p>
+                                        </div>
+                                        <span className={`text-[12px] whitespace-nowrap ${t.isOverdue ? "font-semibold text-red-600 dark:text-red-400" : "text-gray-500 dark:text-zinc-400"}`}>
+                                            {t.isOverdue ? "Overdue · " : ""}{format(parseISO(t.due_date), "EEE MMM d")}
+                                        </span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
             </div>
         </div>
 
