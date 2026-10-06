@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useAuth } from '../context/AuthContext'
 import { usePulse } from '../context/PulseContext'
+import { useInbox } from '../context/InboxContext'
 import { createTask } from '../features/workspaceSlice'
 import { sendTaskToPulse } from '../lib/pulse'
 import { parseCapture } from '../lib/parseCapture'
@@ -9,9 +10,7 @@ import { PlusIcon, XIcon, Loader2Icon, ZapIcon, CalendarIcon, FolderIcon, FlagIc
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
-const LAST_PROJECT_KEY = 'xpm_capture_project'
 const OPEN_EVENT = 'xpm:capture'
-const readLast = () => { try { return localStorage.getItem(LAST_PROJECT_KEY) || '' } catch { return '' } }
 
 function Chip({ icon, children, onRemove }) {
     const Icon = icon
@@ -28,19 +27,20 @@ function Chip({ icon, children, onRemove }) {
 }
 
 // Type a task and press Enter. "#project", "!high", "tomorrow", "fri", "2pm" are
-// picked out of the text and shown as chips you can dismiss. Needs a project, so
-// the last one you used is remembered.
+// picked out of the text and shown as chips you can dismiss. With no project it
+// lands in your Inbox, so capturing never asks you to decide anything.
 function CaptureBar() {
     const [open, setOpen] = useState(false)
     const [text, setText] = useState('')
     const [ignore, setIgnore] = useState(() => new Set())
-    const [manualProject, setManualProject] = useState(readLast)
+    const [manualProject, setManualProject] = useState('')
     const [toPulse, setToPulse] = useState(false)
     const [submitting, setSubmitting] = useState(false)
     const inputRef = useRef(null)
     const dispatch = useDispatch()
     const { user, pulse } = useAuth()
     const { reload } = usePulse()
+    const inbox = useInbox()
 
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace)
     const projects = useMemo(() => currentWorkspace?.projects || [], [currentWorkspace])
@@ -68,9 +68,10 @@ function CaptureBar() {
     useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50) }, [open])
 
     const parsed = useMemo(() => parseCapture(text, projects, new Date(), ignore), [text, projects, ignore])
-    const validManual = projects.some((p) => p.id === manualProject) ? manualProject : (projects[0]?.id || '')
-    const projectId = parsed.project?.id || validManual
+    const validManual = projects.some((p) => p.id === manualProject) ? manualProject : ''
+    const projectId = parsed.project?.id || validManual // '' means Inbox
     const project = projects.find((p) => p.id === projectId)
+    const toInbox = !projectId
     const title = parsed.title.trim()
     const dismiss = (kind) => setIgnore((s) => new Set(s).add(kind))
 
@@ -78,12 +79,13 @@ function CaptureBar() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!title || !projectId || !currentWorkspace || submitting) return
+        if (!title || !currentWorkspace || submitting) return
         setSubmitting(true)
         try {
+            const target = toInbox ? await inbox.ensure() : { id: projectId }
             const task = await dispatch(createTask({
                 workspaceId: currentWorkspace.id,
-                projectId,
+                projectId: target.id,
                 title,
                 priority: parsed.priority || 'MEDIUM',
                 status: 'TODO',
@@ -92,10 +94,10 @@ function CaptureBar() {
                 dueDate: parsed.dueDate,
                 dueTime: parsed.dueTime,
             })).unwrap()
-            try { localStorage.setItem(LAST_PROJECT_KEY, projectId) } catch { /* ignore */ }
-            setManualProject(projectId)
+            setManualProject('')
 
-            if (toPulse && pulse.enabled) {
+            if (toInbox) { inbox.reload(); toast.success('Added to Inbox') }
+            else if (toPulse && pulse.enabled) {
                 const ok = await sendTaskToPulse(
                     { ...task, projectId, projectName: project?.name, pulseTag: project?.pulse_tag || null },
                     user.id, currentWorkspace.id,
@@ -151,7 +153,7 @@ function CaptureBar() {
                                         <FolderIcon className="size-3" />
                                         <select value={validManual} onChange={(e) => setManualProject(e.target.value)}
                                             className="bg-transparent focus:outline-none max-w-[180px] truncate cursor-pointer">
-                                            {projects.length === 0 && <option value="">No projects</option>}
+                                            <option value="">Inbox</option>
                                             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                     </label>
@@ -160,12 +162,13 @@ function CaptureBar() {
 
                         <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60">
                             {pulse.enabled ? (
-                                <label className="inline-flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 cursor-pointer">
-                                    <input type="checkbox" checked={toPulse} onChange={(e) => setToPulse(e.target.checked)} className="rounded" />
+                                <label className={`inline-flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 ${toInbox ? 'opacity-40' : 'cursor-pointer'}`}
+                                    title={toInbox ? 'Pick a project first; Inbox tasks are triaged before they go to Pulse' : undefined}>
+                                    <input type="checkbox" disabled={toInbox} checked={toPulse && !toInbox} onChange={(e) => setToPulse(e.target.checked)} className="rounded" />
                                     <ZapIcon className="size-3 text-violet-500" /> Also send to Pulse
                                 </label>
                             ) : <span className="text-[11px] text-zinc-400">↵ add · Esc close</span>}
-                            <button type="submit" disabled={submitting || !title || !projectId}
+                            <button type="submit" disabled={submitting || !title}
                                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-40 hover:opacity-90 transition">
                                 {submitting && <Loader2Icon className="size-3.5 animate-spin" />}
                                 Add task

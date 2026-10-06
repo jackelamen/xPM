@@ -16,6 +16,7 @@ import ProjectTimeline from "../components/ProjectTimeline";
 import ProjectNotes from "../components/ProjectNotes";
 import ProjectGantt from "../components/ProjectGantt";
 import TaskPanel from "../components/TaskPanel";
+import { useSyncedPref } from "../lib/useSyncedPref";
 
 export default function ProjectDetail() {
 
@@ -32,6 +33,9 @@ export default function ProjectDetail() {
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [activeTab, setActiveTab] = useState(tab || "tasks");
     const [selectedTaskId, setSelectedTaskId] = useState(null);
+    // Tasks (the list) and Settings are always there; other views are added with "+ View".
+    const [pinnedViews, setPinnedViews] = useSyncedPref("project_views", []);
+    const [viewMenu, setViewMenu] = useState(false);
 
     useEffect(() => {
         if (tab) setActiveTab(tab);
@@ -170,21 +174,51 @@ export default function ProjectDetail() {
 
             {/* Tabs */}
             <div>
-                <div className="flex flex-wrap border-b border-zinc-200 dark:border-zinc-800 mb-6 gap-0">
-                    {TABS.map((tabItem) => (
-                        <button
-                            key={tabItem.key}
-                            onClick={() => { setActiveTab(tabItem.key); setSearchParams({ id: id, tab: tabItem.key }); }}
-                            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm transition-all border-b-2 -mb-px ${
-                                activeTab === tabItem.key
-                                    ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-medium"
-                                    : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                            }`}
-                        >
-                            <tabItem.icon className="size-3.5" />
-                            {tabItem.label}
-                        </button>
+                <div className="flex flex-wrap items-center border-b border-zinc-200 dark:border-zinc-800 mb-6 gap-0">
+                    {TABS.filter((t) => t.key === "tasks" || t.key === "settings" || pinnedViews.includes(t.key) || t.key === activeTab).map((tabItem) => (
+                        <div key={tabItem.key} className="flex items-center -mb-px">
+                            <button
+                                onClick={() => { setActiveTab(tabItem.key); setSearchParams({ id: id, tab: tabItem.key }); }}
+                                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm transition-all border-b-2 ${
+                                    activeTab === tabItem.key
+                                        ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-medium"
+                                        : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                                }`}
+                            >
+                                <tabItem.icon className="size-3.5" />
+                                {tabItem.key === "tasks" ? "List" : tabItem.label}
+                            </button>
+                            {pinnedViews.includes(tabItem.key) && (
+                                <button onClick={() => setPinnedViews((v) => v.filter((k) => k !== tabItem.key))}
+                                    title={`Remove ${tabItem.label} from this bar`} aria-label={`Remove ${tabItem.label} view`}
+                                    className="-ml-2 mr-1 text-zinc-300 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs leading-none">×</button>
+                            )}
+                        </div>
                     ))}
+                    <div className="relative">
+                        <button onClick={() => setViewMenu((v) => !v)}
+                            className="flex items-center gap-1 px-3 py-2.5 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
+                            <PlusIcon className="size-3.5" /> View
+                        </button>
+                        {viewMenu && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setViewMenu(false)} />
+                                <div className="absolute left-0 top-full mt-1 z-20 w-44 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1">
+                                    {TABS.filter((t) => t.key !== "tasks" && t.key !== "settings").map((t) => (
+                                        <button key={t.key}
+                                            onClick={() => {
+                                                setPinnedViews((v) => (v.includes(t.key) ? v : [...v, t.key]));
+                                                setActiveTab(t.key); setSearchParams({ id: id, tab: t.key }); setViewMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                                            <t.icon className="size-3.5 text-zinc-400" />{t.label}
+                                            {pinnedViews.includes(t.key) && <span className="ml-auto text-xs text-zinc-400">added</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div>

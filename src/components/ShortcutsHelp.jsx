@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { XIcon } from 'lucide-react'
 
-const GO = { h: '/', t: '/my-tasks', p: '/projects', x: '/xplan', c: '/crm', r: '/reports', i: '/pulse-inbox' }
+const GO = { h: '/', t: '/my-tasks', p: '/projects', x: '/xplan', c: '/crm', r: '/reports', i: '/inbox', w: '/week', u: '/pulse-inbox' }
 
 const SHORTCUTS = [
     ['⌘⇧K', 'Quick capture'],
@@ -13,7 +13,9 @@ const SHORTCUTS = [
     ['G then X', 'Go to xPlan'],
     ['G then C', 'Go to CRM'],
     ['G then R', 'Go to Reports'],
-    ['G then I', 'Go to Pulse inbox'],
+    ['G then I', 'Go to Inbox'],
+    ['G then W', 'Go to Week (plan / review)'],
+    ['G then U', 'Go to Pulse inbox'],
     ['Esc', 'Close panels and dialogs'],
 ]
 

@@ -66,13 +66,41 @@ export const AuthProvider = ({ children }) => {
         if (data?.user) setUser(data.user)
     }
 
-    // One-time carry-over of the old browser-only toggle.
+    // Weekly ritual state: { planned: <Monday of the planned week>, reviewed: <Monday> }.
+    // Saved to the account so it's the same on every device.
+    const rituals = user?.user_metadata?.rituals || {}
+    const markRitual = async (patch) => {
+        const { data, error } = await supabase.auth.updateUser({ data: { rituals: { ...(user?.user_metadata?.rituals || {}), ...patch } } })
+        if (error) throw error
+        if (data?.user) setUser(data.user)
+    }
+
+    // Small settings that change behaviour (auto-archive) or layout (My Tasks view).
+    // Kept in user metadata, so they must stay tiny; bigger ones use user_prefs.
+    const prefs = useMemo(() => {
+        const m = user?.user_metadata?.prefs || {}
+        return { autoArchive: m.auto_archive || { enabled: false, days: 7 }, myTasksView: m.mytasks_view || 'list' }
+    }, [user])
+
+    const updatePrefs = async (patch) => {
+        const cur = user?.user_metadata?.prefs || {}
+        const { data, error } = await supabase.auth.updateUser({ data: { prefs: { ...cur, ...patch } } })
+        if (error) throw error
+        if (data?.user) setUser(data.user)
+    }
+
+    // One-time carry-over of settings that used to live only in this browser.
     const migrated = useRef(false)
     useEffect(() => {
-        if (!user || migrated.current || user.user_metadata?.pulse !== undefined) return
+        if (!user || migrated.current) return
         migrated.current = true
+        const meta = user.user_metadata || {}
         try {
-            if (JSON.parse(localStorage.getItem(PULSE_LEGACY_KEY)) === true) updatePulse({ enabled: true }).catch(() => {})
+            if (meta.pulse === undefined && JSON.parse(localStorage.getItem(PULSE_LEGACY_KEY)) === true) updatePulse({ enabled: true }).catch(() => {})
+            if (meta.prefs?.auto_archive === undefined) {
+                const old = JSON.parse(localStorage.getItem('xpm_auto_archive'))
+                if (old?.enabled) updatePrefs({ auto_archive: old }).catch(() => {})
+            }
         } catch { /* ignore */ }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user])
@@ -89,7 +117,7 @@ export const AuthProvider = ({ children }) => {
     const displayName = profile?.name || user?.email?.split('@')[0] || 'there'
 
     return (
-        <AuthContext.Provider value={{ user, profile, displayName, isSuperadmin: !!profile?.is_superadmin, pulse, updatePulse, loading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, profile, displayName, isSuperadmin: !!profile?.is_superadmin, pulse, updatePulse, rituals, markRitual, prefs, updatePrefs, loading, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     )

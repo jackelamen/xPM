@@ -5,9 +5,9 @@ import { Outlet } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { loadTheme } from '../features/themeSlice'
 import { fetchWorkspaces, fetchWorkspaceDetail, createWorkspace, archiveTasks } from '../features/workspaceSlice'
-import { getAutoArchiveSetting } from './ProfileSettings'
 import { useAuth } from '../context/AuthContext'
 import { PulseProvider } from '../context/PulseContext'
+import { InboxProvider } from '../context/InboxContext'
 import ShortcutsHelp from '../components/ShortcutsHelp'
 import QuickCapture from '../components/QuickCapture'
 import { Loader2Icon } from 'lucide-react'
@@ -18,7 +18,7 @@ const Layout = () => {
     const [wsName, setWsName] = useState('')
     const [creating, setCreating] = useState(false)
 
-    const { user } = useAuth()
+    const { user, prefs } = useAuth()
     const dispatch = useDispatch()
     const { loading, currentWorkspace, workspaces } = useSelector((state) => state.workspace)
 
@@ -41,7 +41,7 @@ const Layout = () => {
     // Auto-archive completed tasks
     useEffect(() => {
         if (!currentWorkspace?.projects) return
-        const { enabled, days } = getAutoArchiveSetting()
+        const { enabled, days } = prefs.autoArchive
         if (!enabled) return
 
         const cutoff = new Date()
@@ -132,6 +132,7 @@ const Layout = () => {
 
     return (
         <PulseProvider>
+        <InboxProvider>
         <div className="flex gradient-mesh dark:gradient-mesh text-gray-900 dark:text-slate-100 min-h-screen">
             {/* Sidebar overlay backdrop on mobile */}
             {isSidebarOpen && (
@@ -150,6 +151,7 @@ const Layout = () => {
             <ShortcutsHelp />
             <QuickCapture />
         </div>
+        </InboxProvider>
         </PulseProvider>
     )
 }

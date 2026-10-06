@@ -53,7 +53,7 @@ export const fetchWorkspaceDetail = createAsyncThunk(
             if (spacesError) throw spacesError
 
             // Fetch projects
-            const { data: projects, error: projectError } = await supabase
+            const { data: allProjects, error: projectError } = await supabase
                 .from("projects")
                 .select("*")
                 .eq("workspace_id", workspaceId)
@@ -61,6 +61,8 @@ export const fetchWorkspaceDetail = createAsyncThunk(
                 .order("created_at", { ascending: true })
 
             if (projectError) throw projectError
+            // Inbox projects (one per person) are internal; see InboxContext.
+            const projects = (allProjects || []).filter((p) => p.icon !== "inbox")
 
             // Fetch tasks for all projects (only columns needed)
             const projectIds = projects.map((p) => p.id)

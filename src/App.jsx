@@ -18,6 +18,8 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Archive from "./pages/Archive";
 import Home from "./pages/Home";
+import Inbox from "./pages/Inbox";
+import Week from "./pages/Week";
 import PulseInbox from "./pages/PulseInbox";
 import Reports from "./pages/Reports";
 import { useAuth } from "./context/AuthContext";
@@ -52,6 +54,8 @@ const App = () => {
                 }>
                     <Route index element={<Home />} />
                     <Route path="overview" element={<Dashboard />} />
+                    <Route path="inbox" element={<Inbox />} />
+                    <Route path="week" element={<Week />} />
                     <Route path="pulse-inbox" element={<PulseInbox />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="my-tasks" element={<MyTasks />} />

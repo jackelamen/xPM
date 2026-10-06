@@ -8,10 +8,11 @@ import {
     UsersRoundIcon, CheckSquareIcon, ArchiveIcon, Layers,
     FolderOpenIcon, ChevronRightIcon, PanelLeftCloseIcon, PanelLeftOpenIcon,
     BuildingIcon, Globe2Icon, MapIcon, HomeIcon, InboxIcon, BarChart3Icon,
-    ExternalLinkIcon, EllipsisIcon,
+    ExternalLinkIcon, EllipsisIcon, CalendarDaysIcon, ZapIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { usePulse } from '../context/PulseContext'
+import { useInbox } from '../context/InboxContext'
 import { PULSE_URL } from '../lib/pulse'
 
 const COLLAPSED_KEY = 'xpm_sidebar_collapsed'
@@ -40,6 +41,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const { isSuperadmin } = useAuth()
     const { enabled: pulseEnabled, needsReview } = usePulse()
     const reviewCount = needsReview.length
+    const inboxCount = useInbox().count
 
     const [moreOpen, setMoreOpen] = useState(() => {
         try { return JSON.parse(localStorage.getItem(MORE_KEY)) === true } catch { return false }
@@ -69,15 +71,17 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     // Daily-use pages first; everything else lives under "More".
     const simpleItems = [
         { name: 'Home',     href: '/',         icon: HomeIcon },
+        { name: 'Inbox',    href: '/inbox',    icon: InboxIcon, badge: inboxCount },
         { name: 'My Tasks', href: '/my-tasks', icon: CheckSquareIcon },
+        { name: 'Week',     href: '/week',     icon: CalendarDaysIcon },
     ]
     const afterProjectsItems = [
-        { name: 'xPlan',   href: '/xplan',   icon: MapIcon },
-        { name: 'CRM',     href: '/crm',     icon: ContactIcon },
-        { name: 'Reports', href: '/reports', icon: BarChart3Icon },
-        ...(pulseEnabled ? [{ name: 'Pulse inbox', href: '/pulse-inbox', icon: InboxIcon, badge: reviewCount }] : []),
+        { name: 'xPlan', href: '/xplan', icon: MapIcon },
+        { name: 'CRM',   href: '/crm',   icon: ContactIcon },
+        ...(pulseEnabled ? [{ name: 'Pulse inbox', href: '/pulse-inbox', icon: ZapIcon, badge: reviewCount }] : []),
     ]
     const moreItems = [
+        { name: 'Reports',   href: '/reports',  icon: BarChart3Icon },
         { name: 'Overview',  href: '/overview', icon: LayoutDashboardIcon },
         { name: 'Workload',  href: '/workload', icon: UsersRoundIcon },
         { name: 'Team',      href: '/team',     icon: UsersIcon },
@@ -141,7 +145,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
                 {/* Nav icons */}
                 <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col items-center py-3 px-[7px]">
-                    {simpleItems.map((i) => iconLink(i.href, i.icon, i.name, i.href === '/'))}
+                    {simpleItems.map((i) => iconLink(i.href, i.icon, i.badge ? `${i.name} (${i.badge})` : i.name, i.href === '/'))}
 
                     <Tip label="Projects">
                         <NavLink to="/projects"
@@ -209,6 +213,9 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         <NavLink to={item.href} key={item.name} end={item.href === '/'} className={navLinkClass}>
                             <item.icon size={16} strokeWidth={1.75} />
                             <span>{item.name}</span>
+                            {item.badge > 0 && (
+                                <span className='ml-auto min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900'>{item.badge}</span>
+                            )}
                         </NavLink>
                     ))}
 

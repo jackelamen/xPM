@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useSyncedPref } from "../lib/useSyncedPref";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { useState, useMemo, useEffect } from "react";
@@ -69,19 +70,11 @@ const ProjectTasks = ({ tasks, onTaskClick, projectId, onRefresh, fieldDefinitio
 
     const isSelecting = selectedTasks.length > 0;
 
-    // Builtin column visibility — persisted per project in localStorage
-    const storageKey = `field_visibility_${projectId}`;
-    const [builtinVisible, setBuiltinVisible] = useState(() => {
-        try { return JSON.parse(localStorage.getItem(storageKey)) || {}; }
-        catch { return {}; }
-    });
+    // Builtin column visibility — saved per project to the account (follows you across devices)
+    const [builtinVisible, setBuiltinVisible] = useSyncedPref(`field_visibility_${projectId}`, {});
 
     const handleBuiltinVisibilityChange = (key, visible) => {
-        setBuiltinVisible((prev) => {
-            const next = { ...prev, [key]: visible };
-            localStorage.setItem(storageKey, JSON.stringify(next));
-            return next;
-        });
+        setBuiltinVisible((prev) => ({ ...prev, [key]: visible }));
     };
 
     // Custom field columns that are currently visible (sorted by position)

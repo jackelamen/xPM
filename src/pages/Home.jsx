@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext'
 import { usePulse } from '../context/PulseContext'
 import { patchTask, setTaskAssignees, updateTask } from '../features/workspaceSlice'
 import { sendTaskToPulse } from '../lib/pulse'
+import { useInbox } from '../context/InboxContext'
+import { bucketOf, nextStep, whenOf } from '../lib/flow'
 import { XPlanThisWeekCard } from '../components/XPlanThisWeek'
 import { CaptureButton } from '../components/QuickCapture'
 import CreateProjectDialog from '../components/CreateProjectDialog'
@@ -67,7 +69,8 @@ function TaskLine({ task, onOpen, children }) {
 }
 
 export default function Home() {
-    const { user, displayName, pulse } = useAuth()
+    const { user, displayName, pulse, rituals } = useAuth()
+    const inbox = useInbox()
     const dispatch = useDispatch()
     const { byXpmTask, needsReview, enabled: pulseEnabled, reload } = usePulse()
     const workspace = useSelector((s) => s.workspace?.currentWorkspace)
@@ -79,7 +82,7 @@ export default function Home() {
     const hour = new Date().getHours()
     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-    const { overdue, soon, noDate, waiting, unsent, inPulseCounts } = useMemo(() => {
+    const { overdue, todayTasks, weekTasks, noDate, waiting, unsent, inPulseCounts } = useMemo(() => {
         const all = projects.flatMap((p) => (p.tasks || []).map((t) => ({ ...t, projectId: p.id, projectName: p.name, pulseTag: p.pulse_tag || null })))
         const parents = new Set(all.map((t) => t.parent_task_id).filter(Boolean))
         const open = all.filter((t) => !t.archived_at && t.status !== 'DONE' && !parents.has(t.id))
@@ -93,9 +96,13 @@ export default function Home() {
         const soonT = mine.filter((t) => t.due_date && t.due_date >= today && t.due_date <= soonEnd).sort(byDue)
         const counts = { today: 0, upcoming: 0, anytime: 0, someday: 0, inbox: 0 }
         for (const t of mine) { const k = byXpmTask.get(t.id)?.location?.key; if (k && counts[k] !== undefined) counts[k]++ }
+        const now = new Date()
+        const byWhen = (a, b) => (whenOf(a) || '').localeCompare(whenOf(b) || '')
         return {
             overdue: overdueT,
             soon: soonT,
+            todayTasks: mine.filter((t) => bucketOf(t, now) === 'today').sort(byWhen),
+            weekTasks: mine.filter((t) => bucketOf(t, now) === 'week').sort(byWhen),
             noDate: mine.filter((t) => !t.due_date && !t.start_date && !t.custom_fields?.someday),
             waiting: open.filter((t) => t.created_by === user?.id && t.assignee_id && t.assignee_id !== user?.id)
                 .sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999')),
@@ -126,6 +133,7 @@ export default function Home() {
         if (sent) { toast.success(`Sent ${sent} to Pulse`); reload() }
     }
 
+    const step = inbox.loading ? null : nextStep({ inboxCount: inbox.count, rituals })
     const open = (t) => setSelected({ taskId: t.id, projectId: t.projectId })
     const pulseProps = { byXpmTask, enabled: pulseEnabled }
     const nothingAtAll = projects.length === 0
@@ -140,7 +148,7 @@ export default function Home() {
                     </h1>
                     <p className="text-[13px] text-gray-500 dark:text-zinc-400 mt-1">
                         {overdue.length > 0 && <span className="text-red-600 dark:text-red-400 font-medium">{overdue.length} overdue · </span>}
-                        {soon.length} due in the next {SOON_DAYS} days
+                        {todayTasks.length} for today · {weekTasks.length} later this week
                         {noDate.length > 0 && ` · ${noDate.length} with no date`}
                     </p>
                 </div>
@@ -152,6 +160,20 @@ export default function Home() {
                 </div>
             </div>
             <CreateProjectDialog isDialogOpen={showNewProject} setIsDialogOpen={setShowNewProject} />
+
+            {/* The one thing to do next */}
+            {step ? (
+                <div className="mb-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm px-5 py-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                        <p className="text-[12px] font-medium uppercase tracking-wide text-gray-400">Next</p>
+                        <p className="text-[17px] font-semibold text-gray-900 dark:text-white">{step.title}</p>
+                        <p className="text-[13px] text-gray-500 dark:text-zinc-400">{step.detail}</p>
+                    </div>
+                    <Link to={step.to} className="flex-shrink-0 px-4 py-2 rounded-lg text-[14px] font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900">{step.cta}</Link>
+                </div>
+            ) : (
+                <p className="mb-6 text-[13px] text-emerald-700 dark:text-emerald-400">Inbox clear and the week is planned. Do the work.</p>
+            )}
 
             {nothingAtAll ? (
                 <Card icon={CalendarClockIcon} tone="text-blue-500" title="Get started">
@@ -172,16 +194,27 @@ export default function Home() {
                             {overdue.length > 8 && <Link to="/my-tasks" className="block px-5 py-2.5 text-[12px] text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white border-t border-gray-100 dark:border-zinc-800">{overdue.length - 8} more in My Tasks</Link>}
                         </Card>
 
-                        <Card icon={CalendarClockIcon} tone="text-blue-500" title={`Due in the next ${SOON_DAYS} days`} count={soon.length}>
-                            {soon.length === 0
-                                ? <Empty>Nothing due this week. Add a task, or date something from "No date" below.</Empty>
-                                : <ul>{soon.map((t) => (
+                        <Card icon={CalendarClockIcon} tone="text-blue-500" title="Today" count={todayTasks.length}>
+                            {todayTasks.length === 0
+                                ? <Empty>Nothing planned for today. <Link to="/week?tab=plan" className="underline">Plan the week</Link> or pull something from "No date".</Empty>
+                                : <ul>{todayTasks.map((t) => (
                                     <TaskLine key={t.id} task={t} onOpen={open}>
                                         <PulseChip task={t} {...pulseProps} />
-                                        <DueLabel date={t.due_date} />
+                                        <DueLabel date={whenOf(t)} />
                                     </TaskLine>
                                 ))}</ul>}
                         </Card>
+
+                        {weekTasks.length > 0 && (
+                            <Card icon={CalendarClockIcon} tone="text-zinc-500" title="Later this week" count={weekTasks.length}>
+                                <ul>{weekTasks.slice(0, 8).map((t) => (
+                                    <TaskLine key={t.id} task={t} onOpen={open}>
+                                        <PulseChip task={t} {...pulseProps} />
+                                        <DueLabel date={whenOf(t)} />
+                                    </TaskLine>
+                                ))}</ul>
+                            </Card>
+                        )}
 
                         <Card icon={CalendarOffIcon} tone="text-zinc-500" title="No date" count={noDate.length}>
                             {noDate.length === 0

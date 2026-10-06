@@ -14,12 +14,6 @@ import NotificationSettings from '../components/NotificationSettings'
 import { autoSendCandidates } from '../lib/pulse'
 import { usePulse } from '../context/PulseContext'
 
-export const AUTO_ARCHIVE_KEY = 'xpm_auto_archive'
-
-export function getAutoArchiveSetting() {
-    try { return JSON.parse(localStorage.getItem(AUTO_ARCHIVE_KEY)) || { enabled: false, days: 7 } }
-    catch { return { enabled: false, days: 7 } }
-}
 
 const inputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-gray-900 dark:text-zinc-100 text-[13px] focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-white/20 mt-1.5 placeholder:text-gray-400"
 const labelClasses = "text-[12px] font-medium text-gray-600 dark:text-zinc-400"
@@ -295,7 +289,7 @@ function WorkspaceSettings() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProfileSettings() {
-    const { user, signOut, displayName: contextDisplayName, pulse, updatePulse } = useAuth()
+    const { user, signOut, displayName: contextDisplayName, pulse, updatePulse, prefs, updatePrefs } = useAuth()
     const { links: pulseLinks } = usePulse()
     const navigate = useNavigate()
     const dispatch = useDispatch()
@@ -308,17 +302,18 @@ export default function ProfileSettings() {
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(true)
 
-    const [autoArchive, setAutoArchive] = useState(getAutoArchiveSetting)
+    const autoArchive = prefs.autoArchive
     const pulseEnabled = pulse.enabled
 
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [changingPassword, setChangingPassword] = useState(false)
 
-    const saveAutoArchive = (next) => {
-        setAutoArchive(next)
-        localStorage.setItem(AUTO_ARCHIVE_KEY, JSON.stringify(next))
-        toast.success(next.enabled ? `Auto-archive enabled (${next.days} days)` : 'Auto-archive disabled')
+    const saveAutoArchive = async (next) => {
+        try {
+            await updatePrefs({ auto_archive: next })
+            toast.success(next.enabled ? `Auto-archive enabled (${next.days} days)` : 'Auto-archive disabled')
+        } catch (err) { toast.error(err.message || 'Could not save') }
     }
 
     const togglePulse = async (val) => {

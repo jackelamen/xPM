@@ -364,6 +364,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
     const [draft, setDraft] = useState(null)
     const [saving, setSaving] = useState(false)
     const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
+    // Less-used fields stay folded away unless the task already uses one.
+    const [showMore, setShowMore] = useState(() => !!(task?.start_date || task?.estimate_minutes || task?.milestone || task?.custom_fields?.someday))
 
     // Sync draft when task changes (new panel open)
     useEffect(() => {
@@ -592,7 +594,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             </select>
                         </div>
 
-                        {/* Type */}
+                        {showMore && (<>
+{/* Type */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Type</p>
                             <select
@@ -606,7 +609,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             </select>
                         </div>
 
-                        {/* Project Lead */}
+                        </>)}
+
+{/* Project Lead */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                 <UserIcon className="size-3" /> Project Lead
@@ -667,7 +672,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             )}
                         </div>
 
-                        {/* Start Date */}
+                        {showMore && (<>
+{/* Start Date */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                 <CalendarIcon className="size-3" /> Start Date
@@ -694,7 +700,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             />
                         </div>
 
-                        {/* Due Date + Time */}
+                        </>)}
+
+{/* Due Date + Time */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                 <CalendarIcon className="size-3" /> Due Date
@@ -714,7 +722,8 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             />
                         </div>
 
-                        {/* Someday */}
+                        {showMore && (<>
+{/* Someday */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Someday</p>
                             <button
@@ -726,9 +735,12 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             </button>
                         </div>
 
-                        <PulseInfo taskId={taskId} />
+                        </>)}
 
-                        {/* Created */}
+<PulseInfo taskId={taskId} />
+
+                        {showMore && (<>
+{/* Created */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                 <ClockIcon className="size-3" /> Created
@@ -750,7 +762,13 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 {(draft?.milestone ?? task.milestone) ? "★ Milestone" : "☆ Mark as milestone"}
                             </button>
                         </div>
+</>)}
                     </div>
+
+                    <button onClick={() => setShowMore((v) => !v)}
+                        className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 -mt-1">
+                        {showMore ? "Fewer fields ▴" : "More fields ▾  type, start date, estimate, someday, milestone"}
+                    </button>
 
                     {/* Recurrence */}
                     <div className="border border-zinc-100 dark:border-zinc-800 rounded-lg p-3 space-y-2">

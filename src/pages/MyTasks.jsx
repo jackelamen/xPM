@@ -14,6 +14,8 @@ import UserAvatar from '../components/UserAvatar'
 import toast from 'react-hot-toast'
 import { sendTaskToPulse as sendToPulse, scheduleText } from '../lib/pulse'
 import { usePulse } from '../context/PulseContext'
+import { useSyncedPref } from '../lib/useSyncedPref'
+import MyTasksList from '../components/MyTasksList'
 import { supabase } from '../lib/supabase'
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -76,16 +78,6 @@ function getDefaultSection(task) {
 const SECTIONS_KEY   = 'mytasks_sections'
 const TASK_SEC_KEY   = 'mytasks_task_sections'
 const VIS_KEY        = 'mytasks_col_vis'
-
-function loadSections() {
-    try { return JSON.parse(localStorage.getItem(SECTIONS_KEY)) || DEFAULT_SECTIONS } catch { return DEFAULT_SECTIONS }
-}
-function saveSections(s) { localStorage.setItem(SECTIONS_KEY, JSON.stringify(s)) }
-
-function loadTaskSections() {
-    try { return JSON.parse(localStorage.getItem(TASK_SEC_KEY)) || {} } catch { return {} }
-}
-function saveTaskSections(m) { localStorage.setItem(TASK_SEC_KEY, JSON.stringify(m)) }
 
 // ── reusable dropdown ─────────────────────────────────────────────────────────
 
@@ -563,7 +555,7 @@ function SectionHeaderRow({
 
 // ── page ──────────────────────────────────────────────────────────────────────
 
-export default function MyTasks() {
+function MyTasksTable() {
     const { user } = useAuth()
     const dispatch = useDispatch()
     const { currentWorkspace } = useSelector((s) => s.workspace)
@@ -599,28 +591,21 @@ export default function MyTasks() {
     const setColWidth = (key, w) => setColWidths((prev) => ({ ...prev, [key]: w }))
 
     // Column visibility
-    const [colVis, setColVis] = useState(() => {
-        try {
-            const saved = JSON.parse(localStorage.getItem(VIS_KEY)) || {}
-            const defaults = Object.fromEntries(ALL_COLS.filter((c) => !c.fixed).map((c) => [c.key, c.defaultOn]))
-            // Always respect the current defaultOn for status (force it off now that sections provide context)
-            return { ...defaults, ...saved, status: false }
-        } catch { return {} }
-    })
-    const handleColVis = (key, val) => {
-        setColVis((prev) => { const next = { ...prev, [key]: val }; localStorage.setItem(VIS_KEY, JSON.stringify(next)); return next })
-    }
+    const [colVisSaved, setColVisSaved] = useSyncedPref(VIS_KEY, {})
+    const colVis = useMemo(() => {
+        const defaults = Object.fromEntries(ALL_COLS.filter((c) => !c.fixed).map((c) => [c.key, c.defaultOn]))
+        // Always respect the current defaultOn for status (force it off now that sections provide context)
+        return { ...defaults, ...colVisSaved, status: false }
+    }, [colVisSaved])
+    const handleColVis = (key, val) => setColVisSaved((prev) => ({ ...prev, [key]: val }))
     const cols = visibleCols(colVis)
 
     // Sections
-    const [sections, setSections] = useState(loadSections)
-    const [sectionOpen, setSectionOpen] = useState(() => Object.fromEntries(loadSections().map((s) => [s.id, true])))
-
-    // task → section assignment (localStorage)
-    const [taskSections, setTaskSections] = useState(loadTaskSections)
-
-    const persistSections = (s) => { saveSections(s); setSections(s) }
-    const persistTaskSections = (m) => { saveTaskSections(m); setTaskSections(m) }
+    // Sections and the task -> section assignment are saved to the account, so
+    // they're the same on every device.
+    const [sections, persistSections] = useSyncedPref(SECTIONS_KEY, DEFAULT_SECTIONS)
+    const [sectionOpen, setSectionOpen] = useState({})
+    const [taskSections, persistTaskSections] = useSyncedPref(TASK_SEC_KEY, {})
 
     // All my tasks
     const allMyTasks = useMemo(() => {
@@ -940,6 +925,28 @@ export default function MyTasks() {
                 <TaskPanel taskId={selectedTaskId} projectId={selectedProjectId}
                     onClose={() => { setSelectedTaskId(null); setSelectedProjectId(null) }} />
             )}
+        </div>
+    )
+}
+
+
+// The default is a plain list sorted by date. The spreadsheet view (columns,
+// custom sections) is still here for when you want it.
+export default function MyTasks() {
+    const { prefs, updatePrefs } = useAuth()
+    const view = prefs.myTasksView
+    const setView = (v) => updatePrefs({ mytasks_view: v }).catch((e) => toast.error(e.message || 'Could not save'))
+    return (
+        <div>
+            <div className="flex justify-end mb-3">
+                <div className="inline-flex rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden text-[12px]">
+                    {[['list', 'List'], ['table', 'Table']].map(([k, label]) => (
+                        <button key={k} onClick={() => setView(k)}
+                            className={`px-3 py-1 ${view === k ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-600 dark:text-zinc-300'}`}>{label}</button>
+                    ))}
+                </div>
+            </div>
+            {view === 'table' ? <MyTasksTable /> : <MyTasksList />}
         </div>
     )
 }
