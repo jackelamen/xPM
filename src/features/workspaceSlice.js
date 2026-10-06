@@ -195,7 +195,7 @@ export const createWorkspace = createAsyncThunk(
 
 export const createProject = createAsyncThunk(
     "workspace/createProject",
-    async ({ workspaceId, name, description, status, priority, startDate, endDate, spaceId }, { rejectWithValue }) => {
+    async ({ workspaceId, name, description, status, priority, startDate, endDate, spaceId, color }, { rejectWithValue }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser()
 
@@ -210,6 +210,7 @@ export const createProject = createAsyncThunk(
                     start_date: startDate || null,
                     end_date: endDate || null,
                     space_id: spaceId || null,
+                    color: color || null,
                     created_by: user.id,
                 })
                 .select()

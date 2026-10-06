@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import SharedModal from "../components/Modal";
 import { supabase } from "../lib/supabase";
 import { useSelector } from "react-redux";
 import { useAuth } from "../context/AuthContext";
@@ -57,19 +58,7 @@ const HORIZON_LABELS = { now: "Now", next: "Next", later: "Later" };
 const LANE_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 function Modal({ title, onClose, children }) {
-    return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">{title}</h2>
-                    <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
-                        <XIcon className="size-4 text-gray-400" />
-                    </button>
-                </div>
-                {children}
-            </div>
-        </div>
-    );
+    return <SharedModal open onClose={onClose} title={title}>{children}</SharedModal>;
 }
 
 function TablePanel({ toolbar, children }) {

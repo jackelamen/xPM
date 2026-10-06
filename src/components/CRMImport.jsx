@@ -290,7 +290,7 @@ export default function CRMImport({ isOpen, onClose, workspaceId, target = "cont
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-ink-950/55 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-xl shadow-xl max-h-[85vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-5">
                     <div>

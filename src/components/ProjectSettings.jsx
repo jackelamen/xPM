@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PROJECT_COLORS } from "./ui";
 import { Save, Loader2Icon, Trash2Icon } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { supabase } from "../lib/supabase";
@@ -21,6 +22,7 @@ export default function ProjectSettings({ project }) {
         status: "PLANNING",
         space_id: "",
         pulse_tag: "",
+        color: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
@@ -33,6 +35,7 @@ export default function ProjectSettings({ project }) {
                 status: project.status || "PLANNING",
                 space_id: project.space_id || "",
                 pulse_tag: project.pulse_tag || "",
+                color: project.color || "",
             });
         }
     }, [project]);
@@ -56,6 +59,7 @@ export default function ProjectSettings({ project }) {
                     status: formData.status,
                     space_id: formData.space_id || null,
                     pulse_tag: normalizedPulseTag,
+                    color: formData.color || null,
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", project.id)
@@ -147,6 +151,17 @@ export default function ProjectSettings({ project }) {
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div>
+                        <label className={labelClasses}>Color</label>
+                        <div className="flex flex-wrap gap-2 mt-1.5">
+                            {PROJECT_COLORS.map((c) => (
+                                <button key={c} type="button" onClick={() => setFormData({ ...formData, color: c })} aria-label={`Color ${c}`} aria-pressed={formData.color === c}
+                                    className={`size-7 rounded-full transition-transform ${formData.color === c ? "ring-2 ring-offset-2 ring-ink-700 dark:ring-offset-zinc-900 scale-110" : "hover:scale-105"}`}
+                                    style={{ backgroundColor: c }} />
+                            ))}
+                        </div>
                     </div>
 
                     <div>

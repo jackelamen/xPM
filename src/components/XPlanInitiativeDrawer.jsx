@@ -318,7 +318,7 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end">
-            <div className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-ink-950/55" onClick={onClose} />
             <div className="relative w-full max-w-2xl h-full bg-white dark:bg-zinc-950 border-l border-gray-200 dark:border-zinc-800 shadow-2xl flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex-shrink-0">

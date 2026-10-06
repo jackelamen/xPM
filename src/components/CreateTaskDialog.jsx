@@ -1,200 +1,176 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon, Loader2Icon, ChevronDownIcon } from "lucide-react";
+import { Loader2Icon, ChevronDownIcon } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { format } from "date-fns";
 import { createTask } from "../features/workspaceSlice";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
+import Modal from "./Modal";
+import { accentBtn, ghostBtn, inputCls, labelCls } from "./ui";
 import toast from "react-hot-toast";
 
+const blank = (me) => ({
+    title: "", description: "", type: "OTHER", status: "TODO", priority: "MEDIUM",
+    leadId: me || "", assigneeIds: [], start_date: "", due_date: "", due_time: "", estimate: "",
+});
+
+// A task needs a title. Who, and when, are one click away. The rest stays folded away.
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
     const dispatch = useDispatch();
+    const { user } = useAuth();
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
     const teamMembers = currentWorkspace?.members || [];
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
-    const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        type: "MEETING",
-        status: "TODO",
-        priority: "MEDIUM",
-        leadId: "",
-        assigneeIds: [],
-        due_date: "",
-        due_time: "",
+    const [more, setMore] = useState(false);
+    const [formData, setFormData] = useState(() => blank(user?.id));
+    const set = (patch) => setFormData((f) => ({ ...f, ...patch }));
+
+    const close = () => { setShowCreateTask(false); setMore(false); };
+
+    const toggleAssignee = (id) => set({
+        assigneeIds: formData.assigneeIds.includes(id) ? formData.assigneeIds.filter((x) => x !== id) : [...formData.assigneeIds, id],
     });
-
-    const toggleAssignee = (userId) => {
-        setFormData((prev) => ({
-            ...prev,
-            assigneeIds: prev.assigneeIds.includes(userId)
-                ? prev.assigneeIds.filter((id) => id !== userId)
-                : [...prev.assigneeIds, userId],
-        }));
-    };
-
-    const assigneeLabel = () => {
-        const count = formData.assigneeIds.length;
-        if (count === 0) return "None";
-        if (count === 1) {
-            const m = teamMembers.find((m) => m.user_id === formData.assigneeIds[0]);
-            return m?.user?.name || m?.user?.email || "1 member";
-        }
-        return `${count} members`;
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!currentWorkspace) return;
+        if (!currentWorkspace || !formData.title.trim()) return;
         setIsSubmitting(true);
         try {
-            await dispatch(createTask({
+            const task = await dispatch(createTask({
                 workspaceId: currentWorkspace.id,
                 projectId,
-                title: formData.title,
+                title: formData.title.trim(),
                 description: formData.description,
                 type: formData.type,
                 status: formData.status,
                 priority: formData.priority,
                 leadId: formData.leadId || null,
                 assigneeIds: formData.assigneeIds,
+                startDate: formData.start_date || null,
                 dueDate: formData.due_date || null,
                 dueTime: formData.due_time || null,
             })).unwrap();
-            toast.success("Task created!");
-            setShowCreateTask(false);
-            setFormData({ title: "", description: "", type: "MEETING", status: "TODO", priority: "MEDIUM", leadId: "", assigneeIds: [], due_date: "", due_time: "" });
+            if (formData.estimate) {
+                // The create call doesn't take an estimate, so set it right after.
+                await supabase.from("xpm_tasks").update({ estimate_minutes: Number(formData.estimate) }).eq("id", task.id);
+            }
+            toast.success("Task created");
+            setFormData(blank(user?.id));
+            close();
         } catch (err) {
-            toast.error(err || "Failed to create task");
+            toast.error(err?.message || err || "Failed to create task");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    return showCreateTask ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/60 backdrop-blur">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-lg w-full max-w-md p-6 text-zinc-900 dark:text-white">
-                <h2 className="text-xl font-bold mb-4">Create New Task</h2>
+    return (
+        <Modal open={!!showCreateTask} onClose={close} title="New task" size="md">
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label htmlFor="task-title" className="sr-only">Title</label>
+                    <input id="task-title" autoFocus value={formData.title} onChange={(e) => set({ title: e.target.value })}
+                        placeholder="What needs to be done?" required
+                        className={`${inputCls} !text-[17px] !py-2.5`} />
+                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Title */}
-                    <div className="space-y-1">
-                        <label htmlFor="title" className="text-sm font-medium">Title</label>
-                        <input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Task title" className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className={labelCls}>Assigned to</label>
+                        <select value={formData.leadId} onChange={(e) => set({ leadId: e.target.value })} className={inputCls}>
+                            <option value="">Unassigned</option>
+                            {teamMembers.map((m) => (
+                                <option key={m.user_id} value={m.user_id}>{m.user_id === user?.id ? "Me" : (m.user?.name || m.user?.email)}</option>
+                            ))}
+                        </select>
                     </div>
-
-                    {/* Description */}
-                    <div className="space-y-1">
-                        <label htmlFor="description" className="text-sm font-medium">Description</label>
-                        <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Describe the task" className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <div>
+                        <label className={labelCls}>Due</label>
+                        <input type="date" value={formData.due_date} onChange={(e) => set({ due_date: e.target.value })} className={inputCls} />
                     </div>
+                </div>
 
-                    {/* Type & Priority */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Type</label>
-                            <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
-                                <option value="MEETING">Meeting</option>
-                                <option value="WRITING">Writing</option>
-                                <option value="STRATEGY">Strategy</option>
-                                <option value="DESIGN">Design</option>
-                                <option value="ADMIN">Admin</option>
-                                <option value="OUTREACH">Outreach</option>
-                                <option value="OTHER">Other</option>
-                            </select>
+                <button type="button" onClick={() => setMore((v) => !v)}
+                    className="flex items-center gap-1 text-[13px] font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
+                    <ChevronDownIcon className={`size-4 transition-transform ${more ? "rotate-180" : ""}`} />
+                    {more ? "Fewer options" : "More options"}
+                    {!more && <span className="font-normal text-gray-400">· notes, start date, estimate, priority</span>}
+                </button>
+
+                {more && (
+                    <div className="space-y-4 pt-1">
+                        <div>
+                            <label className={labelCls}>Notes</label>
+                            <textarea value={formData.description} onChange={(e) => set({ description: e.target.value })} placeholder="Anything worth knowing" className={`${inputCls} h-20 resize-none`} />
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Priority</label>
-                            <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"                             >
-                                <option value="LOW">Low</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="HIGH">High</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Lead and Status */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Project Lead</label>
-                            <select value={formData.leadId} onChange={(e) => setFormData({ ...formData, leadId: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1">
-                                <option value="">Unassigned</option>
-                                {teamMembers.map((member) => (
-                                    <option key={member.user_id} value={member.user_id}>
-                                        {member.user?.name || member.user?.email}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Status</label>
-                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1">
-                                <option value="TODO">To Do</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="DONE">Done</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Assignees multi-select */}
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Assignees</label>
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setShowAssigneeDropdown((v) => !v)}
-                                className="w-full flex items-center justify-between rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
-                            >
-                                <span>{assigneeLabel()}</span>
-                                <ChevronDownIcon className="size-4 text-zinc-400" />
-                            </button>
-                            {showAssigneeDropdown && (
-                                <div className="absolute z-10 mt-1 w-full rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg max-h-48 overflow-y-auto">
-                                    {teamMembers.map((member) => (
-                                        <label key={member.user_id} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer text-sm text-zinc-800 dark:text-zinc-200">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.assigneeIds.includes(member.user_id)}
-                                                onChange={() => toggleAssignee(member.user_id)}
-                                                className="rounded"
-                                            />
-                                            {member.user?.name || member.user?.email}
-                                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>Starts</label>
+                                <input type="date" value={formData.start_date} onChange={(e) => set({ start_date: e.target.value })} className={inputCls} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Due time</label>
+                                <input type="time" value={formData.due_time} onChange={(e) => set({ due_time: e.target.value })} className={inputCls} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Estimate (minutes)</label>
+                                <input type="number" min="0" step="5" value={formData.estimate} onChange={(e) => set({ estimate: e.target.value })} placeholder="30" className={inputCls} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Priority</label>
+                                <select value={formData.priority} onChange={(e) => set({ priority: e.target.value })} className={inputCls}>
+                                    <option value="LOW">Low</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="URGENT">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Status</label>
+                                <select value={formData.status} onChange={(e) => set({ status: e.target.value })} className={inputCls}>
+                                    <option value="TODO">To do</option>
+                                    <option value="IN_PROGRESS">In progress</option>
+                                    <option value="DONE">Done</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Type</label>
+                                <select value={formData.type} onChange={(e) => set({ type: e.target.value })} className={inputCls}>
+                                    {["OTHER", "MEETING", "WRITING", "STRATEGY", "DESIGN", "ADMIN", "OUTREACH"].map((t) => (
+                                        <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>
                                     ))}
-                                </div>
-                            )}
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Due Date + Time */}
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Due Date</label>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="size-5 text-zinc-500 dark:text-zinc-400 shrink-0" />
-                            <input type="date" value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} min={new Date().toISOString().split('T')[0]} className="flex-1 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm" />
-                            <input type="time" value={formData.due_time} onChange={(e) => setFormData({ ...formData, due_time: e.target.value })} className="w-32 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm" placeholder="Time" />
-                        </div>
-                        {formData.due_date && (
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                {format(new Date(formData.due_date), "PPP")}{formData.due_time ? ` · ${formData.due_time}` : ""}
-                            </p>
+                        {teamMembers.length > 1 && (
+                            <div>
+                                <label className={labelCls}>Also assign to</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {teamMembers.filter((m) => m.user_id !== formData.leadId).map((m) => {
+                                        const on = formData.assigneeIds.includes(m.user_id);
+                                        return (
+                                            <button type="button" key={m.user_id} onClick={() => toggleAssignee(m.user_id)}
+                                                className={`px-3 py-1.5 rounded-lg text-[13px] border transition-colors ${on ? "bg-ink-900 text-white border-ink-900 dark:bg-white dark:text-ink-950 dark:border-white" : "border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:border-ink-400"}`}>
+                                                {m.user?.name || m.user?.email}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         )}
                     </div>
+                )}
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={() => setShowCreateTask(false)} className="rounded border border-zinc-300 dark:border-zinc-700 px-5 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition" >
-                            Cancel
-                        </button>
-                        <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 rounded px-5 py-2 text-sm bg-ink-800 hover:bg-ink-900 hover:opacity-90 text-white transition disabled:opacity-60" >
-                            {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
-                            {isSubmitting ? "Creating..." : "Create Task"}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    ) : null;
+                <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" onClick={close} className={ghostBtn}>Cancel</button>
+                    <button type="submit" disabled={isSubmitting || !formData.title.trim()} className={accentBtn}>
+                        {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
+                        {isSubmitting ? "Creating…" : "Create task"}
+                    </button>
+                </div>
+            </form>
+        </Modal>
+    );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { primaryBtn } from "../components/ui";
 import { Search, UserPlus, Folder, CheckSquare, Users, Trash2, Edit2 } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
 import UserAvatar from "../components/UserAvatar";
@@ -70,27 +71,9 @@ const Team = () => {
     const activeProjects = projects.filter((p) => p.status !== "CANCELLED" && p.status !== "COMPLETED");
 
     const stats = [
-        {
-            label: "Total Members",
-            value: users.length,
-            icon: <Users className="size-4" />,
-            iconBg: "bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-300",
-            bg: "bg-blue-500/5",
-        },
-        {
-            label: "Active Projects",
-            value: activeProjects.length,
-            icon: <Folder className="size-4" />,
-            iconBg: "bg-violet-50 dark:bg-violet-500/10 text-violet-500 dark:text-violet-300",
-            bg: "bg-violet-500/5",
-        },
-        {
-            label: "Total Tasks",
-            value: tasks.length,
-            icon: <CheckSquare className="size-4" />,
-            iconBg: "bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-300",
-            bg: "bg-rose-500/5",
-        },
+        { label: users.length === 1 ? "member" : "members", value: users.length },
+        { label: activeProjects.length === 1 ? "active project" : "active projects", value: activeProjects.length },
+        { label: tasks.length === 1 ? "task" : "tasks", value: tasks.length },
     ];
 
     return (
@@ -99,40 +82,32 @@ const Team = () => {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Team</h1>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-                        Manage team members and their contributions.
+                    <h1 className="text-[34px] sm:text-[40px] font-bold tracking-tight leading-none text-ink-900 dark:text-white">Team</h1>
+                    <p className="mt-2 text-[15px] text-gray-500 dark:text-zinc-400">
+                        Who is in this workspace, and what they are working on.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     {isAdmin && (
                         <button
                             onClick={() => setIsDialogOpen(true)}
-                            className="flex items-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow-sm"
+                            className={primaryBtn}
                         >
                             <UserPlus className="size-4" />
-                            Invite Member
+                            Invite a teammate
                         </button>
                     )}
                 </div>
                 <InviteMemberDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            {/* Where the team stands, in one line */}
+            <div className="flex flex-wrap items-baseline gap-x-10 gap-y-2">
                 {stats.map((stat) => (
-                    <div
-                        key={stat.label}
-                        className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group hover:-translate-y-0.5 transition-transform duration-150"
-                    >
-                        <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${stat.iconBg} flex-shrink-0 self-start sm:self-auto`}>
-                            {stat.icon}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-[9px] sm:text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5 truncate">{stat.label}</p>
-                            <p className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
-                        </div>
-                    </div>
+                    <p key={stat.label} className="flex items-baseline gap-2">
+                        <span className="font-display text-[34px] font-bold leading-none tabular-nums text-ink-900 dark:text-white">{stat.value}</span>
+                        <span className="text-[15px] text-gray-500 dark:text-zinc-400">{stat.label}</span>
+                    </p>
                 ))}
             </div>
 

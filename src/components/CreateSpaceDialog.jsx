@@ -1,15 +1,13 @@
 import { useState, useRef } from "react"
+import Modal from "./Modal"
+import { accentBtn, ghostBtn, inputCls, PROJECT_COLORS } from "./ui"
 import { XIcon, Loader2Icon, UploadIcon } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { createSpace, updateSpace } from "../features/workspaceSlice"
 import { supabase } from "../lib/supabase"
 import toast from "react-hot-toast"
 
-const COLORS = [
-    "#6366f1", "#3b82f6", "#10b981", "#f59e0b",
-    "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6",
-    "#f97316", "#64748b",
-]
+const COLORS = PROJECT_COLORS
 
 const CreateSpaceDialog = ({ isOpen, onClose, editSpace = null }) => {
     const dispatch = useDispatch()
@@ -17,7 +15,7 @@ const CreateSpaceDialog = ({ isOpen, onClose, editSpace = null }) => {
 
     const [name, setName] = useState(editSpace?.name || "")
     const [description, setDescription] = useState(editSpace?.description || "")
-    const [color, setColor] = useState(editSpace?.color || "#6366f1")
+    const [color, setColor] = useState(editSpace?.color || COLORS[0])
     const [iconUrl, setIconUrl] = useState(editSpace?.icon_url || "")
     const [uploading, setUploading] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -66,21 +64,12 @@ const CreateSpaceDialog = ({ isOpen, onClose, editSpace = null }) => {
         }
     }
 
-    if (!isOpen) return null
-
     return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md text-zinc-900 dark:text-zinc-200 relative">
-                <button className="absolute top-3 right-3 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200" onClick={onClose}>
-                    <XIcon className="size-4" />
-                </button>
-
-                <h2 className="text-base font-semibold mb-4">{editSpace ? "Edit Space" : "New Space"}</h2>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
+        <Modal open={!!isOpen} onClose={onClose} title={editSpace ? "Edit space" : "New space"} size="md">
+            <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Icon upload */}
                     <div>
-                        <label className="block text-sm mb-2 text-zinc-700 dark:text-zinc-300">Icon <span className="text-zinc-400">(optional)</span></label>
+                        <label className="block text-[13px] font-medium mb-2 text-gray-700 dark:text-zinc-300">Icon <span className="text-zinc-400">(optional)</span></label>
                         <div className="flex items-center gap-3">
                             <div
                                 onClick={() => fileRef.current?.click()}
@@ -106,30 +95,30 @@ const CreateSpaceDialog = ({ isOpen, onClose, editSpace = null }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm mb-1 text-zinc-700 dark:text-zinc-300">Name</label>
+                        <label className="block text-[13px] font-medium mb-1 text-gray-700 dark:text-zinc-300">Name</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. SHOPLINE Korea, Signal 7 Internal"
-                            className="w-full px-3 py-2 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                            className={inputCls}
                             required
                             autoFocus
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm mb-1 text-zinc-700 dark:text-zinc-300">Description <span className="text-zinc-400">(optional)</span></label>
+                        <label className="block text-[13px] font-medium mb-1 text-gray-700 dark:text-zinc-300">Description <span className="text-zinc-400">(optional)</span></label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="What is this space for?"
-                            className="w-full px-3 py-2 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm outline-none focus:ring-1 focus:ring-blue-500 h-16 resize-none"
+                            className={`${inputCls} h-16 resize-none`}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm mb-2 text-zinc-700 dark:text-zinc-300">Color</label>
+                        <label className="block text-[13px] font-medium mb-2 text-gray-700 dark:text-zinc-300">Color</label>
                         <div className="flex flex-wrap gap-2">
                             {COLORS.map((c) => (
                                 <button
@@ -144,18 +133,14 @@ const CreateSpaceDialog = ({ isOpen, onClose, editSpace = null }) => {
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                            Cancel
-                        </button>
-                        <button type="submit" disabled={isSubmitting || !name.trim()}
-                            className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-50 transition">
-                            {isSubmitting && <Loader2Icon className="size-3.5 animate-spin" />}
-                            {editSpace ? "Save Changes" : "Create Space"}
+                        <button type="button" onClick={onClose} className={ghostBtn}>Cancel</button>
+                        <button type="submit" disabled={isSubmitting || !name.trim()} className={accentBtn}>
+                            {isSubmitting && <Loader2Icon className="size-4 animate-spin" />}
+                            {editSpace ? "Save changes" : "Create space"}
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+        </Modal>
     )
 }
 
