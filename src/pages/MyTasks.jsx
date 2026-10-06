@@ -12,7 +12,8 @@ import { updateTask } from '../features/workspaceSlice'
 import TaskPanel from '../components/TaskPanel'
 import UserAvatar from '../components/UserAvatar'
 import toast from 'react-hot-toast'
-import { getPulseEnabled } from './ProfileSettings'
+import { sendTaskToPulse as sendToPulse, scheduleText } from '../lib/pulse'
+import { usePulse } from '../context/PulseContext'
 import { supabase } from '../lib/supabase'
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ const ALL_COLS = [
     { key: 'project',       label: 'Project',    defaultW: 120, defaultOn: true },
     { key: 'assignee',      label: 'Assignee',   defaultW: 130, defaultOn: false },
     { key: 'tags',          label: 'Tags',       defaultW: 80,  defaultOn: false },
-    { key: 'send_to_pulse', label: 'Pulse',      defaultW: 52,  defaultOn: false, pulseOnly: true },
+    { key: 'send_to_pulse', label: 'Pulse',      defaultW: 104,  defaultOn: false, pulseOnly: true },
 ]
 
 function visibleCols(colVis) {
@@ -188,6 +189,7 @@ function BadgeCell({ value, cfgMap, options, onSave }) {
 function DateCell({ value, onSave }) {
     const [editing, setEditing] = useState(false)
     const isOverdue = value && isPast(new Date(value)) && !isToday(new Date(value))
+    const isDueToday = value && isToday(new Date(value))
     if (editing) return (
         <input type="date" autoFocus defaultValue={value?.slice(0, 10) || ''}
             onBlur={(e) => { onSave(e.target.value || null); setEditing(false) }}
@@ -198,7 +200,7 @@ function DateCell({ value, onSave }) {
     )
     return (
         <button onClick={(e) => { e.stopPropagation(); setEditing(true) }}
-            className={`text-sm hover:underline ${isOverdue ? 'text-red-500 font-medium' : value ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-300 dark:text-zinc-700 opacity-0 group-hover:opacity-100'}`}>
+            className={`text-sm hover:underline ${isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : isDueToday ? 'text-amber-600 dark:text-amber-400 font-semibold' : value ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-300 dark:text-zinc-700 opacity-0 group-hover:opacity-100'}`}>
             {value ? format(new Date(value), 'MMM d, yyyy') : '—'}
         </button>
     )
@@ -281,85 +283,13 @@ function TextCell({ value, onSave }) {
 
 // ── send to pulse ─────────────────────────────────────────────────────────────
 
-function xpmPriorityToPulse(p) {
-    if (p === 'HIGH' || p === 'URGENT') return 3
-    if (p === 'MEDIUM') return 2
-    if (p === 'LOW') return 1
-    return 0
-}
-
-async function sendTaskToPulse(task, userId, workspaceId) {
-    try {
-        // The project's custom Pulse tag wins when set (Project Settings ->
-        // Pulse Tag); otherwise fall back to the project name lowercased.
-        // The tasks.tags DB trigger normalizes on write anyway, but we
-        // compute it explicitly here so pulse_project_tag (shown in
-        // PulseBridge) matches exactly what landed in Pulse.
-        const effectiveTag = task.pulseTag || (task.projectName ? task.projectName.toLowerCase() : null)
-
-        let listId = null
-        if (task.projectName) {
-            const { data: existing } = await supabase
-                .from('lists').select('id')
-                .eq('user_id', userId).ilike('name', task.projectName)
-                .is('deleted_at', null).maybeSingle()
-            if (existing) {
-                listId = existing.id
-            } else {
-                const { data: created } = await supabase
-                    .from('lists').insert({ user_id: userId, name: task.projectName })
-                    .select('id').single()
-                if (created) listId = created.id
-            }
-        }
-        const dueAt = task.due_date
-            ? new Date(`${task.due_date}T${task.due_time || '00:00:00'}`).toISOString()
-            : null
-        const { data: pulseTask, error } = await supabase.from('tasks').insert({
-            user_id: userId,
-            title: task.title,
-            notes: task.description || null,
-            due_at: dueAt,
-            status: 'todo',
-            priority: xpmPriorityToPulse(task.priority),
-            duration_minutes: 30,
-            list_id: listId,
-            tags: effectiveTag ? [effectiveTag] : [],
-        }).select('id').single()
-        if (error) throw error
-
-        // Record the bridge link so completion can sync both ways (Pulse <-> xPM).
-        if (pulseTask?.id) {
-            await supabase.from('pulse_xpm_task_links').insert({
-                user_id: userId,
-                xpm_workspace_id: workspaceId || null,
-                xpm_project_id: task.projectId || null,
-                xpm_task_id: task.id,
-                pulse_task_id: String(pulseTask.id),
-                pulse_task_title: task.title,
-                pulse_project_tag: effectiveTag,
-                sync_status: 'linked',
-            })
-        }
-
-        // Persist flag so the bolt stays purple after reload
-        await supabase
-            .from('xpm_tasks')
-            .update({ custom_fields: { ...(task.custom_fields || {}), sent_to_pulse: true } })
-            .eq('id', task.id)
-
-        return true
-    } catch (err) {
-        toast.error(err.message || 'Failed to send to Pulse')
-        return false
-    }
-}
-
 function SendToPulseCell({ task, userId, workspaceId, alreadyLinked }) {
     // A task can already be "in Pulse" two ways: (1) it was sent FROM xPM
     // (custom_fields.sent_to_pulse), or (2) it originated IN Pulse and got
     // promoted/linked here via pulse_xpm_task_links (alreadyLinked, passed
     // down from MyTasks' bulk fetch). Either way there's nothing to send.
+    const { byXpmTask } = usePulse()
+    const state = byXpmTask.get(task.id)
     const wasSent = !!task.custom_fields?.sent_to_pulse
     const [sent, setSent] = useState(wasSent || alreadyLinked)
     const [loading, setLoading] = useState(false)
@@ -374,17 +304,22 @@ function SendToPulseCell({ task, userId, workspaceId, alreadyLinked }) {
         e.stopPropagation()
         if (sent || loading) return
         setLoading(true)
-        const ok = await sendTaskToPulse(task, userId, workspaceId)
+        const ok = await sendToPulse(task, userId, workspaceId, { onError: (err) => toast.error(err.message || 'Failed to send to Pulse') })
         if (ok) { setSent(true); toast.success('Task sent to Pulse') }
         setLoading(false)
     }
+
+    const where = state?.location
+    const tip = !sent
+        ? 'Send this task to Pulse'
+        : [where ? `In Pulse · ${where.label}` : (alreadyLinked && !wasSent ? 'Already linked to Pulse' : 'In Pulse'), state?.pulseTask ? scheduleText(state.pulseTask) : null].filter(Boolean).join('\n')
     return (
-        <button onClick={handle} disabled={sent || loading}
-            title={sent ? (alreadyLinked && !wasSent ? 'Already linked to Pulse' : 'Already sent to Pulse') : 'Send this task to Pulse'}
-            className={`transition-colors ${sent ? 'text-violet-500 cursor-default' : 'text-zinc-400 hover:text-violet-500'}`}>
+        <button onClick={handle} disabled={sent || loading} title={tip}
+            className={`flex items-center gap-1.5 transition-colors ${sent ? 'text-violet-500 cursor-default' : 'text-zinc-400 hover:text-violet-500'}`}>
             {loading
                 ? <span className="size-3 border border-violet-400 border-t-transparent rounded-full animate-spin inline-block" />
                 : <ZapIcon size={14} strokeWidth={2.5} fill={sent ? 'currentColor' : 'none'} />}
+            {sent && where && <span className="text-[11px] font-medium">{where.label}</span>}
         </button>
     )
 }
@@ -392,6 +327,7 @@ function SendToPulseCell({ task, userId, workspaceId, alreadyLinked }) {
 // ── column visibility picker ──────────────────────────────────────────────────
 
 function FieldPicker({ colVis, onChange }) {
+    const { enabled: pulseEnabled } = usePulse()
     const [open, setOpen] = useState(false)
     const ref = useRef(null)
     useEffect(() => {
@@ -408,7 +344,7 @@ function FieldPicker({ colVis, onChange }) {
             {open && (
                 <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl py-2 w-52">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 px-3 pb-2">Show / hide fields</p>
-                    {ALL_COLS.filter((c) => !c.fixed && (!c.pulseOnly || getPulseEnabled())).map((col) => {
+                    {ALL_COLS.filter((c) => !c.fixed && (!c.pulseOnly || pulseEnabled)).map((col) => {
                         const on = colVis[col.key] !== false
                         return (
                             <label key={col.key} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
@@ -472,6 +408,9 @@ function TaskRow({ task, cols, colWidths, members, projects, onRowClick, onSave,
                             className={`text-sm truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${isDone ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
                             {task.title}
                         </button>
+                        {task.custom_fields?.someday && (
+                            <span className="flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">Someday</span>
+                        )}
                     </div>
                 )
             case 'priority': return <BadgeCell value={task.priority} cfgMap={PRIORITY_CFG} options={PRIORITY_OPTIONS} onSave={(v) => save({ priority: v })} />

@@ -7,6 +7,9 @@ import { loadTheme } from '../features/themeSlice'
 import { fetchWorkspaces, fetchWorkspaceDetail, createWorkspace, archiveTasks } from '../features/workspaceSlice'
 import { getAutoArchiveSetting } from './ProfileSettings'
 import { useAuth } from '../context/AuthContext'
+import { PulseProvider } from '../context/PulseContext'
+import ShortcutsHelp from '../components/ShortcutsHelp'
+import QuickCapture from '../components/QuickCapture'
 import { Loader2Icon } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -128,6 +131,7 @@ const Layout = () => {
     )
 
     return (
+        <PulseProvider>
         <div className="flex gradient-mesh dark:gradient-mesh text-gray-900 dark:text-slate-100 min-h-screen">
             {/* Sidebar overlay backdrop on mobile */}
             {isSidebarOpen && (
@@ -143,7 +147,10 @@ const Layout = () => {
                     <Outlet context={{ setIsSidebarOpen }} />
                 </div>
             </div>
+            <ShortcutsHelp />
+            <QuickCapture />
         </div>
+        </PulseProvider>
     )
 }
 

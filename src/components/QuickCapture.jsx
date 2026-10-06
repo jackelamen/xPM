@@ -1,28 +1,54 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useAuth } from '../context/AuthContext'
+import { usePulse } from '../context/PulseContext'
 import { createTask } from '../features/workspaceSlice'
-import { PlusIcon, XIcon, Loader2Icon } from 'lucide-react'
+import { sendTaskToPulse } from '../lib/pulse'
+import { parseCapture } from '../lib/parseCapture'
+import { PlusIcon, XIcon, Loader2Icon, ZapIcon, CalendarIcon, FolderIcon, FlagIcon, ClockIcon } from 'lucide-react'
+import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
-export default function QuickCapture({ variant = 'floating' }) {
+const LAST_PROJECT_KEY = 'xpm_capture_project'
+const OPEN_EVENT = 'xpm:capture'
+const readLast = () => { try { return localStorage.getItem(LAST_PROJECT_KEY) || '' } catch { return '' } }
+
+function Chip({ icon, children, onRemove }) {
+    const Icon = icon
+    return (
+        <span className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[12px] text-zinc-700 dark:text-zinc-300">
+            <Icon className="size-3 text-zinc-400" />{children}
+            {onRemove && (
+                <button type="button" onClick={onRemove} aria-label="Remove" className="p-0.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700">
+                    <XIcon className="size-3" />
+                </button>
+            )}
+        </span>
+    )
+}
+
+// Type a task and press Enter. "#project", "!high", "tomorrow", "fri", "2pm" are
+// picked out of the text and shown as chips you can dismiss. Needs a project, so
+// the last one you used is remembered.
+function CaptureBar() {
     const [open, setOpen] = useState(false)
-    const [title, setTitle] = useState('')
-    const [projectId, setProjectId] = useState('')
-    const [priority, setPriority] = useState('MEDIUM')
+    const [text, setText] = useState('')
+    const [ignore, setIgnore] = useState(() => new Set())
+    const [manualProject, setManualProject] = useState(readLast)
+    const [toPulse, setToPulse] = useState(false)
     const [submitting, setSubmitting] = useState(false)
     const inputRef = useRef(null)
     const dispatch = useDispatch()
-    const { user } = useAuth()
+    const { user, pulse } = useAuth()
+    const { reload } = usePulse()
 
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace)
-    const projects = currentWorkspace?.projects || []
-    const firstProjectId = projects[0]?.id
+    const projects = useMemo(() => currentWorkspace?.projects || [], [currentWorkspace])
 
     // Global keyboard shortcut: Cmd+Shift+K
     useEffect(() => {
         function handleKeyDown(e) {
-            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'k') {
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
                 e.preventDefault()
                 setOpen((prev) => !prev)
             }
@@ -32,32 +58,53 @@ export default function QuickCapture({ variant = 'floating' }) {
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [])
 
+    // Buttons elsewhere (Home, Dashboard) open the bar through this event.
     useEffect(() => {
-        if (open) {
-            setTimeout(() => inputRef.current?.focus(), 50)
-            if (firstProjectId && !projectId) setProjectId(firstProjectId)
-        }
-    }, [open, firstProjectId, projectId])
+        const openBar = () => setOpen(true)
+        window.addEventListener(OPEN_EVENT, openBar)
+        return () => window.removeEventListener(OPEN_EVENT, openBar)
+    }, [])
+
+    useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50) }, [open])
+
+    const parsed = useMemo(() => parseCapture(text, projects, new Date(), ignore), [text, projects, ignore])
+    const validManual = projects.some((p) => p.id === manualProject) ? manualProject : (projects[0]?.id || '')
+    const projectId = parsed.project?.id || validManual
+    const project = projects.find((p) => p.id === projectId)
+    const title = parsed.title.trim()
+    const dismiss = (kind) => setIgnore((s) => new Set(s).add(kind))
+
+    const close = () => { setOpen(false); setText(''); setIgnore(new Set()) }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!title.trim() || !projectId || !currentWorkspace) return
+        if (!title || !projectId || !currentWorkspace || submitting) return
         setSubmitting(true)
         try {
-            await dispatch(createTask({
+            const task = await dispatch(createTask({
                 workspaceId: currentWorkspace.id,
                 projectId,
-                title: title.trim(),
-                priority,
+                title,
+                priority: parsed.priority || 'MEDIUM',
                 status: 'TODO',
-                type: 'MEETING',
-                assigneeId: user?.id || null,
+                type: 'OTHER',
+                leadId: user?.id || null,
+                dueDate: parsed.dueDate,
+                dueTime: parsed.dueTime,
             })).unwrap()
-            toast.success('Task created')
-            setTitle('')
-            setOpen(false)
+            try { localStorage.setItem(LAST_PROJECT_KEY, projectId) } catch { /* ignore */ }
+            setManualProject(projectId)
+
+            if (toPulse && pulse.enabled) {
+                const ok = await sendTaskToPulse(
+                    { ...task, projectId, projectName: project?.name, pulseTag: project?.pulse_tag || null },
+                    user.id, currentWorkspace.id,
+                    { onError: (err) => toast.error(err.message || 'Failed to send to Pulse') })
+                if (ok) { toast.success('Task created and sent to Pulse'); reload() }
+            } else toast.success('Task created')
+            close()
         } catch (err) {
-            toast.error(err || 'Failed to create task')
+            toast.error(err?.message || err || 'Failed to create task')
         } finally {
             setSubmitting(false)
         }
@@ -65,104 +112,88 @@ export default function QuickCapture({ variant = 'floating' }) {
 
     return (
         <>
-            {variant === 'inline' ? (
-                <button
-                    onClick={() => setOpen(true)}
-                    title="Quick capture (⌘⇧K)"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.05] text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-white/[0.08] transition-colors whitespace-nowrap"
-                >
-                    <PlusIcon className="size-3.5" strokeWidth={2.5} />
-                    Quick Capture
-                    <span className="ml-1 text-[10px] text-gray-400 dark:text-zinc-600 font-normal hidden lg:inline">⌘⇧K</span>
-                </button>
-            ) : (
-                <button
-                    onClick={() => setOpen(true)}
-                    title="Quick capture (⌘⇧K)"
-                    className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
-                >
-                    <PlusIcon className="size-5" />
-                </button>
-            )}
+            <button
+                onClick={() => setOpen(true)}
+                title="Quick capture (⌘⇧K)"
+                aria-label="Quick capture"
+                className="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+            >
+                <PlusIcon className="size-5" />
+            </button>
 
-            {/* Modal */}
             {open && (
                 <>
-                    <div className="fixed inset-0 z-50 bg-black/20 dark:bg-black/40" onClick={() => setOpen(false)} />
-                    <div className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl p-5">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Quick Capture</h2>
-                            <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
-                                <XIcon className="size-4" />
-                            </button>
+                    <div className="fixed inset-0 z-50 bg-black/30" onClick={close} />
+                    <form onSubmit={handleSubmit}
+                        className="fixed top-[22vh] left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Add a task…  try “Send proposal friday 2pm #acme !high”"
+                            className="w-full px-5 py-4 bg-transparent text-[16px] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none"
+                            autoComplete="off"
+                        />
+
+                        <div className="flex flex-wrap items-center gap-1.5 px-5 pb-3 min-h-[34px]">
+                            {parsed.dueDate && (
+                                <Chip icon={CalendarIcon} onRemove={() => dismiss('date')}>
+                                    {format(new Date(`${parsed.dueDate}T00:00:00`), 'EEE MMM d')}
+                                </Chip>
+                            )}
+                            {parsed.dueTime && <Chip icon={ClockIcon} onRemove={() => dismiss('time')}>{parsed.dueTime}</Chip>}
+                            {parsed.priority && <Chip icon={FlagIcon} onRemove={() => dismiss('priority')}>{parsed.priority.toLowerCase()}</Chip>}
+                            {parsed.project
+                                ? <Chip icon={FolderIcon} onRemove={() => dismiss('project')}>{parsed.project.name}</Chip>
+                                : (
+                                    <label className="inline-flex items-center gap-1 text-[12px] text-zinc-500 dark:text-zinc-400">
+                                        <FolderIcon className="size-3" />
+                                        <select value={validManual} onChange={(e) => setManualProject(e.target.value)}
+                                            className="bg-transparent focus:outline-none max-w-[180px] truncate cursor-pointer">
+                                            {projects.length === 0 && <option value="">No projects</option>}
+                                            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </label>
+                                )}
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-3">
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="What needs to be done?"
-                                className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-zinc-400"
-                                required
-                            />
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Project</label>
-                                    <select
-                                        value={projectId}
-                                        onChange={(e) => setProjectId(e.target.value)}
-                                        className="w-full px-2 py-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        required
-                                    >
-                                        <option value="">Select project</option>
-                                        {projects.map((p) => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</label>
-                                    <select
-                                        value={priority}
-                                        onChange={(e) => setPriority(e.target.value)}
-                                        className="w-full px-2 py-1.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    >
-                                        <option value="LOW">Low</option>
-                                        <option value="MEDIUM">Medium</option>
-                                        <option value="HIGH">High</option>
-                                        <option value="URGENT">Urgent</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between items-center pt-1">
-                                <p className="text-xs text-zinc-400 dark:text-zinc-500">⌘⇧K to toggle</p>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpen(false)}
-                                        className="px-3 py-1.5 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={submitting || !title.trim() || !projectId}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white disabled:opacity-60 hover:opacity-90 transition"
-                                    >
-                                        {submitting && <Loader2Icon className="size-3.5 animate-spin" />}
-                                        Add Task
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+                        <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60">
+                            {pulse.enabled ? (
+                                <label className="inline-flex items-center gap-1.5 text-[12px] text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                                    <input type="checkbox" checked={toPulse} onChange={(e) => setToPulse(e.target.checked)} className="rounded" />
+                                    <ZapIcon className="size-3 text-violet-500" /> Also send to Pulse
+                                </label>
+                            ) : <span className="text-[11px] text-zinc-400">↵ add · Esc close</span>}
+                            <button type="submit" disabled={submitting || !title || !projectId}
+                                className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 disabled:opacity-40 hover:opacity-90 transition">
+                                {submitting && <Loader2Icon className="size-3.5 animate-spin" />}
+                                Add task
+                            </button>
+                        </div>
+                    </form>
                 </>
             )}
         </>
     )
+}
+
+export function CaptureButton({ label = 'Quick Capture' }) {
+    return (
+        <button
+            onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))}
+            title="Quick capture (⌘⇧K)"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-semibold rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors shadow-sm whitespace-nowrap"
+        >
+            <PlusIcon className="size-3.5" strokeWidth={2.5} />
+            {label}
+            <span className="ml-1 text-[10px] opacity-60 font-normal hidden lg:inline">⌘⇧K</span>
+        </button>
+    )
+}
+
+// One bar lives in the layout (so ⌘⇧K works on every page); variant="inline"
+// renders just a button that opens it.
+export default function QuickCapture({ variant = 'floating', label }) {
+    return variant === 'inline' ? <CaptureButton label={label} /> : <CaptureBar />
 }

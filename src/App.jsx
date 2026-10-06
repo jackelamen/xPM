@@ -17,6 +17,9 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Archive from "./pages/Archive";
+import Home from "./pages/Home";
+import PulseInbox from "./pages/PulseInbox";
+import Reports from "./pages/Reports";
 import { useAuth } from "./context/AuthContext";
 import { Loader2Icon } from "lucide-react";
 
@@ -47,7 +50,10 @@ const App = () => {
                         <Layout />
                     </ProtectedRoute>
                 }>
-                    <Route index element={<Dashboard />} />
+                    <Route index element={<Home />} />
+                    <Route path="overview" element={<Dashboard />} />
+                    <Route path="pulse-inbox" element={<PulseInbox />} />
+                    <Route path="reports" element={<Reports />} />
                     <Route path="my-tasks" element={<MyTasks />} />
                     <Route path="all-tasks" element={<AllTasks />} />
                     <Route path="team" element={<Team />} />

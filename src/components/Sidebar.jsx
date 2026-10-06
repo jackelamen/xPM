@@ -7,11 +7,15 @@ import {
     LayoutDashboardIcon, SettingsIcon, UsersIcon, ContactIcon,
     UsersRoundIcon, CheckSquareIcon, ArchiveIcon, Layers,
     FolderOpenIcon, ChevronRightIcon, PanelLeftCloseIcon, PanelLeftOpenIcon,
-    BuildingIcon, Globe2Icon, MapIcon,
+    BuildingIcon, Globe2Icon, MapIcon, HomeIcon, InboxIcon, BarChart3Icon,
+    ExternalLinkIcon, EllipsisIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { usePulse } from '../context/PulseContext'
+import { PULSE_URL } from '../lib/pulse'
 
 const COLLAPSED_KEY = 'xpm_sidebar_collapsed'
+const MORE_KEY = 'xpm_sidebar_more'
 
 // ── Tooltip for icon-only mode ────────────────────────────────────────────────
 function Tip({ label, children }) {
@@ -34,6 +38,13 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const projects = useSelector((s) => s.workspace.currentWorkspace?.projects || [])
     const currentWorkspace = useSelector((s) => s.workspace.currentWorkspace)
     const { isSuperadmin } = useAuth()
+    const { enabled: pulseEnabled, needsReview } = usePulse()
+    const reviewCount = needsReview.length
+
+    const [moreOpen, setMoreOpen] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(MORE_KEY)) === true } catch { return false }
+    })
+    const toggleMore = () => setMoreOpen((v) => { localStorage.setItem(MORE_KEY, JSON.stringify(!v)); return !v })
 
     const [spacesExpanded,   setSpacesExpanded]   = useState(false)
     const [projectsExpanded, setProjectsExpanded] = useState(false)
@@ -55,17 +66,23 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const baseClass     = 'flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all text-[14px] font-medium mb-1'
     const navLinkClass  = ({ isActive }) => `${baseClass} ${isActive ? activeClass : inactiveClass}`
 
+    // Daily-use pages first; everything else lives under "More".
     const simpleItems = [
-        { name: 'Dashboard', href: '/',         icon: LayoutDashboardIcon },
-        { name: 'My Tasks',  href: '/my-tasks', icon: CheckSquareIcon },
-        ...(isSuperadmin ? [{ name: 'All Workspaces', href: '/all-tasks', icon: Globe2Icon }] : []),
+        { name: 'Home',     href: '/',         icon: HomeIcon },
+        { name: 'My Tasks', href: '/my-tasks', icon: CheckSquareIcon },
     ]
-    const bottomItems = [
-        { name: 'Workload', href: '/workload', icon: UsersRoundIcon },
-        { name: 'CRM',      href: '/crm',      icon: ContactIcon },
-        { name: 'xPlan',    href: '/xplan',    icon: MapIcon },
-        { name: 'Team',     href: '/team',      icon: UsersIcon },
-        { name: 'Archive',  href: '/archive',   icon: ArchiveIcon },
+    const afterProjectsItems = [
+        { name: 'xPlan',   href: '/xplan',   icon: MapIcon },
+        { name: 'CRM',     href: '/crm',     icon: ContactIcon },
+        { name: 'Reports', href: '/reports', icon: BarChart3Icon },
+        ...(pulseEnabled ? [{ name: 'Pulse inbox', href: '/pulse-inbox', icon: InboxIcon, badge: reviewCount }] : []),
+    ]
+    const moreItems = [
+        { name: 'Overview',  href: '/overview', icon: LayoutDashboardIcon },
+        { name: 'Workload',  href: '/workload', icon: UsersRoundIcon },
+        { name: 'Team',      href: '/team',     icon: UsersIcon },
+        { name: 'Archive',   href: '/archive',  icon: ArchiveIcon },
+        ...(isSuperadmin ? [{ name: 'All Workspaces', href: '/all-tasks', icon: Globe2Icon }] : []),
     ]
 
     const sidebarRef = useRef(null)
@@ -126,15 +143,6 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col items-center py-3 px-[7px]">
                     {simpleItems.map((i) => iconLink(i.href, i.icon, i.name, i.href === '/'))}
 
-                    <Tip label="Spaces">
-                        <NavLink to="/spaces"
-                            className={({ isActive }) =>
-                                `flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-all
-                                ${isActive ? activeClass : inactiveClass}`
-                            }>
-                            <Layers size={16} strokeWidth={1.75} />
-                        </NavLink>
-                    </Tip>
                     <Tip label="Projects">
                         <NavLink to="/projects"
                             className={({ isActive }) =>
@@ -145,7 +153,26 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         </NavLink>
                     </Tip>
 
-                    {bottomItems.map((i) => iconLink(i.href, i.icon, i.name))}
+                    {afterProjectsItems.map((i) => iconLink(i.href, i.icon, i.badge ? `${i.name} (${i.badge})` : i.name))}
+                    {PULSE_URL && pulseEnabled && (
+                        <Tip label="Open Pulse">
+                            <a href={PULSE_URL} target="_blank" rel="noreferrer"
+                                className={`flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-all ${inactiveClass}`}>
+                                <ExternalLinkIcon size={16} strokeWidth={1.75} />
+                            </a>
+                        </Tip>
+                    )}
+                    <div className="w-5 border-t border-gray-200/80 dark:border-white/[0.06] my-1.5" />
+                    <Tip label="Spaces">
+                        <NavLink to="/spaces"
+                            className={({ isActive }) =>
+                                `flex items-center justify-center w-9 h-9 rounded-lg mb-0.5 transition-all
+                                ${isActive ? activeClass : inactiveClass}`
+                            }>
+                            <Layers size={16} strokeWidth={1.75} />
+                        </NavLink>
+                    </Tip>
+                    {moreItems.map((i) => iconLink(i.href, i.icon, i.name))}
                 </div>
 
                 {/* Bottom: settings + toggle */}
@@ -185,6 +212,54 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         </NavLink>
                     ))}
 
+                    {/* Projects */}
+                    <div className='mb-0.5'>
+                        <div className='flex items-center rounded-md overflow-hidden'>
+                            <NavLink to='/projects'
+                                className={({ isActive }) =>
+                                    `flex items-center gap-3 py-2.5 pl-3 pr-1 flex-1 rounded-lg transition-all text-[14px] font-medium ${isActive ? activeClass : inactiveClass}`
+                                }>
+                                <FolderOpenIcon size={16} strokeWidth={1.75} />
+                                <span>Projects</span>
+                            </NavLink>
+                            <button onClick={() => setProjectsExpanded((v) => !v)}
+                                className={`p-1.5 rounded-md transition-all ${inactiveClass}`}>
+                                <ChevronRightIcon size={11} className={`transition-transform duration-150 ${projectsExpanded ? 'rotate-90' : ''}`} />
+                            </button>
+                        </div>
+                        {projectsExpanded && (
+                            <div className='mt-0.5 mb-1'>
+                                <ProjectSidebar compact />
+                            </div>
+                        )}
+                    </div>
+
+                    {afterProjectsItems.map((item) => (
+                        <NavLink to={item.href} key={item.name} className={navLinkClass}>
+                            <item.icon size={16} strokeWidth={1.75} />
+                            <span>{item.name}</span>
+                            {item.badge > 0 && (
+                                <span className='ml-auto min-w-[18px] text-center text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-500 text-white'>{item.badge}</span>
+                            )}
+                        </NavLink>
+                    ))}
+
+                    {PULSE_URL && pulseEnabled && (
+                        <a href={PULSE_URL} target='_blank' rel='noreferrer' className={`${baseClass} ${inactiveClass}`}>
+                            <ExternalLinkIcon size={16} strokeWidth={1.75} />
+                            <span>Open Pulse</span>
+                        </a>
+                    )}
+
+                    {/* More */}
+                    <button onClick={toggleMore}
+                        className={`${baseClass} w-full ${inactiveClass}`} aria-expanded={moreOpen}>
+                        <EllipsisIcon size={16} strokeWidth={1.75} />
+                        <span>More</span>
+                        <ChevronRightIcon size={11} className={`ml-auto transition-transform duration-150 ${moreOpen ? 'rotate-90' : ''}`} />
+                    </button>
+                    {moreOpen && (
+                        <div className='pl-2'>
                     {/* Spaces */}
                     <div className='mb-0.5'>
                         <div className='flex items-center rounded-md overflow-hidden'>
@@ -220,34 +295,14 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         )}
                     </div>
 
-                    {/* Projects */}
-                    <div className='mb-0.5'>
-                        <div className='flex items-center rounded-md overflow-hidden'>
-                            <NavLink to='/projects'
-                                className={({ isActive }) =>
-                                    `flex items-center gap-3 py-2.5 pl-3 pr-1 flex-1 rounded-lg transition-all text-[14px] font-medium ${isActive ? activeClass : inactiveClass}`
-                                }>
-                                <FolderOpenIcon size={16} strokeWidth={1.75} />
-                                <span>Projects</span>
-                            </NavLink>
-                            <button onClick={() => setProjectsExpanded((v) => !v)}
-                                className={`p-1.5 rounded-md transition-all ${inactiveClass}`}>
-                                <ChevronRightIcon size={11} className={`transition-transform duration-150 ${projectsExpanded ? 'rotate-90' : ''}`} />
-                            </button>
+                            {moreItems.map((item) => (
+                                <NavLink to={item.href} key={item.name} className={navLinkClass}>
+                                    <item.icon size={16} strokeWidth={1.75} />
+                                    <span>{item.name}</span>
+                                </NavLink>
+                            ))}
                         </div>
-                        {projectsExpanded && (
-                            <div className='mt-0.5 mb-1'>
-                                <ProjectSidebar compact />
-                            </div>
-                        )}
-                    </div>
-
-                    {bottomItems.map((item) => (
-                        <NavLink to={item.href} key={item.name} className={navLinkClass}>
-                            <item.icon size={16} strokeWidth={1.75} />
-                            <span>{item.name}</span>
-                        </NavLink>
-                    ))}
+                    )}
                 </div>
             </div>
 

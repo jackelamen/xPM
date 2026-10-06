@@ -1,3 +1,5 @@
+import { usePulse } from "../context/PulseContext"
+import { scheduleText } from "../lib/pulse"
 import { useEffect, useState, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { updateTaskStatus, deleteTasks, patchTask, setTaskAssignees } from "../features/workspaceSlice"
@@ -75,6 +77,25 @@ function EditableText({ value, onSave, multiline = false, placeholder = "Click t
                 {value || placeholder}
             </span>
             <PencilIcon className="size-3 mt-0.5 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
+        </div>
+    )
+}
+
+function PulseInfo({ taskId }) {
+    const { enabled, byXpmTask } = usePulse()
+    if (!enabled) return null
+    const st = byXpmTask.get(taskId)
+    return (
+        <div>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Pulse</p>
+            {st ? (
+                <p className="text-sm text-violet-600 dark:text-violet-400">
+                    {st.location ? st.location.label : "Linked"}
+                    {st.pulseTask && <span className="block text-xs text-zinc-500 dark:text-zinc-400">{scheduleText(st.pulseTask)}</span>}
+                </p>
+            ) : (
+                <p className="text-sm text-zinc-400">Not in Pulse</p>
+            )}
         </div>
     )
 }
@@ -356,6 +377,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 assignee_ids: (task.assignees || []).map((a) => a.id),
                 due_date: task.due_date || "",
                 due_time: task.due_time || "",
+                start_date: task.start_date || "",
+                estimate_minutes: task.estimate_minutes ?? "",
+                someday: !!task.custom_fields?.someday,
                 milestone: task.milestone || false,
             })
         }
@@ -370,6 +394,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
         JSON.stringify([...(draft.assignee_ids || [])].sort()) !== JSON.stringify([...(task.assignees || []).map((a) => a.id)].sort()) ||
         draft.due_date !== (task.due_date || "") ||
         draft.due_time !== (task.due_time || "") ||
+        draft.start_date !== (task.start_date || "") ||
+        String(draft.estimate_minutes ?? "") !== String(task.estimate_minutes ?? "") ||
+        draft.someday !== !!task.custom_fields?.someday ||
         draft.milestone !== (task.milestone || false)
     )
 
@@ -393,6 +420,9 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                 type: draft.type,
                 due_date: draft.due_date || null,
                 due_time: draft.due_time || null,
+                start_date: draft.start_date || null,
+                estimate_minutes: draft.estimate_minutes === "" || draft.estimate_minutes == null ? null : Number(draft.estimate_minutes),
+                custom_fields: { ...(task.custom_fields || {}), someday: draft.someday || undefined },
                 milestone: draft.milestone,
                 updated_at: new Date().toISOString(),
             }
@@ -637,6 +667,33 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                             )}
                         </div>
 
+                        {/* Start Date */}
+                        <div>
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                                <CalendarIcon className="size-3" /> Start Date
+                            </p>
+                            <input
+                                type="date"
+                                value={draft?.start_date ?? task.start_date ?? ""}
+                                onChange={(e) => setDraft((d) => ({ ...d, start_date: e.target.value }))}
+                                className="text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0"
+                            />
+                        </div>
+
+                        {/* Estimate */}
+                        <div>
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                                <ClockIcon className="size-3" /> Estimate (min)
+                            </p>
+                            <input
+                                type="number" min="0" step="5"
+                                value={draft?.estimate_minutes ?? ""}
+                                onChange={(e) => setDraft((d) => ({ ...d, estimate_minutes: e.target.value }))}
+                                placeholder="30"
+                                className="w-20 text-sm text-zinc-800 dark:text-zinc-200 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-0"
+                            />
+                        </div>
+
                         {/* Due Date + Time */}
                         <div>
                             <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
@@ -656,6 +713,20 @@ export default function TaskPanel({ taskId, projectId, onClose }) {
                                 placeholder="Add time"
                             />
                         </div>
+
+                        {/* Someday */}
+                        <div>
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Someday</p>
+                            <button
+                                onClick={() => setDraft((d) => ({ ...d, someday: !d?.someday }))}
+                                className={`text-xs px-2 py-1 rounded border transition ${draft?.someday ? "border-zinc-500 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"}`}
+                                title="Someday tasks are never auto-sent to Pulse; if sent by hand they get the 'someday' tag"
+                            >
+                                {draft?.someday ? "Someday" : "Not someday"}
+                            </button>
+                        </div>
+
+                        <PulseInfo taskId={taskId} />
 
                         {/* Created */}
                         <div>

@@ -11,14 +11,10 @@ import { useNavigate } from 'react-router-dom'
 import { clearWorkspaces, fetchWorkspaces } from '../features/workspaceSlice'
 import { toggleTheme } from '../features/themeSlice'
 import NotificationSettings from '../components/NotificationSettings'
+import { autoSendCandidates } from '../lib/pulse'
+import { usePulse } from '../context/PulseContext'
 
 export const AUTO_ARCHIVE_KEY = 'xpm_auto_archive'
-export const PULSE_KEY = 'xpm_pulse_enabled'
-
-export function getPulseEnabled() {
-    try { return JSON.parse(localStorage.getItem(PULSE_KEY)) === true }
-    catch { return false }
-}
 
 export function getAutoArchiveSetting() {
     try { return JSON.parse(localStorage.getItem(AUTO_ARCHIVE_KEY)) || { enabled: false, days: 7 } }
@@ -299,7 +295,8 @@ function WorkspaceSettings() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProfileSettings() {
-    const { user, signOut, displayName: contextDisplayName } = useAuth()
+    const { user, signOut, displayName: contextDisplayName, pulse, updatePulse } = useAuth()
+    const { links: pulseLinks } = usePulse()
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const { theme } = useSelector((state) => state.theme)
@@ -312,7 +309,7 @@ export default function ProfileSettings() {
     const [loading, setLoading] = useState(true)
 
     const [autoArchive, setAutoArchive] = useState(getAutoArchiveSetting)
-    const [pulseEnabled, setPulseEnabled] = useState(getPulseEnabled)
+    const pulseEnabled = pulse.enabled
 
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -324,10 +321,22 @@ export default function ProfileSettings() {
         toast.success(next.enabled ? `Auto-archive enabled (${next.days} days)` : 'Auto-archive disabled')
     }
 
-    const togglePulse = (val) => {
-        localStorage.setItem(PULSE_KEY, JSON.stringify(val))
-        setPulseEnabled(val)
-        toast.success(val ? 'Pulse integration enabled' : 'Pulse integration disabled')
+    const togglePulse = async (val) => {
+        try {
+            await updatePulse(val ? { enabled: true } : { enabled: false, auto_send: false })
+            toast.success(val ? 'Pulse integration enabled' : 'Pulse integration disabled')
+        } catch (err) { toast.error(err.message || 'Could not save') }
+    }
+
+    const toggleAutoSend = async (val) => {
+        if (val) {
+            // Turning it on sends everything that qualifies right now, so say how many.
+            const linked = new Set(pulseLinks.map((l) => l.xpm_task_id).filter(Boolean))
+            const n = autoSendCandidates(currentWorkspace?.projects || [], user.id, pulse.days, linked).length
+            if (n > 0 && !window.confirm(`${n} of your tasks already qualify and will be sent to Pulse now (up to 25 at a time). Turn on auto-send?`)) return
+        }
+        try { await updatePulse({ auto_send: val }); toast.success(val ? 'Auto-send on' : 'Auto-send off') }
+        catch (err) { toast.error(err.message || 'Could not save') }
     }
 
     useEffect(() => {
@@ -508,7 +517,7 @@ export default function ProfileSettings() {
                             <ZapIcon size={13} className="text-violet-500" />
                             <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100">Enable Pulse integration</p>
                         </div>
-                        <p className="text-[12px] text-gray-500 dark:text-zinc-500">Pulse and xPM share the same account. Once enabled, a "Send to Pulse" column becomes available in My Tasks via the Fields picker.</p>
+                        <p className="text-[12px] text-gray-500 dark:text-zinc-500">Pulse and xPM share the same account. This setting is saved to your account, so it follows you across devices. Once enabled, a "Send to Pulse" column becomes available in My Tasks via the Fields picker.</p>
                         {pulseEnabled && (
                             <p className="text-[12px] text-violet-600 dark:text-violet-400 mt-2 flex items-center gap-1.5">
                                 <ZapIcon size={11} /> Active — open Fields in My Tasks to enable "Send to Pulse"
@@ -521,6 +530,22 @@ export default function ProfileSettings() {
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${pulseEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                     </button>
                 </div>
+                {pulseEnabled && (
+                    <div className="mt-5 pt-5 border-t border-gray-100 dark:border-white/[0.06] flex items-start justify-between gap-6">
+                        <div className="flex-1">
+                            <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100 mb-1">Auto-send my tasks to Pulse</p>
+                            <p className="text-[12px] text-gray-500 dark:text-zinc-500">
+                                Sends tasks assigned to you when their start or due date is within the next{' '}
+                                <select value={pulse.days}                                     onChange={(e) => updatePulse({ days: Number(e.target.value) }).catch((err) => toast.error(err.message || 'Could not save'))}
+                                    className="mx-0.5 px-1 py-0.5 rounded border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-[12px]">
+                                    {[1, 3, 7, 14, 30].map((d) => <option key={d} value={d}>{d} day{d > 1 ? 's' : ''}</option>)}
+                                </select>
+                                (overdue included). Tasks with no date, Someday tasks, and other people's tasks are never sent automatically. The ⚡ button still works for any task. Runs while xPM is open.
+                            </p>
+                        </div>
+                        <Toggle checked={pulse.autoSend} onChange={toggleAutoSend} />
+                    </div>
+                )}
             </Section>
 
             {/* Workspace */}
