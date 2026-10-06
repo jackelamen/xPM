@@ -3,7 +3,11 @@ import { supabase } from "../lib/supabase";
 import {
     XIcon, PlusIcon, TrashIcon, Loader2Icon, HandshakeIcon,
     LayersIcon, TargetIcon, FlagIcon, Rows3Icon, UploadCloudIcon, UsersIcon,
+    ListChecksIcon, ChevronDownIcon,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useTaskRollup } from "../lib/xplanRollup";
+import RollupChip from "./XPlanRollupChip";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 
@@ -184,6 +188,12 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
     const [pushing, setPushing] = useState(false);
     const [creatingProject, setCreatingProject] = useState(false);
     const [lastPushedAt, setLastPushedAt] = useState(initiative.last_pushed_at);
+    const [xpmProjectId, setXpmProjectId] = useState(initiative.xpm_project_id);
+    const [projects, setProjects] = useState([]);
+    const [portalOpen, setPortalOpen] = useState(
+        !!(initiative.xportal_client_id || initiative.last_pushed_at || initiative.contact_email)
+    );
+    const rollup = useTaskRollup(xpmProjectId ? [{ id: initiative.id, xpm_project_id: xpmProjectId }] : []);
 
     const phases = usePlanList("xplan_phases", initiative.id);
     const milestones = usePlanList("xplan_milestones", initiative.id);
@@ -216,6 +226,10 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
             .select("id, name, color")
             .eq("workspace_id", workspaceId).order("name")
             .then(({ data }) => setSpaces(data || []));
+        supabase.from("projects")
+            .select("id, name")
+            .eq("workspace_id", workspaceId).is("archived_at", null).order("name")
+            .then(({ data }) => setProjects(data || []));
     }, [workspaceId]);
 
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -253,26 +267,29 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
         onChanged?.();
     };
 
-    // Create a real xPM project in the linked Space so tasks can be tracked
-    // against it — the "do" stage of plan -> do -> report. Manual, one-shot:
-    // once xpm_project_id is set the button disappears (it's just an id link,
-    // not a live sync).
+    // Tasks live in an xPM project. Either create one for this plan item
+    // (a Space is optional) or link one that already exists.
+    const linkXpmProject = async (projectId) => {
+        const { error } = await supabase.from("roadmap_initiatives")
+            .update({ xpm_project_id: projectId || null }).eq("id", initiative.id);
+        if (error) return toast.error(error.message);
+        setXpmProjectId(projectId || null);
+        onChanged?.();
+    };
+
     const createXpmProject = async () => {
-        if (!form.space_id) return toast.error("Link a Space first.");
         setCreatingProject(true);
         const { data, error } = await supabase.from("projects").insert({
             workspace_id: workspaceId,
-            space_id: form.space_id,
+            space_id: form.space_id || null,
             name: form.title.trim() || "Untitled project",
             description: form.description.trim() || null,
         }).select().single();
-        if (!error) {
-            await supabase.from("roadmap_initiatives").update({ xpm_project_id: data.id }).eq("id", initiative.id);
-        }
+        if (error) { setCreatingProject(false); return toast.error(error.message); }
+        setProjects((prev) => [...prev, { id: data.id, name: data.name }]);
+        await linkXpmProject(data.id);
         setCreatingProject(false);
-        if (error) return toast.error(error.message);
-        toast.success("xPM project created");
-        onChanged?.();
+        toast.success("Task list created");
     };
 
     // Manual push (initial and re-push alike): save first so xPortal gets what's
@@ -370,6 +387,38 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                         </div>
                     </div>
 
+                    {/* Tasks */}
+                    <Section icon={ListChecksIcon} title="Tasks" hint="where the work happens"
+                        action={xpmProjectId && <RollupChip stats={rollup[initiative.id]} />}>
+                        {xpmProjectId ? (
+                            <div className="flex items-center gap-3">
+                                <Link to={`/projectsDetail?id=${xpmProjectId}&tab=tasks`}
+                                    className="text-[13px] font-medium text-gray-900 dark:text-zinc-100 underline underline-offset-2">
+                                    Open task list
+                                </Link>
+                                <button onClick={() => linkXpmProject(null)}
+                                    className="text-[11px] text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition">Unlink</button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                <button onClick={createXpmProject} disabled={creatingProject}
+                                    className="self-start flex items-center gap-1.5 text-[13px] font-medium rounded-lg px-3 py-1.5 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition disabled:opacity-50">
+                                    {creatingProject ? <Loader2Icon className="size-3.5 animate-spin" /> : <PlusIcon className="size-3.5" />}
+                                    Create a task list for this
+                                </button>
+                                {projects.length > 0 && (
+                                    <select className={inputCls} value="" onChange={(e) => e.target.value && linkXpmProject(e.target.value)}>
+                                        <option value="">…or link an existing xPM project</option>
+                                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                )}
+                                <p className="text-[11px] text-gray-400 dark:text-zinc-500">
+                                    Link tasks and this project's progress shows on the board, the Projects table and your weekly review.
+                                </p>
+                            </div>
+                        )}
+                    </Section>
+
                     {/* Links */}
                     <Section icon={HandshakeIcon} title="CRM deal" hint="manual link">
                         <select className={inputCls} value={form.deal_id} onChange={set("deal_id")}>
@@ -387,23 +436,21 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                         )}
                     </Section>
 
-                    <Section icon={LayersIcon} title="Space" hint="link once the pursuit is won">
+                    <Section icon={LayersIcon} title="Space" hint="optional, groups the task list">
                         <select className={inputCls} value={form.space_id} onChange={set("space_id")}>
                             <option value="">Not linked</option>
                             {spaces.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
-                        {form.space_id && !initiative.xpm_project_id && (
-                            <button onClick={createXpmProject} disabled={creatingProject}
-                                className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition disabled:opacity-50">
-                                {creatingProject ? <Loader2Icon className="size-3.5 animate-spin" /> : <PlusIcon className="size-3.5" />}
-                                Create the xPM project in this Space
-                            </button>
-                        )}
-                        {initiative.xpm_project_id && (
-                            <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1.5">xPM project already created — see it under Projects in this Space.</p>
-                        )}
                     </Section>
 
+                    <div>
+                        <button onClick={() => setPortalOpen((o) => !o)}
+                            className="flex items-center gap-2 text-[13px] font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white transition">
+                            <UsersIcon className="size-4" /> Client portal (optional)
+                            <ChevronDownIcon className={`size-3.5 transition-transform ${portalOpen ? "rotate-180" : ""}`} />
+                        </button>
+                    </div>
+                    {portalOpen && <>
                     <Section icon={UsersIcon} title="xPortal client" hint="who the pushed plan belongs to">
                         <div className="flex flex-col gap-2.5">
                             <div>
@@ -490,6 +537,7 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                             </div>
                         </Section>
                     </div>
+                    </>}
                 </div>
 
                 {/* Footer */}
@@ -499,12 +547,12 @@ export default function XPlanInitiativeDrawer({ initiative, workspaceId, lanes, 
                         {saving && <Loader2Icon className="size-4 animate-spin" />}
                         Save changes
                     </button>
-                    <button onClick={push} disabled={pushing || saving}
+                    {portalOpen && <button onClick={push} disabled={pushing || saving}
                         title={form.space_id ? "Send this plan to the client's xPortal" : "Link a Space first"}
                         className="ml-auto flex items-center gap-2 text-sm font-medium rounded-lg px-4 py-2 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition disabled:opacity-50">
                         {pushing ? <Loader2Icon className="size-4 animate-spin" /> : <UploadCloudIcon className="size-4" />}
                         {pushing ? "Pushing…" : lastPushedAt ? "Re-push to xPortal" : "Push to xPortal"}
-                    </button>
+                    </button>}
                 </div>
             </div>
         </div>

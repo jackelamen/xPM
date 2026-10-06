@@ -7,10 +7,13 @@ import MiniCalendar from '../components/MiniCalendar'
 import RecentActivity from '../components/RecentActivity'
 import CreateProjectDialog from '../components/CreateProjectDialog'
 import QuickCapture from '../components/QuickCapture'
+import { XPlanThisWeekCard } from '../components/XPlanThisWeek'
+import { useSelector } from 'react-redux'
 import { useAuth } from '../context/AuthContext'
 
 const Dashboard = () => {
     const { displayName } = useAuth()
+    const workspaceId = useSelector((state) => state.workspace?.currentWorkspace?.id)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
     const hour = new Date().getHours()
@@ -52,6 +55,7 @@ const Dashboard = () => {
 
                 {/* Projects Overview + Recent + Status */}
                 <div className="md:col-span-1 lg:col-span-5 flex flex-col gap-4 sm:gap-5">
+                    <XPlanThisWeekCard workspaceId={workspaceId} />
                     <ProjectsOverviewCard />
                     <RecentProjectsCard />
                     <ProjectStatusCard />

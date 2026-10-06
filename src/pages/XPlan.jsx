@@ -17,6 +17,9 @@ import toast from "react-hot-toast";
 import { format } from "date-fns";
 import XPlanTimeline from "../components/XPlanTimeline";
 import XPlanInitiativeDrawer from "../components/XPlanInitiativeDrawer";
+import XPlanThisWeek from "../components/XPlanThisWeek";
+import { useTaskRollup } from "../lib/xplanRollup";
+import RollupChip from "../components/XPlanRollupChip";
 
 // Shared open-editor behavior: "new" → small create modal; an existing row →
 // full drawer (details + links + plan builder).
@@ -35,7 +38,7 @@ function InitiativeEditor({ target, workspaceId, lanes, members, onSaved, onClos
     );
 }
 
-const TABS = ["Timeline", "Board", "Projects", "Lanes"];
+const TABS = ["This week", "Timeline", "Board", "Projects", "Lanes"];
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-zinc-500 mt-1";
 const labelCls = "text-xs font-medium text-gray-500 dark:text-zinc-400";
@@ -247,7 +250,7 @@ const BOARD_COLUMNS = [
     { id: "later", label: "Later", color: "bg-zinc-400",  hint: "On the radar" },
 ];
 
-function BoardCard({ row, onClick, isDragging }) {
+function BoardCard({ row, onClick, isDragging, stats }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: row.id });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.35 : 1 };
 
@@ -275,11 +278,12 @@ function BoardCard({ row, onClick, isDragging }) {
                     </span>
                 )}
             </div>
+            {stats && <div className="mt-2"><RollupChip stats={stats} /></div>}
         </div>
     );
 }
 
-function BoardColumn({ column, rows, onCardClick, activeId }) {
+function BoardColumn({ column, rows, onCardClick, activeId, rollup }) {
     const { setNodeRef, isOver } = useSortable({ id: column.id });
     return (
         <div ref={setNodeRef} className="flex flex-col flex-1 min-w-[260px]">
@@ -294,7 +298,7 @@ function BoardColumn({ column, rows, onCardClick, activeId }) {
             }`}>
                 <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
                     {rows.map((row) => (
-                        <BoardCard key={row.id} row={row} onClick={onCardClick} isDragging={activeId === row.id} />
+                        <BoardCard key={row.id} row={row} onClick={onCardClick} isDragging={activeId === row.id} stats={rollup[row.id]} />
                     ))}
                 </SortableContext>
                 {rows.length === 0 && (
@@ -310,6 +314,7 @@ function Board({ workspaceId, lanes, members }) {
     const [activeId, setActiveId] = useState(null);
     const [modal, setModal] = useState(null); // null | "new" | initiative row
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+    const rollup = useTaskRollup(rows);
 
     const load = useCallback(async () => {
         const { data, error } = await supabase
@@ -399,7 +404,7 @@ function Board({ workspaceId, lanes, members }) {
                 <div className="flex gap-4 overflow-x-auto pb-4">
                     <SortableContext items={BOARD_COLUMNS.map((c) => c.id)} strategy={verticalListSortingStrategy}>
                         {BOARD_COLUMNS.map((col) => (
-                            <BoardColumn key={col.id} column={col} rows={byHorizon[col.id]} onCardClick={setModal} activeId={activeId} />
+                            <BoardColumn key={col.id} column={col} rows={byHorizon[col.id]} onCardClick={setModal} activeId={activeId} rollup={rollup} />
                         ))}
                     </SortableContext>
                 </div>
@@ -438,6 +443,7 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
     }, [workspaceId]);
 
     useEffect(() => { load(); refreshLanes(); }, [load, refreshLanes]);
+    const rollup = useTaskRollup(rows);
 
     const visible = useMemo(
         () => (rows || []).filter((r) => !laneFilter || r.lane_id === laneFilter),
@@ -488,7 +494,7 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
                     <table className="w-full text-sm">
                         <TableHead cols={[
                             { label: "Project" }, { label: "Lane" }, { label: "Owner" },
-                            { label: "Timeline" }, { label: "Horizon" }, { label: "Status" }, { label: "", right: true },
+                            { label: "Timeline" }, { label: "Tasks" }, { label: "Horizon" }, { label: "Status" }, { label: "", right: true },
                         ]} />
                         <tbody>
                             {visible.map((r) => (
@@ -508,6 +514,9 @@ function Initiatives({ workspaceId, lanes, members, refreshLanes }) {
                                     <td className="px-5 py-3.5 text-gray-600 dark:text-zinc-300">{r.owner?.name || r.owner?.email || "—"}</td>
                                     <td className="px-5 py-3.5 text-gray-500 dark:text-zinc-400 whitespace-nowrap text-[13px]">
                                         {r.start_date || r.end_date ? `${fmtDate(r.start_date)} → ${fmtDate(r.end_date)}` : "—"}
+                                    </td>
+                                    <td className="px-5 py-3.5">
+                                        {r.xpm_project_id ? <RollupChip stats={rollup[r.id]} /> : <span className="text-gray-300 dark:text-zinc-600">—</span>}
                                     </td>
                                     <td className="px-5 py-3.5 text-gray-600 dark:text-zinc-300">{HORIZON_LABELS[r.horizon]}</td>
                                     <td className="px-5 py-3.5">
@@ -626,9 +635,24 @@ function Lanes({ workspaceId, lanes, refreshLanes }) {
     );
 }
 
+// ─── This week tab ───────────────────────────────────────────────────────────
+function ThisWeekTab({ workspaceId, lanes, members }) {
+    const [modal, setModal] = useState(null);
+    const [version, setVersion] = useState(0);
+    return (
+        <>
+            <XPlanThisWeek key={version} workspaceId={workspaceId} onOpen={setModal} />
+            {modal && (
+                <InitiativeEditor target={modal} workspaceId={workspaceId} lanes={lanes} members={members}
+                    onSaved={() => setVersion((v) => v + 1)} onClose={() => setModal(null)} />
+            )}
+        </>
+    );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function XPlan() {
-    const [activeTab, setActiveTab] = useState("Timeline");
+    const [activeTab, setActiveTab] = useState("This week");
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace);
     const [lanes, setLanes] = useState([]);
     const [members, setMembers] = useState([]);
@@ -673,6 +697,9 @@ export default function XPlan() {
                 </div>
             </div>
 
+            {activeTab === "This week" && (
+                <ThisWeekTab workspaceId={workspaceId} lanes={lanes} members={members} />
+            )}
             {activeTab === "Timeline" && (
                 <Timeline workspaceId={workspaceId} lanes={lanes} members={members} />
             )}
