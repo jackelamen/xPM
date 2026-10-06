@@ -8,7 +8,6 @@ import { updateTask } from '../features/workspaceSlice'
 import { useThisWeek } from '../lib/useThisWeek'
 import { allTasks, fmtMins, isMine, minutesOf, openLeaves, weekStartOf, whenOf, ymd } from '../lib/flow'
 
-const CAPACITY = 360 // minutes of planned work per day before it's flagged
 
 function BacklogRow({ t, days, isNow, onAssign }) {
     return (
@@ -36,7 +35,8 @@ function BacklogRow({ t, days, isNow, onAssign }) {
 }
 
 export default function WeekPlan({ weekKind, onWeekKind }) {
-    const { user, markRitual } = useAuth()
+    const { user, markRitual, prefs, updatePrefs } = useAuth()
+    const [showCap, setShowCap] = useState(false)
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const workspace = useSelector((s) => s.workspace?.currentWorkspace)
@@ -117,6 +117,30 @@ export default function WeekPlan({ weekKind, onWeekKind }) {
                 </div>
             </div>
 
+            <div className="mb-4">
+                <button onClick={() => setShowCap((v) => !v)} className="text-[12px] text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
+                    Daily capacity {showCap ? '▴' : '▾'}
+                </button>
+                {showCap && (
+                    <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
+                        {[1, 2, 3, 4, 5, 6, 0].map((dow) => (
+                            <label key={dow} className="flex items-center gap-1.5 text-[12px] text-gray-600 dark:text-zinc-300">
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dow]}
+                                <input type="number" min="0" max="16" step="0.5" defaultValue={prefs.capacity[dow]}
+                                    onBlur={(e) => {
+                                        const v = Math.max(0, Math.min(16, Number(e.target.value) || 0))
+                                        if (v === prefs.capacity[dow]) return
+                                        const next = [...prefs.capacity]; next[dow] = v
+                                        updatePrefs({ capacity: next }).catch((err) => toast.error(err.message || 'Could not save'))
+                                    }}
+                                    className="w-14 px-1.5 py-0.5 rounded border border-gray-200 dark:border-zinc-700 bg-transparent text-[12px]" />h
+                            </label>
+                        ))}
+                        <span className="text-[11px] text-gray-400">hours you can really plan per day, after meetings. 0 turns the warning off. The Weekend column uses Saturday.</span>
+                    </div>
+                )}
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
                 <aside className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden lg:max-h-[calc(100vh-220px)] overflow-y-auto">
                     <p className="px-4 py-3 text-[13px] font-semibold text-gray-800 dark:text-zinc-200 border-b border-gray-100 dark:border-zinc-800">Backlog</p>
@@ -133,6 +157,8 @@ export default function WeekPlan({ weekKind, onWeekKind }) {
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 content-start">
                     {columns.map((c) => {
                         const mins = c.tasks.reduce((n, t) => n + minutesOf(t), 0)
+                        const cap = (prefs.capacity[c.date.getDay()] || 0) * 60 // 0 means no limit set
+                        const overCap = cap > 0 && mins > cap
                         const isToday = c.key === todayStr
                         return (
                             <div key={c.key} onDragOver={(e) => { e.preventDefault(); setOver(c.key) }} onDragLeave={() => setOver(null)} onDrop={(e) => onDrop(e, c)}
@@ -141,11 +167,11 @@ export default function WeekPlan({ weekKind, onWeekKind }) {
                                     <p className={`text-[13px] font-semibold ${isToday ? 'text-amber-600 dark:text-amber-400' : 'text-gray-800 dark:text-zinc-200'}`}>
                                         {c.label} <span className="font-normal text-gray-400">{format(c.date, 'd')}</span>
                                     </p>
-                                    {mins > 0 && <span className={`text-[11px] tabular-nums ${mins > CAPACITY ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}`}>{fmtMins(mins)}</span>}
+                                    {mins > 0 && <span className={`text-[11px] tabular-nums ${overCap ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}`}>{fmtMins(mins)}{cap > 0 && ` / ${fmtMins(cap)}`}</span>}
                                 </div>
-                                {mins > 0 && (
+                                {mins > 0 && cap > 0 && (
                                     <div className="h-1 rounded-full bg-gray-100 dark:bg-zinc-800 mb-2 overflow-hidden">
-                                        <div className={`h-full ${mins > CAPACITY ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (mins / CAPACITY) * 100)}%` }} />
+                                        <div className={`h-full ${overCap ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (mins / cap) * 100)}%` }} />
                                     </div>
                                 )}
                                 <ul className="space-y-1.5">

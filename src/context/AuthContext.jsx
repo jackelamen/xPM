@@ -79,7 +79,12 @@ export const AuthProvider = ({ children }) => {
     // Kept in user metadata, so they must stay tiny; bigger ones use user_prefs.
     const prefs = useMemo(() => {
         const m = user?.user_metadata?.prefs || {}
-        return { autoArchive: m.auto_archive || { enabled: false, days: 7 }, myTasksView: m.mytasks_view || 'list' }
+        return {
+            autoArchive: m.auto_archive || { enabled: false, days: 7 },
+            myTasksView: m.mytasks_view || 'list',
+            // Hours of real work you can plan per day, indexed by Date#getDay() (Sun..Sat). 0 = no limit shown.
+            capacity: Array.isArray(m.capacity) && m.capacity.length === 7 ? m.capacity : [0, 6, 6, 6, 6, 6, 0],
+        }
     }, [user])
 
     const updatePrefs = async (patch) => {
