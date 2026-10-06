@@ -1,188 +1,154 @@
-import { useState } from "react";
-import { format, isSameDay, isBefore, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from "date-fns";
-import { CalendarIcon, Clock, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PriorityTag } from "./Badges";
+import Tooltip from "./Tooltip";
 
-const typeColors = {
-    MEETING: "bg-blue-200 text-blue-800 dark:bg-blue-500 dark:text-blue-900",
-    WRITING: "bg-green-200 text-green-800 dark:bg-green-500 dark:text-green-900",
-    STRATEGY: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
-    DESIGN: "bg-purple-200 text-purple-800 dark:bg-purple-500 dark:text-purple-900",
-    ADMIN: "bg-zinc-200 text-zinc-800 dark:bg-zinc-500 dark:text-zinc-900",
-    OUTREACH: "bg-teal-200 text-teal-800 dark:bg-teal-500 dark:text-teal-900",
-    OTHER: "bg-rose-200 text-rose-800 dark:bg-rose-500 dark:text-rose-900",
-};
-
-const priorityBorders = {
-    LOW: "border-zinc-300 dark:border-zinc-600",
-    MEDIUM: "border-amber-300 dark:border-amber-500",
-    HIGH: "border-orange-300 dark:border-orange-500",
-};
+const key = (d) => format(d, "yyyy-MM-dd");
+// A task sits on its due date; one with only a start date sits on that.
+const dateOf = (t) => t.due_date || t.start_date || null;
+const parse = (s) => new Date(`${s}T00:00:00`);
 
 const ProjectCalendar = ({ tasks }) => {
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [month, setMonth] = useState(new Date());
+    const [selected, setSelected] = useState(key(new Date()));
+    const todayKey = key(new Date());
 
-    const today = new Date();
-    const getTasksForDate = (date) => tasks.filter((task) => task.due_date && isSameDay(new Date(task.due_date), date));
+    const byDay = useMemo(() => {
+        const m = {};
+        for (const t of tasks) { const d = dateOf(t); if (d) (m[d] ||= []).push(t); }
+        return m;
+    }, [tasks]);
 
-    const upcomingTasks = tasks
-        .filter((task) => task.due_date && !isBefore(new Date(task.due_date), today) && task.status !== "DONE")
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-        .slice(0, 5);
-
-    const overdueTasks = tasks.filter((task) => task.due_date && isBefore(new Date(task.due_date), today) && task.status !== "DONE");
-
-    const daysInMonth = eachDayOfInterval({
-        start: startOfMonth(currentMonth),
-        end: endOfMonth(currentMonth),
+    // Full weeks, Monday first (the same as the week planner), so every date sits under its weekday.
+    const days = eachDayOfInterval({
+        start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
+        end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
     });
 
+    const open = tasks.filter((t) => t.status !== "DONE" && dateOf(t));
+    const overdue = open.filter((t) => t.due_date && t.due_date < todayKey).sort((a, b) => a.due_date.localeCompare(b.due_date));
+    const upcoming = open.filter((t) => dateOf(t) >= todayKey).sort((a, b) => dateOf(a).localeCompare(dateOf(b))).slice(0, 6);
+    const selectedTasks = byDay[selected] || [];
 
-    const handleMonthChange = (direction) => {
-        setCurrentMonth((prev) => (direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1)));
-    };
+    const goToday = () => { setMonth(new Date()); setSelected(todayKey); };
 
     return (
-        <div className="grid lg:grid-cols-3 gap-6">
-            {/* Calendar View */}
-            <div className="lg:col-span-2 ">
-                <div className="not-dark:bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-zinc-900 dark:text-white text-md flex gap-2 items-center max-sm:hidden">
-                            <CalendarIcon className="size-5" /> Task Calendar
-                        </h2>
-                        <div className="flex gap-2 items-center">
-                            <button onClick={() => handleMonthChange("prev")}>
-                                <ChevronLeft className="size-5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white" />
+        <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-x-10 gap-y-8">
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-[26px] font-semibold text-ink-900 dark:text-white">{format(month, "MMMM yyyy")}</h2>
+                    <div className="flex items-center gap-1">
+                        <button onClick={goToday} className="px-3 py-1.5 text-[13px] font-medium rounded-md border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800">Today</button>
+                        <Tooltip label="Previous month">
+                            <button onClick={() => setMonth((m) => subMonths(m, 1))} aria-label="Previous month" className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-zinc-800">
+                                <ChevronLeft className="size-5" />
                             </button>
-                            <span className="text-zinc-900 dark:text-white">{format(currentMonth, "MMMM yyyy")}</span>
-                            <button onClick={() => handleMonthChange("next")}>
-                                <ChevronRight className="size-5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white" />
+                        </Tooltip>
+                        <Tooltip label="Next month">
+                            <button onClick={() => setMonth((m) => addMonths(m, 1))} aria-label="Next month" className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-zinc-800">
+                                <ChevronRight className="size-5" />
                             </button>
-                        </div>
+                        </Tooltip>
                     </div>
+                </div>
 
-                    <div className="grid grid-cols-7 text-xs text-zinc-600 dark:text-zinc-400 mb-2 text-center">
-                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                            <div key={day}>{day}</div>
+                <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                    <div className="grid grid-cols-7 border-b border-gray-100 dark:border-zinc-800">
+                        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                            <div key={d} className="px-2 py-2 text-[13px] font-medium text-gray-500 dark:text-zinc-400">{d}</div>
                         ))}
                     </div>
-
-                    <div className="grid grid-cols-7 gap-2">
-                        {daysInMonth.map((day) => {
-                            const dayTasks = getTasksForDate(day);
-                            const isSelected = isSameDay(day, selectedDate);
-                            const hasOverdue = dayTasks.some((t) => t.status !== "DONE" && isBefore(t.due_date, today));
-
+                    <div className="grid grid-cols-7">
+                        {days.map((day) => {
+                            const k = key(day);
+                            const list = byDay[k] || [];
+                            const inMonth = isSameMonth(day, month);
+                            const isToday = k === todayKey;
+                            const isSel = k === selected;
+                            const hasOverdue = list.some((t) => t.status !== "DONE" && t.due_date && t.due_date < todayKey);
                             return (
-                                <button
-                                    key={day}
-                                    onClick={() => setSelectedDate(day)}
-                                    className={`sm:h-14 rounded-md flex flex-col items-center justify-center text-sm
-                                    ${isSelected ? "bg-blue-200 text-blue-900 dark:bg-blue-600 dark:text-white" : "bg-zinc-50 text-zinc-900 dark:bg-zinc-800/40 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"}
-                                    ${hasOverdue ? "border border-red-300 dark:border-red-500" : ""}`}
-                                >
-                                    <span>{format(day, "d")}</span>
-                                    {dayTasks.length > 0 && (
-                                        <span className="text-[10px] text-blue-700 dark:text-blue-400">{dayTasks.length} tasks</span>
-                                    )}
+                                <button key={k} onClick={() => setSelected(k)}
+                                    className={`min-h-[64px] sm:min-h-[96px] p-1.5 text-left border-b border-r border-gray-100 dark:border-zinc-800 flex flex-col gap-1 transition-colors
+                                        ${isSel ? "bg-ink-50 dark:bg-zinc-800 ring-2 ring-inset ring-ink-600" : "hover:bg-gray-50 dark:hover:bg-zinc-800/60"}
+                                        ${inMonth ? "" : "bg-gray-50/70 dark:bg-zinc-950/40"}`}>
+                                    <span className={`self-start text-[13px] tabular-nums size-6 rounded-full flex items-center justify-center
+                                        ${isToday ? "bg-signal-500 text-ink-950 font-bold" : inMonth ? "text-gray-800 dark:text-zinc-200" : "text-gray-300 dark:text-zinc-600"}`}>
+                                        {format(day, "d")}
+                                    </span>
+                                    <span className="hidden sm:flex flex-col gap-0.5 min-w-0">
+                                        {list.slice(0, 2).map((t) => (
+                                            <span key={t.id} className={`truncate rounded px-1.5 py-0.5 text-[12px] leading-tight
+                                                ${t.status === "DONE" ? "bg-gray-100 dark:bg-zinc-800 text-gray-400 line-through" : hasOverdue && t.due_date < todayKey ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300" : "bg-ink-50 dark:bg-zinc-800 text-ink-800 dark:text-zinc-200"}`}>
+                                                {t.title}
+                                            </span>
+                                        ))}
+                                        {list.length > 2 && <span className="px-1.5 text-[12px] text-gray-500 dark:text-zinc-400">+{list.length - 2} more</span>}
+                                    </span>
+                                    {list.length > 0 && <span className="sm:hidden self-start size-1.5 rounded-full bg-ink-600" />}
                                 </button>
                             );
                         })}
                     </div>
                 </div>
-
-                {/* Tasks for Selected Day */}
-                {getTasksForDate(selectedDate).length > 0 && (
-                    <div className=" not-dark:bg-white mt-6 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
-                        <h3 className="text-zinc-900 dark:text-white text-lg mb-3">
-                            Tasks for {format(selectedDate, "MMM d, yyyy")}
-                        </h3>
-                        <div className="space-y-3">
-                            {getTasksForDate(selectedDate).map((task) => (
-                                <div
-                                    key={task.id}
-                                    className={`bg-zinc-50 dark:bg-zinc-800/40 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition p-4 rounded border-l-4 ${priorityBorders[task.priority]}`}
-                                >
-                                    <div className="flex justify-between mb-2">
-                                        <h4 className="text-zinc-900 dark:text-white font-medium">{task.title}</h4>
-                                        <span className={`px-2 py-0.5 rounded text-xs ${typeColors[task.type]}`}>
-                                            {task.type}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-zinc-600 dark:text-zinc-400">
-                                        <span className="capitalize">{task.priority.toLowerCase()} priority</span>
-                                        {task.assignee && (
-                                            <span className="flex items-center gap-1">
-                                                <User className="w-3 h-3" />
-                                                {task.assignee.name}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-                {/* Upcoming Tasks */}
-                <div className="bg-white dark:bg-zinc-950 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
-                    <h3 className="text-zinc-900 dark:text-white text-sm flex items-center gap-2 mb-3">
-                        <Clock className="w-4 h-4" /> Upcoming Tasks
+            <div className="space-y-8">
+                <section>
+                    <h3 className="text-[18px] font-semibold text-gray-900 dark:text-white pb-2">
+                        {selected === todayKey ? "Today" : format(parse(selected), "EEE, MMM d")}
+                        <span className="ml-2 text-[13px] font-normal text-gray-400">{selectedTasks.length}</span>
                     </h3>
-                    {upcomingTasks.length === 0 ? (
-                        <p className="text-zinc-500 dark:text-zinc-400 text-sm text-center">No upcoming tasks</p>
+                    {selectedTasks.length === 0 ? (
+                        <p className="text-[14px] text-gray-500 dark:text-zinc-400">Nothing on this day.</p>
                     ) : (
-                        <div className="space-y-2">
-                            {upcomingTasks.map((task) => (
-                                <div
-                                    key={task.id}
-                                    className="bg-zinc-50 dark:bg-zinc-800/40 hover:bg-zinc-100 dark:hover:bg-zinc-800 p-3 rounded-lg transition"
-                                >
-                                    <div className="flex justify-between items-start text-sm">
-                                        <span className="text-zinc-900 dark:text-white">{task.title}</span>
-                                        <span className={`text-xs px-2 py-0.5 rounded ${typeColors[task.type]}`}>
-                                            {task.type}
-                                        </span>
+                        <ul>
+                            {selectedTasks.map((t) => (
+                                <li key={t.id} className="flex items-center gap-3 py-2.5 border-b border-gray-200 dark:border-zinc-800">
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-[15px] truncate ${t.status === "DONE" ? "line-through text-gray-400" : "text-gray-900 dark:text-zinc-100"}`}>{t.title}</p>
+                                        {t.assignee && <p className="text-[12px] text-gray-400 dark:text-zinc-500 truncate">{t.assignee.name || t.assignee.email}</p>}
                                     </div>
-                                    <p className="text-xs text-zinc-600 dark:text-zinc-400">{format(new Date(task.due_date), "MMM d")}</p>
-                                </div>
+                                    <PriorityTag priority={t.priority} />
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     )}
-                </div>
+                </section>
 
-                {/* Overdue Tasks */}
-                {overdueTasks.length > 0 && (
-                    <div className="bg-white dark:bg-zinc-950  border border-red-300 dark:border-red-500 border-l-4 rounded-lg p-4">
-                        <h3 className="text-red-700 dark:text-red-400 text-sm flex items-center gap-2 mb-3">
-                            <Clock className="w-4 h-4" /> Overdue Tasks ({overdueTasks.length})
+                {overdue.length > 0 && (
+                    <section>
+                        <h3 className="flex items-center gap-2 text-[18px] font-semibold text-gray-900 dark:text-white pb-2">
+                            <span className="size-2 rounded-full bg-red-500" />Overdue
+                            <span className="text-[13px] font-normal text-gray-400">{overdue.length}</span>
                         </h3>
-                        <div className="space-y-2">
-                            {overdueTasks.slice(0, 5).map((task) => (
-                                <div key={task.id} className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 p-3 rounded-lg transition" >
-                                    <div className="flex justify-between text-sm text-zinc-900 dark:text-white">
-                                        <span>{task.title}</span>
-                                        <span className="text-xs px-2 py-0.5 rounded bg-red-200 dark:bg-red-500 text-red-900 dark:text-red-900">
-                                            {task.type}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-red-600 dark:text-red-300">
-                                        Due {format(new Date(task.due_date), "MMM d")}
-                                    </p>
-                                </div>
+                        <ul>
+                            {overdue.slice(0, 5).map((t) => (
+                                <li key={t.id} className="flex items-center gap-3 py-2.5 border-b border-gray-200 dark:border-zinc-800">
+                                    <p className="text-[15px] text-gray-900 dark:text-zinc-100 truncate flex-1">{t.title}</p>
+                                    <span className="text-[12px] font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">{format(parse(t.due_date), "MMM d")}</span>
+                                </li>
                             ))}
-                            {overdueTasks.length > 5 && (
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">
-                                    +{overdueTasks.length - 5} more
-                                </p>
-                            )}
-                        </div>
-                    </div>
+                            {overdue.length > 5 && <li className="pt-2 text-[13px] text-gray-500">{overdue.length - 5} more</li>}
+                        </ul>
+                    </section>
                 )}
+
+                <section>
+                    <h3 className="text-[18px] font-semibold text-gray-900 dark:text-white pb-2">Coming up</h3>
+                    {upcoming.length === 0 ? (
+                        <p className="text-[14px] text-gray-500 dark:text-zinc-400">Nothing scheduled.</p>
+                    ) : (
+                        <ul>
+                            {upcoming.map((t) => (
+                                <li key={t.id} className="flex items-center gap-3 py-2.5 border-b border-gray-200 dark:border-zinc-800">
+                                    <p className="text-[15px] text-gray-900 dark:text-zinc-100 truncate flex-1">{t.title}</p>
+                                    <span className="text-[12px] text-gray-500 dark:text-zinc-400 whitespace-nowrap">{format(parse(dateOf(t)), "EEE MMM d")}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
             </div>
         </div>
     );

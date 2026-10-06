@@ -14,13 +14,13 @@ import toast from "react-hot-toast"
 
 const STATUS_COLORS = {
     TODO: { bar: "bg-zinc-300 dark:bg-zinc-600", text: "text-zinc-600 dark:text-zinc-300" },
-    IN_PROGRESS: { bar: "bg-blue-400 dark:bg-blue-500", text: "text-blue-600" },
-    DONE: { bar: "bg-emerald-400 dark:bg-emerald-500", text: "text-emerald-600" },
+    IN_PROGRESS: { bar: "bg-ink-700 dark:bg-ink-400", text: "text-ink-700 dark:text-ink-300" },
+    DONE: { bar: "bg-emerald-500", text: "text-emerald-600" },
 }
 
 const PRIORITY_COLORS = {
     URGENT: "ring-2 ring-red-400",
-    HIGH: "ring-2 ring-orange-400",
+    HIGH: "ring-2 ring-signal-500",
     MEDIUM: "",
     LOW: "",
 }
@@ -98,17 +98,15 @@ export default function ProjectTimeline({ tasks }) {
     // Month labels in header
     const monthLabels = useMemo(() => {
         const months = []
-        let currentMonth = null
-        let startX = 0
+        let cur = null, startI = 0
         headerDays.forEach((day, i) => {
-            const month = format(day, "MMMM yyyy")
-            if (month !== currentMonth) {
-                if (currentMonth) months.push({ label: currentMonth, x: startX, width: (i - months.length > 0 ? i : i) * dayWidth })
-                currentMonth = month
-                startX = i * dayWidth
+            const m = format(day, "MMMM yyyy")
+            if (m !== cur) {
+                if (cur) months.push({ label: cur, x: startI * dayWidth, w: (i - startI) * dayWidth })
+                cur = m; startI = i
             }
         })
-        if (currentMonth) months.push({ label: currentMonth, x: startX })
+        if (cur) months.push({ label: cur, x: startI * dayWidth, w: (headerDays.length - startI) * dayWidth })
         return months
     }, [headerDays, dayWidth])
 
@@ -244,16 +242,21 @@ export default function ProjectTimeline({ tasks }) {
                     {/* Header */}
                     <div className="flex sticky top-0 z-10 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800">
                         <div style={{ width: leftColWidth, minWidth: leftColWidth }} className="flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 px-3 py-2">
-                            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Task</span>
+                            <span className="text-[13px] font-semibold text-gray-600 dark:text-zinc-300">Task</span>
                         </div>
                         <div className="relative flex-1" style={{ height: headerHeight }}>
                             {/* Month labels */}
-                            {monthLabels.map((m, i) => (
-                                <div key={i} className="absolute top-0 text-xs font-medium text-zinc-500 dark:text-zinc-400 px-1 truncate"
-                                    style={{ left: m.x, top: 2 }}>
-                                    {m.label}
-                                </div>
-                            ))}
+                            {/* Each label is held inside its own month's width, and shortened (or left out)
+                                when the month is too narrow, so neighbouring labels can't overlap. */}
+                            {monthLabels.map((m, i) => {
+                                const text = m.w >= 120 ? m.label : m.w >= 44 ? m.label.slice(0, 3) : ""
+                                return text ? (
+                                    <div key={i} className="absolute text-[13px] font-semibold text-ink-800 dark:text-zinc-300 px-1.5 overflow-hidden whitespace-nowrap"
+                                        style={{ left: m.x, width: m.w, top: 2 }}>
+                                        {text}
+                                    </div>
+                                ) : null
+                            })}
                             {/* Day labels */}
                             <div className="absolute bottom-0 flex" style={{ height: 24 }}>
                                 {headerDays.slice(0, VISIBLE_DAYS).map((day, i) => {
@@ -261,7 +264,7 @@ export default function ProjectTimeline({ tasks }) {
                                     const isWe = isWeekend(day)
                                     return (
                                         <div key={i} style={{ width: dayWidth, minWidth: dayWidth }}
-                                            className={`flex items-center justify-center text-xs border-r border-zinc-100 dark:border-zinc-800 ${isT ? "text-blue-600 dark:text-blue-400 font-bold" : isWe ? "text-zinc-400 dark:text-zinc-600" : "text-zinc-500 dark:text-zinc-400"}`}>
+                                            className={`flex items-center justify-center text-xs border-r border-zinc-100 dark:border-zinc-800 ${isT ? "text-signal-700 dark:text-signal-400 font-bold" : isWe ? "text-zinc-400 dark:text-zinc-600" : "text-zinc-500 dark:text-zinc-400"}`}>
                                             {dayWidth >= 16 ? format(day, "d") : (i % 7 === 0 ? format(day, "MMM d") : "")}
                                         </div>
                                     )
@@ -274,7 +277,7 @@ export default function ProjectTimeline({ tasks }) {
                     <div className="relative">
                         {/* Today vertical line */}
                         {todayX >= 0 && todayX <= totalContentWidth && (
-                            <div className="absolute top-0 bottom-0 w-px bg-blue-400 dark:bg-blue-500 z-10 pointer-events-none"
+                            <div className="absolute top-0 bottom-0 w-px bg-signal-500 z-10 pointer-events-none"
                                 style={{ left: leftColWidth + todayX }} />
                         )}
 
@@ -284,7 +287,7 @@ export default function ProjectTimeline({ tasks }) {
                                 {groupBy !== "none" && (
                                     <div className="flex items-center bg-zinc-50 dark:bg-zinc-900/70 border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5">
                                         <div style={{ width: leftColWidth, minWidth: leftColWidth }} className="flex-shrink-0">
-                                            <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">{group.label}</span>
+                                            <span className="text-[14px] font-semibold text-gray-800 dark:text-zinc-200">{group.label}</span>
                                         </div>
                                     </div>
                                 )}
@@ -392,7 +395,7 @@ export default function ProjectTimeline({ tasks }) {
             {unscheduledTasks.length > 0 && (
                 <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
                     <div className="px-4 py-2 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
-                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                        <p className="text-[13px] font-semibold text-gray-700 dark:text-zinc-300">
                             Unscheduled ({unscheduledTasks.length})
                         </p>
                     </div>

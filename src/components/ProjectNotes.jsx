@@ -10,9 +10,9 @@ import toast from "react-hot-toast"
 
 const NOTE_TYPES = [
     { value: "general", label: "General", icon: FileTextIcon, color: "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300" },
-    { value: "meeting", label: "Meeting", icon: UsersIcon, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" },
-    { value: "decision", label: "Decision", icon: LightbulbIcon, color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" },
-    { value: "brief", label: "Brief", icon: BookOpenIcon, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" },
+    { value: "meeting", label: "Meeting", icon: UsersIcon, color: "bg-ink-100 dark:bg-ink-900/40 text-ink-800 dark:text-ink-200" },
+    { value: "decision", label: "Decision", icon: LightbulbIcon, color: "bg-signal-500/20 dark:bg-signal-500/15 text-signal-700 dark:text-signal-400" },
+    { value: "brief", label: "Brief", icon: BookOpenIcon, color: "bg-ink-50 dark:bg-ink-900/30 text-ink-600 dark:text-ink-300" },
     { value: "planning", label: "Planning", icon: LayoutIcon, color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" },
 ]
 
@@ -201,7 +201,7 @@ export default function ProjectNotes({ projectId }) {
             <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex gap-1 flex-wrap">
                     <button onClick={() => setFilterType("")}
-                        className={`px-3 py-1 text-xs rounded-full border transition ${!filterType ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300"}`}>
+                        className={`px-3 py-1 text-xs rounded-full border transition ${!filterType ? "border-ink-700 bg-ink-900 text-white dark:bg-white dark:text-ink-950 dark:border-white" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300"}`}>
                         All ({notes.length})
                     </button>
                     {NOTE_TYPES.map(nt => {
@@ -209,7 +209,7 @@ export default function ProjectNotes({ projectId }) {
                         if (count === 0) return null
                         return (
                             <button key={nt.value} onClick={() => setFilterType(nt.value)}
-                                className={`px-3 py-1 text-xs rounded-full border transition ${filterType === nt.value ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300"}`}>
+                                className={`px-3 py-1 text-xs rounded-full border transition ${filterType === nt.value ? "border-ink-700 bg-ink-900 text-white dark:bg-white dark:text-ink-950 dark:border-white" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300"}`}>
                                 {nt.label} ({count})
                             </button>
                         )
@@ -218,9 +218,9 @@ export default function ProjectNotes({ projectId }) {
                 <button
                     onClick={() => setEditingId("new")}
                     disabled={editingId === "new"}
-                    className="ml-auto flex items-center gap-2 px-4 py-2 text-sm rounded bg-ink-800 hover:bg-ink-900 text-white hover:opacity-90 transition disabled:opacity-60"
+                    className="ml-auto flex items-center gap-2 px-4 py-2.5 text-[14px] font-semibold rounded-lg bg-ink-900 hover:bg-ink-800 dark:bg-white dark:text-ink-950 text-white transition-colors disabled:opacity-60"
                 >
-                    <PlusIcon className="size-4" /> New Note
+                    <PlusIcon className="size-4" /> New note
                 </button>
             </div>
 
@@ -237,10 +237,14 @@ export default function ProjectNotes({ projectId }) {
 
             {/* Notes grid */}
             {filtered.length === 0 && editingId !== "new" ? (
-                <div className="text-center py-16 text-zinc-400 dark:text-zinc-500">
-                    <FileTextIcon className="size-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">{filterType ? `No ${filterType} notes yet` : "No notes yet"}</p>
-                    <p className="text-xs mt-1">Create notes to document decisions, meetings, and project context.</p>
+                <div className="rounded-2xl border border-dashed border-gray-300 dark:border-zinc-700 text-center py-14">
+                    <p className="font-display text-[20px] font-semibold text-gray-900 dark:text-white">{filterType ? `No ${filterType} notes yet` : "No notes yet"}</p>
+                    <p className="text-[14px] mt-1 text-gray-500 dark:text-zinc-400">Notes hold decisions, meetings and context for this project.</p>
+                    {!filterType && (
+                        <button onClick={() => setEditingId("new")} className="mt-5 px-5 py-2.5 rounded-lg bg-signal-500 hover:bg-signal-400 text-ink-950 text-[14px] font-semibold transition-colors">
+                            Write the first note
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="columns-1 md:columns-2 gap-4 space-y-4">

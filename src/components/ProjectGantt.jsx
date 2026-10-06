@@ -22,14 +22,14 @@ const BAR_H = 22
 const BAR_RADIUS = 4
 
 const STATUS_COLORS = {
-    TODO:        { fill: "#a1a1aa", stroke: "#71717a" },
-    IN_PROGRESS: { fill: "#60a5fa", stroke: "#3b82f6" },
-    DONE:        { fill: "#34d399", stroke: "#10b981" },
+    TODO:        { fill: "#8aa0bd", stroke: "#6f87a6" },
+    IN_PROGRESS: { fill: "#0f3a68", stroke: "#082f57" },
+    DONE:        { fill: "#2b9c78", stroke: "#1f7d5f" },
 }
 
 const PRIORITY_STROKE = {
     URGENT: "#ef4444",
-    HIGH:   "#f97316",
+    HIGH:   "#d98a0b",
     MEDIUM: null,
     LOW:    null,
 }
@@ -124,15 +124,15 @@ export default function ProjectGantt({ tasks, projectId }) {
     // Month label positions
     const monthLabels = useMemo(() => {
         const months = []
-        let cur = null, startX = 0
+        let cur = null, startI = 0
         headerDays.forEach((day, i) => {
-            const m = format(day, "MMM yyyy")
+            const m = format(day, "MMMM yyyy")
             if (m !== cur) {
-                if (cur) months.push({ label: cur, x: startX })
-                cur = m; startX = i * DAY_W
+                if (cur) months.push({ label: cur, x: startI * DAY_W, w: (i - startI) * DAY_W })
+                cur = m; startI = i
             }
         })
-        if (cur) months.push({ label: cur, x: startX })
+        if (cur) months.push({ label: cur, x: startI * DAY_W, w: (headerDays.length - startI) * DAY_W })
         return months
     }, [headerDays])
 
@@ -281,7 +281,7 @@ export default function ProjectGantt({ tasks, projectId }) {
         return slipped
     }, [deps, tasks, localDates])
 
-    const svgH = scheduledTasks.length * ROW_H + HEADER_H + 8
+    const svgH = scheduledTasks.length * ROW_H + 8
     const todayX = xOf(today)
 
     if (loadingDeps) return (
@@ -320,7 +320,7 @@ export default function ProjectGantt({ tasks, projectId }) {
                 <div className="ml-auto flex items-center gap-2">
                     <button
                         onClick={() => setLinking(linking ? null : { fromTaskId: null })}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded border transition ${linking ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"}`}>
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded border transition ${linking ? "border-ink-600 bg-ink-50 dark:bg-ink-900/40 text-ink-800 dark:text-ink-200" : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"}`}>
                         <LinkIcon className="size-3.5" />
                         {linking?.fromTaskId ? "Click successor task" : linking ? "Click a task to start" : "Add dependency"}
                     </button>
@@ -359,7 +359,7 @@ export default function ProjectGantt({ tasks, projectId }) {
             {/* Main Gantt grid */}
             <div
                 ref={containerRef}
-                className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
             >
@@ -368,7 +368,7 @@ export default function ProjectGantt({ tasks, projectId }) {
                     <div className="flex sticky top-0 z-20 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800">
                         <div style={{ width: LEFT_W, minWidth: LEFT_W }}
                             className="flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 px-3 flex items-end pb-2">
-                            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Task</span>
+                            <span className="text-[13px] font-semibold text-gray-600 dark:text-zinc-300">Task</span>
                         </div>
                         {/* SVG header */}
                         <svg width={totalW} height={HEADER_H} className="flex-shrink-0">
@@ -378,12 +378,15 @@ export default function ProjectGantt({ tasks, projectId }) {
                                     fill="currentColor" className="text-zinc-50 dark:text-zinc-800/60" />
                             ) : null)}
                             {/* Month labels */}
-                            {monthLabels.map((m, i) => (
-                                <text key={i} x={m.x + 4} y={16} fontSize={10} fontWeight={600}
-                                    fill="currentColor" className="text-zinc-500 dark:text-zinc-400">
-                                    {m.label}
-                                </text>
-                            ))}
+                            {/* Labels are clipped to their month and shortened when it's narrow, so they never overlap. */}
+                            {monthLabels.map((m, i) => {
+                                const text = m.w >= 110 ? m.label : m.w >= 40 ? m.label.slice(0, 3) : ""
+                                return text ? (
+                                    <svg key={i} x={m.x} y={0} width={m.w} height={24}>
+                                        <text x={6} y={17} fontSize={12} fontWeight={600} fill="currentColor" className="text-ink-800 dark:text-zinc-300">{text}</text>
+                                    </svg>
+                                ) : null
+                            })}
                             {/* Day labels */}
                             {headerDays.map((day, i) => {
                                 const isT = isToday(day)
@@ -391,7 +394,7 @@ export default function ProjectGantt({ tasks, projectId }) {
                                 return (
                                     <text key={i} x={i * DAY_W + DAY_W / 2} y={42} textAnchor="middle"
                                         fontSize={9} fontWeight={isT ? 700 : 400}
-                                        fill={isT ? "#3b82f6" : isWe ? "#a1a1aa" : "currentColor"}
+                                        fill={isT ? "#b45f06" : isWe ? "#a1a1aa" : "currentColor"}
                                         className={isT ? "" : "text-zinc-400 dark:text-zinc-500"}>
                                         {format(day, "d")}
                                     </text>
@@ -400,7 +403,7 @@ export default function ProjectGantt({ tasks, projectId }) {
                             {/* Today line in header */}
                             {todayX >= 0 && todayX <= totalW && (
                                 <line x1={todayX + DAY_W / 2} y1={0} x2={todayX + DAY_W / 2} y2={HEADER_H}
-                                    stroke="#3b82f6" strokeWidth={1.5} strokeDasharray="3 2" opacity={0.6} />
+                                    stroke="#ffb020" strokeWidth={2} strokeDasharray="3 2" />
                             )}
                         </svg>
                     </div>
@@ -422,8 +425,8 @@ export default function ProjectGantt({ tasks, projectId }) {
                                                 handleBarClick(task)
                                             }
                                         }}
-                                        className={`flex items-center px-3 gap-2 border-b border-zinc-50 dark:border-zinc-800/60 ${linking ? "cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40" : ""} ${isLinkFrom ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}>
-                                        <div className={`size-2 rounded-full flex-shrink-0 ${task.status === "DONE" ? "bg-emerald-400" : task.status === "IN_PROGRESS" ? "bg-blue-400" : "bg-zinc-300"}`} />
+                                        className={`flex items-center px-3 gap-2 border-b border-zinc-50 dark:border-zinc-800/60 ${linking ? "cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40" : ""} ${isLinkFrom ? "bg-ink-50 dark:bg-ink-900/40" : ""}`}>
+                                        <div className={`size-2 rounded-full flex-shrink-0 ${task.status === "DONE" ? "bg-emerald-400" : task.status === "IN_PROGRESS" ? "bg-ink-700" : "bg-ink-200"}`} />
                                         <span className={`text-xs truncate flex-1 ${isSlipped ? "text-amber-600 dark:text-amber-400" : "text-zinc-700 dark:text-zinc-300"}`}>
                                             {task.title}
                                         </span>
@@ -464,15 +467,15 @@ export default function ProjectGantt({ tasks, projectId }) {
 
                             {/* Row dividers */}
                             {scheduledTasks.map((_, i) => (
-                                <line key={i} x1={0} y1={HEADER_H + (i + 1) * ROW_H - 0.5}
-                                    x2={totalW} y2={HEADER_H + (i + 1) * ROW_H - 0.5}
+                                <line key={i} x1={0} y1={(i + 1) * ROW_H - 0.5}
+                                    x2={totalW} y2={(i + 1) * ROW_H - 0.5}
                                     stroke="currentColor" strokeWidth={0.5} className="text-zinc-100 dark:text-zinc-800/60" />
                             ))}
 
                             {/* Today line */}
                             {todayX >= 0 && todayX <= totalW && (
                                 <line x1={todayX + DAY_W / 2} y1={0} x2={todayX + DAY_W / 2} y2={svgH}
-                                    stroke="#3b82f6" strokeWidth={1.5} opacity={0.5} />
+                                    stroke="#ffb020" strokeWidth={2} />
                             )}
 
                             {/* Dependency lines — drawn below bars */}
@@ -483,8 +486,8 @@ export default function ProjectGantt({ tasks, projectId }) {
                                 const fromTask = scheduledTasks[fromRow]
                                 const toTask = scheduledTasks[toRow]
                                 if (!fromTask || !toTask) return null
-                                const fromGeom = barGeom(fromTask, HEADER_H + fromRow * ROW_H)
-                                const toGeom = barGeom(toTask, HEADER_H + toRow * ROW_H)
+                                const fromGeom = barGeom(fromTask, fromRow * ROW_H)
+                                const toGeom = barGeom(toTask, toRow * ROW_H)
                                 if (!fromGeom || !toGeom) return null
                                 return (
                                     <DepLine
@@ -500,7 +503,7 @@ export default function ProjectGantt({ tasks, projectId }) {
 
                             {/* Task bars */}
                             {scheduledTasks.map((task, i) => {
-                                const rowY = HEADER_H + i * ROW_H
+                                const rowY = i * ROW_H
                                 const geom = barGeom(task, rowY)
                                 if (!geom) return null
                                 const { x, y, w } = geom
@@ -585,10 +588,10 @@ export default function ProjectGantt({ tasks, projectId }) {
             {/* Legend */}
             <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 flex-wrap">
                 <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-zinc-300 inline-block" /> To Do</span>
-                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-blue-400 inline-block" /> In Progress</span>
-                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-emerald-400 inline-block" /> Done</span>
-                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-amber-400 inline-block" /> Schedule slip</span>
-                <span className="flex items-center gap-1.5"><span className="size-3 rotate-45 bg-amber-400 inline-block" /> Milestone</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-ink-700 inline-block" /> In progress</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm inline-block" style={{ background: "#2b9c78" }} /> Done</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-signal-500 inline-block" /> Schedule slip</span>
+                <span className="flex items-center gap-1.5"><span className="size-3 rotate-45 bg-signal-500 inline-block" /> Milestone</span>
                 <span className="text-zinc-300 dark:text-zinc-600">|</span>
                 <span>Drag bars to shift dates · Drag edges to resize · Use "Add dependency" to connect tasks</span>
             </div>

@@ -6,9 +6,9 @@ import { fetchWorkspaceDetail } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-const inputClasses = "w-full px-3 py-2 rounded mt-1 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500";
+const inputClasses = "w-full px-3 py-2 rounded mt-1 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-ink-500";
 const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
-const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800";
+const cardClasses = "rounded-2xl border p-6 bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800";
 
 export default function ProjectSettings({ project }) {
     const dispatch = useDispatch();
@@ -99,7 +99,7 @@ export default function ProjectSettings({ project }) {
         <div className="grid lg:grid-cols-2 gap-8">
             {/* Project Details */}
             <div className={cardClasses}>
-                <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">Project Details</h2>
+                <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white mb-4">Project details</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className={labelClasses}>Project Name</label>
@@ -165,7 +165,7 @@ export default function ProjectSettings({ project }) {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="flex items-center gap-2 text-sm bg-ink-800 hover:bg-ink-900 text-white px-4 py-2 rounded disabled:opacity-60 hover:opacity-90 transition"
+                        className="flex items-center gap-2 text-[14px] font-semibold bg-ink-900 hover:bg-ink-800 dark:bg-white dark:text-ink-950 text-white px-4 py-2.5 rounded-lg disabled:opacity-60 transition-colors"
                     >
                         {isSubmitting ? <Loader2Icon className="size-4 animate-spin" /> : <Save className="size-4" />}
                         {isSubmitting ? "Saving..." : "Save Changes"}
@@ -177,13 +177,13 @@ export default function ProjectSettings({ project }) {
             <div className="space-y-6">
                 {/* Members */}
                 <div className={cardClasses}>
-                    <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-3">
+                    <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white mb-3">
                         Team Members <span className="text-sm text-zinc-500">({project.members?.length || 0})</span>
                     </h2>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                         {(project.members || []).map((member) => (
                             <div key={member.id || member.user_id} className="flex items-center gap-3 px-3 py-2 rounded dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-300">
-                                <div className="size-6 rounded-full bg-ink-800 hover:bg-ink-900 flex items-center justify-center text-white text-xs font-medium">
+                                <div className="size-6 rounded-full bg-ink-800 flex items-center justify-center text-white text-xs font-medium">
                                     {(member.user?.name || member.user?.email || "?")[0].toUpperCase()}
                                 </div>
                                 <span className="flex-1 truncate">{member.user?.name || member.user?.email}</span>
@@ -195,7 +195,7 @@ export default function ProjectSettings({ project }) {
 
                 {/* Danger Zone */}
                 <div className="rounded-lg border border-red-200 dark:border-red-900 p-6">
-                    <h2 className="text-lg font-medium text-red-600 dark:text-red-400 mb-1">Danger Zone</h2>
+                    <h2 className="text-[20px] font-semibold text-red-600 dark:text-red-400 mb-1">Danger zone</h2>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
                         Archiving a project hides it from all views. Tasks are preserved.
                     </p>
